@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Cost Function</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.10);
+    --series-a: #2a78d6; --series-b: #eb6834;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
+      --series-a: #3987e5; --series-b: #d95926;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
+    --series-a: #3987e5; --series-b: #d95926;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 0 0 12px; }
+  a { color: inherit; }
+  .lede { color: var(--ink-2); margin: 0 0 20px; }
+  .setups { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .setups { grid-template-columns: 1fr; } }
+  fieldset, .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 0; min-width: 0; }
+  fieldset.setup { border-top: 3px solid var(--series); }
+  fieldset.setup[data-id="A"] { --series: var(--series-a); }
+  fieldset.setup[data-id="B"] { --series: var(--series-b); }
+  legend { font-weight: 600; padding: 0 4px; display: flex; align-items: center; gap: 8px; }
+  .key { width: 16px; height: 2px; background: var(--series); display: inline-block; }
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .setup .fields { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); }
+  select, input { font: inherit; color: var(--ink); background: var(--page); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 100%; min-width: 0; }
+  .toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+  .toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .toggle label { display: block; padding: 6px 14px; cursor: pointer; color: var(--ink-2); }
+  .toggle input:checked + label { background: var(--ink); color: var(--surface); }
+  .toggle input:focus-visible + label { outline: 2px solid var(--series); outline-offset: -2px; }
+  details.card > summary { cursor: pointer; font-weight: 600; }
+  details.card[open] > summary { margin-bottom: 12px; }
+  .card { margin-top: 16px; }
+  .headline { font-size: 16px; margin: 16px 0 0; }
+  .chart-box { position: relative; height: 320px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  #sources td, #sources th { text-align: left; }
+  th { color: var(--ink-2); font-weight: 600; font-size: 13px; }
+  .notes { color: var(--ink-2); margin: 0; padding-left: 18px; }
+  .error { color: var(--ink); border-left: 3px solid var(--series-b); padding-left: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Agent cost function</h1>
+  <p class="lede">What one agent session costs on Claude or OpenAI as its context grows, for two setups side by side. Change a setting and the charts update.</p>
+
+  <div class="setups">
+    <fieldset class="setup" data-id="A"></fieldset>
+    <fieldset class="setup" data-id="B"></fieldset>
+  </div>
+
+  <details class="card" id="shared">
+    <summary>Shared assumptions</summary>
+    <div class="fields">
+      <label>Session length (tokens)<input name="session" type="number" min="10000" max="1000000" step="10000"></label>
+      <label>System prompt + tools (tokens)<input name="base" type="number" min="0" max="200000" step="1000"></label>
+      <label>New context per request, excl. reasoning (tokens)<input name="growth" type="number" min="500" max="200000" step="500"></label>
+      <label>Visible output per request (tokens)<input name="visibleOut" type="number" min="0" max="64000" step="100"></label>
+      <label>Reasoning per request: none<input name="think-none" type="number" min="0" max="128000" step="100"></label>
+      <label>Reasoning: low<input name="think-low" type="number" min="0" max="128000" step="100"></label>
+      <label>Reasoning: medium<input name="think-medium" type="number" min="0" max="128000" step="100"></label>
+      <label>Reasoning: high<input name="think-high" type="number" min="0" max="128000" step="100"></label>
+      <label>Reasoning: xhigh<input name="think-xhigh" type="number" min="0" max="128000" step="100"></label>
+      <label>Reasoning: max<input name="think-max" type="number" min="0" max="128000" step="100"></label>
+    </div>
+  </details>
+
+  <p class="headline" id="headline"></p>
+
+  <section class="card">
+    <h2>Cumulative cost (USD) vs context size</h2>
+    <div class="chart-box"><canvas id="cumChart" aria-label="Cumulative cost per setup as context grows"></canvas></div>
+  </section>
+
+  <section class="card">
+    <h2>Cost per request (USD) vs context size</h2>
+    <div class="chart-box"><canvas id="reqChart" aria-label="Cost of each request per setup as context grows"></canvas></div>
+  </section>
+
+  <section class="card">
+    <h2>Breakdown at end of session</h2>
+    <div class="table-wrap"><table id="breakdown"></table></div>
+  </section>
+
+  <details class="card">
+    <summary>Cumulative cost at regular steps (table view)</summary>
+    <div class="table-wrap"><table id="steps"></table></div>
+  </details>
+
+  <section class="card">
+    <h2>How it is calculated</h2>
+    <ul class="notes">
+      <li>Every request sends the whole context. The part sent before is a cache read; the new part (tool results, user text, the last reply) is a cache write. Each cache hit restarts the cache lifetime on both providers.</li>
+      <li>Output per request is the visible output plus the reasoning tokens for the chosen effort; both providers bill reasoning as output. When earlier reasoning stays in context, those tokens also join the context and are read back as input on later requests, so the session reaches its size in fewer requests.</li>
+      <li>Requests run back to back. Interruptions are spread evenly over the session. If a pause is longer than the cache lifetime, the whole context is written again (filled marker); a shorter pause keeps the cache (hollow marker).</li>
+      <li>OpenAI's older cache modes have no fixed lifetime: <code>in_memory</code> lasts about 5–10 minutes idle and <code>24h</code> typically about 30 minutes. This page uses 5 and 30 minutes.</li>
+      <li>Long prompts: Claude Haiku 5.5 bills a request at 5× once its prompt passes 100K tokens. OpenAI models bill 2× input and cache and 1.5× output for the whole request once the prompt passes 272K tokens.</li>
+      <li>Reasoning tokens per effort level are not published by either provider. The numbers in Shared assumptions are guesses, the same for every model, and the levels do not mean the same amount of work across models.</li>
+      <li>Not modelled: compaction, subagents, fast/priority/flex/batch pricing, regional pricing, reasoning kept only within the current turn (treated as dropped), and effort changing how many requests a task takes.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Sources (checked 2026-10-20)</h2>
+    <div class="table-wrap"><table id="sources"></table></div>
+    <ul class="notes" id="docs" style="margin-top: 12px"></ul>
+  </section>
+</main>
+
+<script>
+const DOCS = {
+  claudePricing: { url: 'https://platform.claude.com/docs/en/about-claude/pricing', proves: 'Claude input, cache write (5 min 1.25×, 1 h 2×), cache read and output prices; Haiku 5.5 over-100K prices' },
+  claudeModels: { url: 'https://platform.claude.com/docs/en/about-claude/models/overview', proves: 'Claude context windows and default effort' },
+  claudeEffort: { url: 'https://platform.claude.com/docs/en/build-with-claude/effort', proves: 'Which Claude models support which effort levels' },
+  claudeThinking: { url: 'https://platform.claude.com/docs/en/build-with-claude/thinking', proves: 'Thinking billed as output; which models keep earlier thinking in context; dropping it with the clear_thinking_20251015 context-editing strategy' },
+  openaiPricing: { url: 'https://developers.openai.com/api/docs/pricing', proves: 'OpenAI input, cached input, cache write, output and over-272K prices' },
+  openaiCaching: { url: 'https://developers.openai.com/api/docs/guides/prompt-caching', proves: 'OpenAI cache lifetimes (30m; in_memory; 24h), write 1.25× on GPT-5.6 and later, no write fee before' },
+  openaiReasoning: { url: 'https://developers.openai.com/api/docs/guides/reasoning', proves: 'Reasoning billed as output; reasoning.context default per model family' },
+};
+const openaiPage = id => `https://developers.openai.com/api/docs/models/${id}`;
+
+const CLAUDE_CACHE = [
+  { id: '5m', label: '5 min · write 1.25×', minutes: 5, write: 1.25 },
+  { id: '1h', label: '1 hour · write 2×', minutes: 60, write: 2 },
+];
+const OPENAI_30M = { id: '30m', label: '30 min · write 1.25×', minutes: 30, write: 1.25 };
+const OPENAI_24H = { id: '24h', label: '24h · ~30 min typical · no write fee', minutes: 30, write: 1 };
+const OPENAI_IN_MEMORY = { id: 'in_memory', label: 'in_memory · ~5–10 min · no write fee', minutes: 5, write: 1 };
+
+const ALL_EFFORTS = ['none', 'low', 'medium', 'high', 'xhigh', 'max'];
+const LOW_TO_MAX = ['low', 'medium', 'high', 'xhigh', 'max'];
+const NONE_TO_MAX = ['none', ...LOW_TO_MAX];
+const NONE_TO_XHIGH = ['none', 'low', 'medium', 'high', 'xhigh'];
+const OPENAI_LONG = { above: 272000, inMult: 2, outMult: 1.5 };
+
+// Prices in USD per million tokens; read is the cache-read multiplier on input.
+// reasoning: [default, ...other allowed] of 'kept' (earlier reasoning stays in context) / 'dropped'.
+const MODELS = {
+  'claude-fable-5-1':  { provider: 'claude', name: 'Claude Fable 5.1',  in: 10,   out: 50,  read: 0.025, maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: ['kept', 'dropped'] },
+  'claude-opus-5-5':   { provider: 'claude', name: 'Claude Opus 5.5',   in: 4,    out: 20,  read: 0.05,  maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'medium', cache: CLAUDE_CACHE, reasoning: ['kept', 'dropped'] },
+  'claude-sonnet-5-5': { provider: 'claude', name: 'Claude Sonnet 5.5', in: 2,    out: 10,  read: 0.05,  maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: ['kept', 'dropped'] },
+  'claude-haiku-5-5':  { provider: 'claude', name: 'Claude Haiku 5.5',  in: 0.1,  out: 0.5, read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'medium', cache: CLAUDE_CACHE, reasoning: ['kept', 'dropped'],
+                         longPrompt: { above: 100000, inMult: 5, outMult: 5 } },
+  'claude-opus-5':     { provider: 'claude', name: 'Claude Opus 5',     in: 5,    out: 25,  read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: ['kept', 'dropped'] },
+  'claude-opus-4-8':   { provider: 'claude', name: 'Claude Opus 4.8',   in: 5,    out: 25,  read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: ['kept', 'dropped'] },
+  'claude-sonnet-5':   { provider: 'claude', name: 'Claude Sonnet 5',   in: 2,    out: 10,  read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: ['kept', 'dropped'] },
+  'claude-sonnet-4-6': { provider: 'claude', name: 'Claude Sonnet 4.6', in: 3,    out: 15,  read: 0.1,   maxInput: 1e6, efforts: ['low', 'medium', 'high', 'max'], defaultEffort: 'high', cache: CLAUDE_CACHE, reasoning: ['kept', 'dropped'] },
+  'gpt-6-astra':       { provider: 'openai', name: 'GPT-6 Astra',       in: 10,   out: 50,  read: 0.1,   maxInput: 922000,  efforts: LOW_TO_MAX,    defaultEffort: null,     cache: [OPENAI_30M], reasoning: ['dropped'], longPrompt: OPENAI_LONG },
+  'gpt-6.1-sol':       { provider: 'openai', name: 'GPT-6.1 Sol',       in: 2,    out: 10,  read: 0.05,  maxInput: 922000,  efforts: LOW_TO_MAX,    defaultEffort: 'medium', cache: [OPENAI_30M], reasoning: [null, 'kept', 'dropped'], longPrompt: OPENAI_LONG },
+  'gpt-6-sol':         { provider: 'openai', name: 'GPT-6 Sol',         in: 2,    out: 10,  read: 0.1,   maxInput: 1050000, efforts: NONE_TO_MAX,   defaultEffort: 'medium', cache: [OPENAI_30M], reasoning: ['dropped'], longPrompt: OPENAI_LONG },
+  'gpt-6-luna':        { provider: 'openai', name: 'GPT-6 Luna',        in: 0.1,  out: 0.5, read: 0.1,   maxInput: 1050000, efforts: NONE_TO_MAX,   defaultEffort: 'medium', cache: [OPENAI_30M], reasoning: ['dropped'], longPrompt: OPENAI_LONG },
+  'gpt-5.6-sol':       { provider: 'openai', name: 'GPT-5.6 Sol',       in: 4,    out: 20,  read: 0.1,   maxInput: 922000,  efforts: NONE_TO_MAX,   defaultEffort: 'medium', cache: [OPENAI_30M], reasoning: ['kept', 'dropped'], longPrompt: OPENAI_LONG },
+  'gpt-5.6-terra':     { provider: 'openai', name: 'GPT-5.6 Terra',     in: 2,    out: 12,  read: 0.1,   maxInput: 922000,  efforts: NONE_TO_MAX,   defaultEffort: 'medium', cache: [OPENAI_30M], reasoning: ['kept', 'dropped'], longPrompt: OPENAI_LONG },
+  'gpt-5.6-luna':      { provider: 'openai', name: 'GPT-5.6 Luna',      in: 0.2,  out: 1.2, read: 0.1,   maxInput: 922000,  efforts: NONE_TO_MAX,   defaultEffort: 'medium', cache: [OPENAI_30M], reasoning: ['kept', 'dropped'], longPrompt: OPENAI_LONG },
+  'gpt-5.5':           { provider: 'openai', name: 'GPT-5.5',           in: 5,    out: 30,  read: 0.1,   maxInput: 1050000, efforts: NONE_TO_XHIGH, defaultEffort: 'medium', cache: [OPENAI_24H], reasoning: ['dropped'], longPrompt: OPENAI_LONG },
+  'gpt-5.4':           { provider: 'openai', name: 'GPT-5.4',           in: 2.5,  out: 15,  read: 0.1,   maxInput: 1050000, efforts: NONE_TO_XHIGH, defaultEffort: 'none',   cache: [OPENAI_24H, OPENAI_IN_MEMORY], reasoning: ['dropped'], longPrompt: OPENAI_LONG },
+  'gpt-5.4-mini':      { provider: 'openai', name: 'GPT-5.4 mini',      in: 0.75, out: 4.5, read: 0.1,   maxInput: 272000,  efforts: NONE_TO_XHIGH, defaultEffort: 'none',   cache: [OPENAI_IN_MEMORY], reasoning: ['dropped'] },
+};
+
+const PROVIDERS = {
+  claude: { name: 'Claude', defaultModel: 'claude-opus-5-5', sources: ['claudePricing', 'claudeModels', 'claudeEffort', 'claudeThinking'] },
+  openai: { name: 'OpenAI', defaultModel: 'gpt-5.6-sol', sources: ['openaiPricing', 'openaiCaching', 'openaiReasoning'] },
+};
+
+const DEFAULTS = {
+  A: { provider: 'claude', model: 'claude-opus-5-5', cache: '5m', effort: 'high', reasoning: 'kept', interruptions: 3, pause: 20 },
+  B: { provider: 'openai', model: 'gpt-5.6-sol', cache: '30m', effort: 'high', reasoning: 'kept', interruptions: 3, pause: 20 },
+  shared: { session: 1000000, base: 20000, growth: 5000, visibleOut: 500,
+            thinking: { none: 0, low: 300, medium: 1000, high: 2500, xhigh: 5000, max: 10000 } },
+};
+
+const reasoningOptions = m => m.reasoning.filter(Boolean);
+const reasoningDefault = m => m.reasoning[0];
+
+function rates(model, promptTokens) {
+  const lp = model.longPrompt && promptTokens > model.longPrompt.above ? model.longPrompt : null;
+  return { in: model.in / 1e6 * (lp ? lp.inMult : 1), out: model.out / 1e6 * (lp ? lp.outMult : 1) };
+}
+
+function simulate(setup, shared) {
+  const model = MODELS[setup.model];
+  const cache = model.cache.find(c => c.id === setup.cache) ?? model.cache[0];
+  const end = Math.min(shared.session, model.maxInput);
+  const pauseExpires = setup.pause > cache.minutes;
+  const pauses = Array.from({ length: setup.interruptions }, (_, k) => end * (k + 1) / (setup.interruptions + 1));
+  const reasoningTokens = shared.thinking[setup.effort];
+  const outTokens = shared.visibleOut + reasoningTokens;
+  const step = shared.growth + (setup.reasoning === 'kept' ? reasoningTokens : 0);
+  const totals = { requests: 0, read: 0, write: 0, rewrite: 0, output: 0, total: 0 };
+  const points = [];
+  let prev = 0, nextPause = 0;
+
+  for (let ctx = shared.base; ctx <= end; ctx += step) {
+    let paused = false;
+    while (nextPause < pauses.length && ctx >= pauses[nextPause]) { paused = true; nextPause++; }
+    const miss = paused && pauseExpires;
+    const r = rates(model, ctx);
+    const read = prev && !miss ? prev * r.in * model.read : 0;
+    const write = (ctx - prev) * r.in * cache.write;
+    const rewrite = miss ? prev * r.in * cache.write : 0;
+    const output = outTokens * r.out;
+    const cost = read + write + rewrite + output;
+    Object.assign(totals, {
+      requests: totals.requests + 1, read: totals.read + read, write: totals.write + write,
+      rewrite: totals.rewrite + rewrite, output: totals.output + output, total: totals.total + cost,
+    });
+    points.push({ x: ctx, cum: totals.total, req: cost, paused, miss });
+    prev = ctx;
+  }
+  return { points, totals, end };
+}
+
+// ponytail: one known-answer check; Sonnet 5.5, 3 requests, no output, 5 min cache.
+console.assert(Math.abs(simulate(
+  { model: 'claude-sonnet-5-5', cache: '5m', effort: 'none', reasoning: 'dropped', interruptions: 0, pause: 0 },
+  { session: 30000, base: 10000, growth: 10000, visibleOut: 0, thinking: { none: 0 } },
+).totals.total - 0.078) < 1e-9, 'simulate() known-answer check failed');
+
+const fmtTokens = t => t >= 1e6 ? `${+(t / 1e6).toFixed(2)}M` : t >= 1e3 ? `${Math.round(t / 1e3)}K` : `${t}`;
+const fmtUsd = v => v === 0 ? '$0' : `$${v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(2) : v.toPrecision(2)}`;
+const fmtPrice = v => `$${+v.toFixed(4)}`;
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const clamp = (input, fallback) => {
+  const v = Number(input.value);
+  return Number.isFinite(v) && input.value !== '' ? Math.min(Number(input.max), Math.max(Number(input.min), v)) : fallback;
+};
+
+const setupEls = [...document.querySelectorAll('fieldset.setup')];
+const sharedEl = document.getElementById('shared');
+
+function buildSetup(fs) {
+  const id = fs.dataset.id, d = DEFAULTS[id];
+  fs.innerHTML = `
+    <legend><span class="key"></span>Setup ${id}</legend>
+    <div class="toggle" role="radiogroup" aria-label="Provider for setup ${id}">
+      ${Object.entries(PROVIDERS).map(([k, p]) => `
+        <input type="radio" name="provider-${id}" id="provider-${id}-${k}" value="${k}">
+        <label for="provider-${id}-${k}">${p.name}</label>`).join('')}
+    </div>
+    <div class="fields">
+      <label>Model<select name="model"></select></label>
+      <label>Prompt cache<select name="cache"></select></label>
+      <label>Reasoning effort<select name="effort"></select></label>
+      <label>Earlier reasoning in context<select name="reasoning"></select></label>
+      <label>Interruptions<input name="interruptions" type="number" min="0" max="50" step="1"></label>
+      <label>Pause per interruption (min)<input name="pause" type="number" min="0" max="1440" step="1"></label>
+    </div>`;
+  const f = fs.elements;
+  fs.querySelector(`#provider-${id}-${d.provider}`).checked = true;
+  syncModels(fs, d.model);
+  syncModelOptions(fs, d);
+  f.interruptions.value = d.interruptions;
+  f.pause.value = d.pause;
+  fs.querySelector('.toggle').addEventListener('change', () => {
+    syncModels(fs, PROVIDERS[providerOf(fs)].defaultModel);
+    syncModelOptions(fs, {});
+  });
+  f.model.addEventListener('change', () => syncModelOptions(fs, { cache: f.cache.value, effort: f.effort.value, reasoning: f.reasoning.value }));
+}
+
+const providerOf = fs => fs.querySelector('.toggle input:checked').value;
+
+function fillSelect(sel, options, wanted, fallback) {
+  sel.replaceChildren(...options.map(([value, text]) => new Option(text, value)));
+  const values = options.map(([value]) => value);
+  sel.value = values.includes(wanted) ? wanted : values.includes(fallback) ? fallback : values[0];
+}
+
+function syncModels(fs, wanted) {
+  const provider = providerOf(fs);
+  const options = Object.entries(MODELS).filter(([, m]) => m.provider === provider).map(([k, m]) => [k, m.name]);
+  fillSelect(fs.elements.model, options, wanted);
+}
+
+function syncModelOptions(fs, wanted) {
+  const f = fs.elements, m = MODELS[f.model.value];
+  fillSelect(f.cache, m.cache.map(c => [c.id, c.label]), wanted.cache);
+  fillSelect(f.effort, m.efforts.map(e => [e, e === m.defaultEffort ? `${e} (default)` : e]), wanted.effort, m.defaultEffort ?? 'medium');
+  const reasoningLabel = r => `${r}${r === reasoningDefault(m) ? ' (default)' : ''}`;
+  fillSelect(f.reasoning, reasoningOptions(m).map(r => [r, reasoningLabel(r)]), wanted.reasoning, reasoningDefault(m));
+}
+
+function readSetup(fs) {
+  const f = fs.elements, d = DEFAULTS[fs.dataset.id];
+  return { provider: providerOf(fs), model: f.model.value, cache: f.cache.value, effort: f.effort.value, reasoning: f.reasoning.value,
+           interruptions: Math.round(clamp(f.interruptions, d.interruptions)), pause: clamp(f.pause, d.pause) };
+}
+
+function readShared() {
+  const get = name => sharedEl.querySelector(`input[name="${name}"]`), d = DEFAULTS.shared;
+  const session = clamp(get('session'), d.session);
+  return {
+    session,
+    base: Math.min(clamp(get('base'), d.base), session),
+    growth: clamp(get('growth'), d.growth),
+    visibleOut: clamp(get('visibleOut'), d.visibleOut),
+    thinking: Object.fromEntries(ALL_EFFORTS.map(e => [e, clamp(get(`think-${e}`), d.thinking[e])])),
+  };
+}
+
+function fillShared() {
+  const d = DEFAULTS.shared;
+  for (const input of sharedEl.querySelectorAll('input')) {
+    input.value = input.name.startsWith('think-') ? d.thinking[input.name.slice(6)] : d[input.name];
+  }
+}
+
+const crosshair = {
+  id: 'crosshair',
+  afterDatasetsDraw(chart) {
+    const active = chart.tooltip?.getActiveElements();
+    if (!active?.length) return;
+    const { ctx, chartArea: { top, bottom } } = chart;
+    ctx.save();
+    ctx.strokeStyle = css('--axis');
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(active[0].element.x, top);
+    ctx.lineTo(active[0].element.x, bottom);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
+
+// Direct labels at each line's end; nudged apart when they would overlap.
+const endLabels = {
+  id: 'endLabels',
+  afterDatasetsDraw(chart, _args, opts) {
+    if (!opts.enabled) return;
+    const { ctx, chartArea } = chart;
+    const labels = chart.data.datasets.map((ds, i) => {
+      const last = chart.getDatasetMeta(i).data.at(-1);
+      return last && { x: last.x, y: Math.max(last.y, chartArea.top + 6), text: `${ds.label.slice(-1)} ${fmtUsd(ds.data.at(-1).y)}` };
+    }).filter(Boolean).sort((a, b) => a.y - b.y);
+    labels.forEach((l, i) => { if (i && l.y - labels[i - 1].y < 14) l.y = labels[i - 1].y + 14; });
+    ctx.save();
+    ctx.font = '600 12px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = css('--ink-2');
+    ctx.textBaseline = 'middle';
+    for (const l of labels) ctx.fillText(l.text, l.x + 8, l.y);
+    ctx.restore();
+  },
+};
+
+// The two setups can have different x positions (reasoning kept in context changes the step),
+// so the tooltip picks each dataset's point nearest the pointer instead of matching by index.
+function nearestPerDataset(chart, e) {
+  const x = chart.scales.x.getValueForPixel(e.x);
+  return chart.data.datasets.flatMap((ds, datasetIndex) => {
+    if (!ds.data.length || x > ds.data.at(-1).x + chart.scales.x.max * 0.01) return [];
+    let index = 0;
+    ds.data.forEach((p, i) => { if (Math.abs(p.x - x) < Math.abs(ds.data[index].x - x)) index = i; });
+    return [{ element: chart.getDatasetMeta(datasetIndex).data[index], datasetIndex, index }];
+  });
+}
+
+function makeChart(canvas, showEndLabels) {
+  const dataset = label => ({
+    label, data: [], borderWidth: 2, tension: 0,
+    pointRadius: c => c.raw?.paused ? 4 : 0,
+    pointBackgroundColor: c => c.raw?.miss ? c.dataset.borderColor : css('--surface'),
+    pointBorderColor: c => c.raw?.miss ? css('--surface') : c.dataset.borderColor,
+    pointBorderWidth: 2, pointHoverRadius: 4, pointHitRadius: 12,
+  });
+  return new Chart(canvas, {
+    type: 'line',
+    data: { datasets: [dataset('Setup A'), dataset('Setup B')] },
+    options: {
+      animation: false, responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'nearestPerDataset', intersect: false },
+      layout: { padding: { right: showEndLabels ? 72 : 0 } },
+      scales: {
+        x: { type: 'linear', min: 0, ticks: { callback: fmtTokens, maxTicksLimit: 11 },
+             title: { display: true, text: 'Context size (tokens)' } },
+        y: { beginAtZero: true, ticks: { callback: fmtUsd }, title: { display: true, text: 'USD' } },
+      },
+      plugins: {
+        endLabels: { enabled: showEndLabels },
+        legend: { align: 'start', labels: { usePointStyle: true, pointStyle: 'line', boxWidth: 16 } },
+        tooltip: {
+          callbacks: {
+            title: items => `${fmtTokens(items[0].parsed.x)} tokens in context`,
+            label: it => `${fmtUsd(it.parsed.y)}  ${it.dataset.label}`,
+            afterLabel: it => it.raw.miss ? '  pause outlived the cache: full re-write'
+                            : it.raw.paused ? '  pause within cache lifetime: cache kept' : '',
+            labelColor: it => ({ borderColor: it.dataset.borderColor, backgroundColor: it.dataset.borderColor }),
+          },
+          boxHeight: 2, boxWidth: 12,
+        },
+      },
+    },
+    plugins: [crosshair, endLabels],
+  });
+}
+
+function applyTheme(chart) {
+  const ink2 = css('--ink-2'), grid = css('--grid'), surface = css('--surface');
+  chart.data.datasets[0].borderColor = css('--series-a');
+  chart.data.datasets[1].borderColor = css('--series-b');
+  for (const axis of Object.values(chart.options.scales)) {
+    axis.ticks.color = css('--muted');
+    axis.title.color = ink2;
+    axis.grid = { color: grid };
+    axis.border = { color: css('--axis') };
+  }
+  chart.options.plugins.legend.labels.color = ink2;
+  Object.assign(chart.options.plugins.tooltip, {
+    backgroundColor: surface, titleColor: ink2, bodyColor: css('--ink'),
+    borderColor: css('--border'), borderWidth: 1,
+  });
+}
+
+function cell(tag, content) {
+  const el = document.createElement(tag);
+  if (content instanceof Node) el.append(content); else el.textContent = content;
+  return el;
+}
+
+function row(tag, values) {
+  const tr = document.createElement('tr');
+  tr.append(...values.map(v => cell(tag, v)));
+  return tr;
+}
+
+function link(url, text) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.textContent = text;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  return a;
+}
+
+const setupName = (s, i) => `${'AB'[i]}: ${MODELS[s.model].name}, ${s.cache}, ${s.effort}, reasoning ${s.reasoning}`;
+
+function renderBreakdown(runs, setups) {
+  const cols = ['Setup', 'Requests', 'Cache reads', 'Cache writes', 'Re-writes after pauses', 'Output + reasoning', 'Total'];
+  const line = (name, t) => [name, String(t.requests), fmtUsd(t.read), fmtUsd(t.write), fmtUsd(t.rewrite), fmtUsd(t.output), fmtUsd(t.total)];
+  const [a, b] = runs.map(r => r.totals);
+  const signed = v => Math.abs(v) < 1e-9 ? '$0' : `${v < 0 ? '−' : '+'}${fmtUsd(Math.abs(v))}`;
+  document.getElementById('breakdown').replaceChildren(
+    row('th', cols),
+    ...runs.map((r, i) => row('td', line(setupName(setups[i], i), r.totals))),
+    row('td', ['B − A', String(b.requests - a.requests), signed(b.read - a.read), signed(b.write - a.write),
+               signed(b.rewrite - a.rewrite), signed(b.output - a.output), signed(b.total - a.total)]),
+  );
+}
+
+function renderSteps(runs, shared) {
+  const steps = Array.from({ length: 10 }, (_, k) => shared.session * (k + 1) / 10);
+  const at = (points, x) => points.filter(p => p.x <= x).at(-1);
+  document.getElementById('steps').replaceChildren(
+    row('th', ['Context', 'Setup A', 'Setup B']),
+    ...steps.map(x => row('td', [fmtTokens(x), ...runs.map(r => x > r.end ? '—' : fmtUsd(at(r.points, x)?.cum ?? 0))])),
+  );
+}
+
+// Compares at the largest context both setups reach; a model's max input can end one run early.
+function renderHeadline(runs) {
+  const common = Math.min(...runs.map(r => r.points.at(-1)?.x ?? 0));
+  const [a, b] = runs.map(r => r.points.filter(p => p.x <= common).at(-1)?.cum ?? 0);
+  const cheaper = a === b ? 'Both cost the same.'
+    : `${a < b ? 'A' : 'B'} is ${Math.round(Math.abs(a - b) / Math.max(a, b) * 100)}% cheaper.`;
+  const capped = runs.some(r => r.end < runs[0].end || r.end < runs[1].end)
+    ? ' One model stops earlier at its max input.' : '';
+  document.getElementById('headline').textContent =
+    `At ${fmtTokens(common)} tokens of context: A ${fmtUsd(a)} · B ${fmtUsd(b)}. ${cheaper}${capped}`;
+}
+
+function renderSources() {
+  const longRule = m => m.longPrompt
+    ? `>${fmtTokens(m.longPrompt.above)}: in ${m.longPrompt.inMult}×, out ${m.longPrompt.outMult}×` : '—';
+  const sourceFor = (k, m) => m.provider === 'openai' ? link(openaiPage(k), 'model page') : link(DOCS.claudePricing.url, 'pricing');
+  document.getElementById('sources').replaceChildren(
+    row('th', ['Model', 'Input', 'Cache read', 'Output', 'Prompt cache', 'Long prompt', 'Max input', 'Effort (default)', 'Earlier reasoning', 'Source']),
+    ...Object.entries(MODELS).map(([k, m]) => row('td', [
+      `${m.name} (${k})`, fmtPrice(m.in), `${fmtPrice(m.in * m.read)} (${m.read}×)`, fmtPrice(m.out),
+      m.cache.map(c => `${c.id} ${c.write}×`).join(', '), longRule(m), fmtTokens(m.maxInput),
+      m.efforts.map(e => e === m.defaultEffort ? `${e}*` : e).join(' '),
+      reasoningOptions(m).map(r => r === reasoningDefault(m) ? `${r}*` : r).join(' '),
+      sourceFor(k, m),
+    ])),
+  );
+  const items = Object.values(DOCS).map(d => {
+    const li = document.createElement('li');
+    li.append(link(d.url, d.url), document.createTextNode(`: ${d.proves}`));
+    return li;
+  });
+  const note = document.createElement('li');
+  note.textContent = 'Prices are USD per million tokens, standard tier. Cache column "write" is the multiplier on input for writing to the cache. * marks a documented default; where none is marked the docs do not state one.';
+  document.getElementById('docs').replaceChildren(note, ...items);
+}
+
+let cumChart, reqChart;
+
+function render() {
+  const shared = readShared();
+  const setups = setupEls.map(readSetup);
+  const runs = setups.map(s => simulate(s, shared));
+  for (const [chart, key] of [[cumChart, 'cum'], [reqChart, 'req']]) {
+    runs.forEach((r, i) => { chart.data.datasets[i].data = r.points.map(p => ({ ...p, y: p[key] })); });
+    chart.options.scales.x.max = shared.session;
+    applyTheme(chart);
+    chart.update();
+  }
+  renderHeadline(runs);
+  renderBreakdown(runs, setups);
+  renderSteps(runs, shared);
+}
+
+if (typeof Chart === 'undefined') {
+  document.getElementById('headline').innerHTML = '<span class="error">Chart.js did not load from cdnjs. Check the network connection and reload.</span>';
+} else {
+  setupEls.forEach(buildSetup);
+  fillShared();
+  renderSources();
+  Chart.defaults.font.family = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+  Chart.Interaction.modes.nearestPerDataset = nearestPerDataset;
+  cumChart = makeChart(document.getElementById('cumChart'), true);
+  reqChart = makeChart(document.getElementById('reqChart'), false);
+  document.querySelector('main').addEventListener('input', render);
+  document.querySelector('main').addEventListener('change', render);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  render();
+}
+</script>
+</body>
+</html>
