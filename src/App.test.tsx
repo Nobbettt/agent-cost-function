@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { MODELS } from './data/pricing'
+import { MODELS, PRICES_CHECKED } from './data/pricing'
 import type { Run } from './model/types'
 
 // Chart.js does not run in jsdom; expose the props the real chart would receive.
@@ -105,22 +105,21 @@ describe('App', () => {
     expect([growth.getAttribute('min'), growth.getAttribute('max'), growth.getAttribute('step')]).toEqual(['500', '200000', '500'])
   })
 
-  it('shows the breakdown, steps and sources tables', () => {
+  it('shows the breakdown and steps tables', () => {
     render(<App />)
     expect(screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept')).toBeTruthy()
     expect(screen.getByText('B − A')).toBeTruthy()
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
-    const sources = document.querySelector('table.sources')!
-    expect(sources.querySelectorAll('tbody tr')).toHaveLength(Object.keys(MODELS).length)
   })
 
-  it('opens external links in a new tab with rel=noopener', () => {
+  it('no longer renders the sources table, but links to the sources page from the footer', () => {
     render(<App />)
-    const links = document.querySelectorAll('section a')
-    expect(links.length).toBeGreaterThan(Object.keys(MODELS).length)
-    for (const l of links) {
-      expect(l.getAttribute('target')).toBe('_blank')
-      expect(l.getAttribute('rel')).toBe('noopener')
-    }
+    expect(document.querySelector('table.sources')).toBeNull()
+    expect(screen.queryByRole('heading', { name: /sources/i })).toBeNull()
+    const footer = screen.getByRole('contentinfo')
+    expect(footer.textContent).toContain(`Prices and settings checked ${PRICES_CHECKED}`)
+    const link = within(footer).getByRole('link', { name: 'Sources' })
+    expect(link.getAttribute('href')).toBe('/sources/')
+    expect(link.getAttribute('target')).toBeNull()
   })
 })

@@ -1,6 +1,8 @@
 import type { CacheOption, Effort, ModelId, ModelSpec, Provider, ReasoningMode } from '../model/types'
 
-// Prices verified 2026-10-20 against the docs below.
+/** Date the prices and settings below were last checked against the docs. */
+export const PRICES_CHECKED = '2026-10-20'
+
 export const DOCS = {
   claudePricing: { url: 'https://platform.claude.com/docs/en/about-claude/pricing', proves: 'Claude input, cache write (5 min 1.25×, 1 h 2×), cache read and output prices; Haiku 5.5 over-100K prices' },
   claudeModels: { url: 'https://platform.claude.com/docs/en/about-claude/models/overview', proves: 'Claude context windows and default effort' },

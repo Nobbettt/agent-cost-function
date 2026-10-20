@@ -21,6 +21,8 @@ npm run lint && npm run typecheck && npm test && npm run build
 
 ## Prices
 
+Every model's prices and settings are listed on the `/sources/` page.
+
 Prices, cache rules and model limits live in `src/data/pricing.ts` (verified 2026-10-20) and come from:
 
 - https://platform.claude.com/docs/en/about-claude/pricing

@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { BreakdownTable } from './components/BreakdownTable'
 import { CostChart } from './components/CostChart'
+import { Footer } from './components/Footer'
 import { Headline } from './components/Headline'
 import { Notes } from './components/Notes'
 import { SetupPanel } from './components/SetupPanel'
 import { SharedAssumptions } from './components/SharedAssumptions'
-import { SourcesTable } from './components/SourcesTable'
 import { StepsTable } from './components/StepsTable'
 import { DEFAULT_SETUPS, DEFAULT_SHARED } from './data/defaults'
 import { compare } from './model/compare'
@@ -26,40 +26,42 @@ export default function App() {
   const comparison = useMemo(() => compare(runs[0], runs[1]), [runs])
 
   return (
-    <main>
-      <h1>Agent cost function</h1>
-      <p className="lede">What one agent session costs on Claude or OpenAI as its context grows, for two setups side by side. Change a setting and the charts update.</p>
+    <>
+      <main>
+        <h1>Agent cost function</h1>
+        <p className="lede">What one agent session costs on Claude or OpenAI as its context grows, for two setups side by side. Change a setting and the charts update.</p>
 
-      <div className="setups">
-        <SetupPanel id="A" setup={setupA} onChange={setSetupA} />
-        <SetupPanel id="B" setup={setupB} onChange={setSetupB} />
-      </div>
+        <div className="setups">
+          <SetupPanel id="A" setup={setupA} onChange={setSetupA} />
+          <SetupPanel id="B" setup={setupB} onChange={setSetupB} />
+        </div>
 
-      <SharedAssumptions shared={shared} onChange={setShared} />
-      <Headline comparison={comparison} />
+        <SharedAssumptions shared={shared} onChange={setShared} />
+        <Headline comparison={comparison} />
 
-      <section className="card">
-        <h2>Cumulative cost (USD) vs context size</h2>
-        <CostChart runs={runs} metric="cum" xMax={effective.session} endLabels label="Cumulative cost per setup as context grows" />
-      </section>
+        <section className="card">
+          <h2>Cumulative cost (USD) vs context size</h2>
+          <CostChart runs={runs} metric="cum" xMax={effective.session} endLabels label="Cumulative cost per setup as context grows" />
+        </section>
 
-      <section className="card">
-        <h2>Cost per request (USD) vs context size</h2>
-        <CostChart runs={runs} metric="req" xMax={effective.session} label="Cost of each request per setup as context grows" />
-      </section>
+        <section className="card">
+          <h2>Cost per request (USD) vs context size</h2>
+          <CostChart runs={runs} metric="req" xMax={effective.session} label="Cost of each request per setup as context grows" />
+        </section>
 
-      <section className="card">
-        <h2>Breakdown at end of session</h2>
-        <div className="table-wrap"><BreakdownTable runs={runs} setups={[setupA, setupB]} /></div>
-      </section>
+        <section className="card">
+          <h2>Breakdown at end of session</h2>
+          <div className="table-wrap"><BreakdownTable runs={runs} setups={[setupA, setupB]} /></div>
+        </section>
 
-      <details className="card">
-        <summary>Cumulative cost at regular steps (table view)</summary>
-        <div className="table-wrap"><StepsTable runs={runs} session={effective.session} /></div>
-      </details>
+        <details className="card">
+          <summary>Cumulative cost at regular steps (table view)</summary>
+          <div className="table-wrap"><StepsTable runs={runs} session={effective.session} /></div>
+        </details>
 
-      <Notes />
-      <SourcesTable />
-    </main>
+        <Notes />
+      </main>
+      <Footer page="calculator" />
+    </>
   )
 }

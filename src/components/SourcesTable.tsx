@@ -27,7 +27,6 @@ function Row({ id, m }: { id: ModelId; m: ModelSpec }) {
 export function SourcesTable() {
   return (
     <section className="card">
-      <h2>Sources (checked 2026-10-20)</h2>
       <div className="table-wrap">
         <table className="sources">
           <thead><tr>{COLS.map((c) => <th key={c}>{c}</th>)}</tr></thead>
