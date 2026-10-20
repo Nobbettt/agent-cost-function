@@ -30,11 +30,14 @@ describe('SourcesPage', () => {
     }
   })
 
-  it('links back to the calculator in the same tab', () => {
+  it('has the site nav with Sources as the current page and a link back to the calculator', () => {
     render(<SourcesPage />)
-    const back = within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Back to the calculator' })
+    const nav = within(within(screen.getByRole('contentinfo')).getByRole('navigation', { name: 'Site' }))
+    const back = nav.getByRole('link', { name: 'Calculator' })
     expect(back.getAttribute('href')).toBe('/')
     expect(back.getAttribute('target')).toBeNull()
+    expect(nav.getByText('Sources').getAttribute('aria-current')).toBe('page')
+    expect(nav.queryByRole('link', { name: 'Sources' })).toBeNull()
     expect(screen.getByRole('link', { name: 'calculator' }).getAttribute('href')).toBe('/')
   })
 })

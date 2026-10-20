@@ -21,7 +21,7 @@ npm run lint && npm run typecheck && npm test && npm run build
 
 ## Prices
 
-Every model's prices and settings are listed on the `/sources/` page.
+The calculation is explained on the `/how-it-works/` page, and every model's prices and settings are listed on the `/sources/` page.
 
 Prices, cache rules and model limits live in `src/data/pricing.ts` (verified 2026-10-20) and come from:
 

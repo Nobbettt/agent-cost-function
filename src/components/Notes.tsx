@@ -1,7 +1,6 @@
 export function Notes() {
   return (
     <section className="card">
-      <h2>How it is calculated</h2>
       <ul className="notes">
         <li>Every request sends the whole context. The part sent before is a cache read; the new part (tool results, user text, the last reply) is a cache write. Each cache hit restarts the cache lifetime on both providers.</li>
         <li>Output per request is the visible output plus the reasoning tokens for the chosen effort; both providers bill reasoning as output. When earlier reasoning stays in context, those tokens also join the context and are read back as input on later requests, so the session reaches its size in fewer requests.</li>

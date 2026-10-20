@@ -55,4 +55,5 @@ th:first-child, td:first-child { text-align: left; }
 th { color: var(--ink-2); font-weight: 600; font-size: 13px; }
 .notes { color: var(--ink-2); margin: 0; padding-left: 18px; }
 footer { max-width: 1100px; margin: 0 auto; padding: 0 16px 32px; color: var(--muted); font-size: 13px; }
-footer p { margin: 0; padding-top: 12px; border-top: 1px solid var(--grid); }
+footer > div { padding-top: 12px; border-top: 1px solid var(--grid); }
+footer nav { display: inline; }

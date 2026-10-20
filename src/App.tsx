@@ -3,7 +3,6 @@ import { BreakdownTable } from './components/BreakdownTable'
 import { CostChart } from './components/CostChart'
 import { Footer } from './components/Footer'
 import { Headline } from './components/Headline'
-import { Notes } from './components/Notes'
 import { SetupPanel } from './components/SetupPanel'
 import { SharedAssumptions } from './components/SharedAssumptions'
 import { StepsTable } from './components/StepsTable'
@@ -58,8 +57,6 @@ export default function App() {
           <summary>Cumulative cost at regular steps (table view)</summary>
           <div className="table-wrap"><StepsTable runs={runs} session={effective.session} /></div>
         </details>
-
-        <Notes />
       </main>
       <Footer page="calculator" />
     </>

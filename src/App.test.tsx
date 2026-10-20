@@ -112,14 +112,18 @@ describe('App', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 
-  it('no longer renders the sources table, but links to the sources page from the footer', () => {
+  it('no longer renders the sources table or the notes, but links to both subpages from the footer', () => {
     render(<App />)
     expect(document.querySelector('table.sources')).toBeNull()
-    expect(screen.queryByRole('heading', { name: /sources/i })).toBeNull()
+    expect(screen.queryByRole('heading', { name: /sources|how it is calculated/i })).toBeNull()
+    expect(screen.queryByText(/Every request sends the whole context/)).toBeNull()
     const footer = screen.getByRole('contentinfo')
     expect(footer.textContent).toContain(`Prices and settings checked ${PRICES_CHECKED}`)
-    const link = within(footer).getByRole('link', { name: 'Sources' })
-    expect(link.getAttribute('href')).toBe('/sources/')
-    expect(link.getAttribute('target')).toBeNull()
+    const nav = within(footer).getByRole('navigation', { name: 'Site' })
+    const links = within(nav).getAllByRole('link')
+    expect(links.map((l) => [l.textContent, l.getAttribute('href'), l.getAttribute('target')])).toEqual([
+      ['How it is calculated', '/how-it-works/', null],
+      ['Sources', '/sources/', null],
+    ])
   })
 })

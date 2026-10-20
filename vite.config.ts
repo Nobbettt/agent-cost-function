@@ -8,10 +8,11 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      // Multi-page: the calculator at / and the sources page at /sources/.
+      // Multi-page: the calculator at /, plus /how-it-works/ and /sources/.
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         sources: resolve(import.meta.dirname, 'sources/index.html'),
+        howItWorks: resolve(import.meta.dirname, 'how-it-works/index.html'),
       },
     },
   },
