@@ -3,13 +3,13 @@ import { BreakdownTable } from './components/BreakdownTable'
 import { CostChart } from './components/CostChart'
 import { CurrencySelect } from './components/CurrencySelect'
 import { Footer } from './components/Footer'
-import { Headline } from './components/Headline'
 import { NavBar } from './components/NavBar'
 import { RateLine } from './components/RateLine'
 import { SettingsSidebar } from './components/SettingsSidebar'
 import { SetupPanel } from './components/SetupPanel'
 import { SharedAssumptions } from './components/SharedAssumptions'
 import { StepsTable } from './components/StepsTable'
+import { SummaryCards } from './components/SummaryCards'
 import { CurrencyProvider } from './currency/CurrencyProvider'
 import { useCurrency } from './currency/context'
 import { DEFAULT_SETUPS, DEFAULT_SHARED } from './data/defaults'
@@ -50,18 +50,18 @@ function Calculator() {
               </header>
 
               <section className="results" aria-label="Results">
-                <div className="headline-block">
-                  <Headline comparison={comparison} format={format} />
+                <div className="summary-block">
+                  <SummaryCards comparison={comparison} setups={[setupA, setupB]} format={format} />
                   <RateLine />
                 </div>
 
                 <section className="card">
-                  <h2>Cumulative cost ({displayCurrency}) vs context size</h2>
+                  <h2>Cumulative cost vs context size</h2>
                   <CostChart runs={runs} metric="cum" xMax={effective.session} endLabels label="Cumulative cost per setup as context grows" format={format} currency={displayCurrency} rate={rate} />
                 </section>
 
                 <section className="card">
-                  <h2>Cost per request ({displayCurrency}) vs context size</h2>
+                  <h2>Cost per request vs context size</h2>
                   <CostChart runs={runs} metric="req" xMax={effective.session} label="Cost of each request per setup as context grows" format={format} currency={displayCurrency} rate={rate} />
                 </section>
               </section>

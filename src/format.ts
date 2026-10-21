@@ -51,6 +51,10 @@ export function formatMoney(usd: number, currency = 'USD', rate = 1): string {
   return `${value < 0 ? '-' : ''}${prefix}${body}${suffix}`
 }
 
+/** A signed amount: "+$13.63" or "−$13.63" (true minus sign), or plain zero. `format` formats the magnitude. */
+export const signedMoney = (v: number, format: (usd: number) => string): string =>
+  Math.abs(v) < 1e-9 ? format(0) : `${v < 0 ? '−' : '+'}${format(Math.abs(v))}`
+
 export const fmtUsd = (v: number): string => formatMoney(v, 'USD', 1)
 
 export const fmtPrice = (v: number): string => `$${+v.toFixed(4)}`

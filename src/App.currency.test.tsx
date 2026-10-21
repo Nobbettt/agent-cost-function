@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { stat } from './test-summary'
 import { CURRENCY_STORAGE_KEY, FX_STORAGE_KEY, FX_TTL_MS } from './data/fx'
 
 // Chart.js does not run in jsdom: expose the currency props the real chart would receive.
@@ -21,7 +22,7 @@ const seedCache = (ageMs: number, rates: Record<string, number> = { EUR: 0.5, SE
   localStorage.setItem(FX_STORAGE_KEY, JSON.stringify({ fetchedAt: Date.now() - ageMs, date: '2026-10-01', rates }))
 
 const select = () => screen.getByLabelText('Currency') as HTMLSelectElement
-const headline = () => document.getElementById('headline')!.textContent!.replace(/\s/g, ' ')
+const summary = () => `${stat('Setup A').value} | ${stat('Setup B').value}`
 const pick = (code: string) => fireEvent.change(select(), { target: { value: code } })
 
 describe('currency: USD default', () => {
@@ -31,9 +32,9 @@ describe('currency: USD default', () => {
     await Promise.resolve()
     expect(fetchSpy).not.toHaveBeenCalled()
     expect(select().value).toBe('USD')
-    expect(headline()).toContain('A $42.55 · B $28.92')
+    expect(summary()).toBe('$42.55 | $28.92')
     expect(document.querySelector('.rate-line')).toBeNull()
-    expect(screen.getByRole('heading', { name: 'Cumulative cost (USD) vs context size' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Cumulative cost vs context size' })).toBeTruthy()
     expect(screen.getByTestId('chart-cum').getAttribute('data-currency')).toBe('USD')
     expect(screen.getByTestId('chart-cum').getAttribute('data-rate')).toBe('1')
     expect(screen.getByTestId('chart-req').getAttribute('data-sample')).toBe('$1235')
@@ -58,20 +59,23 @@ describe('currency: USD default', () => {
 })
 
 describe('currency: selecting another currency', () => {
-  it('fetches once and converts the headline, tables, charts and card titles; shows the rate line', async () => {
+  it('fetches once and converts the summary cards, tables and charts; shows the rate line', async () => {
     const fetchSpy = stubFetch()
     render(<App />)
     pick('SEK')
     expect(screen.getByText('Loading exchange rate…')).toBeTruthy()
     await screen.findByText(/Shown in SEK at 1 USD = 10 SEK/)
     expect(fetchSpy).toHaveBeenCalledTimes(1)
-    expect(headline()).toContain('A SEK 426 · B SEK 289')
+    expect(summary()).toBe('SEK 426 | SEK 289')
+    expect(stat('Difference (B − A)')).toEqual({ value: '−SEK 136', sub: 'B is 32% cheaper' })
+    expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
     const line = document.querySelector('.rate-line')!
     expect(line.textContent!.replace(/\s/g, ' ')).toBe('Shown in SEK at 1 USD = 10 SEK · ECB reference rate 2026-10-21 via Frankfurter')
     const link = within(line as HTMLElement).getByRole('link', { name: 'Frankfurter' })
     expect([link.getAttribute('href'), link.getAttribute('target'), link.getAttribute('rel')]).toEqual(['https://frankfurter.dev', '_blank', 'noopener'])
-    expect(screen.getByRole('heading', { name: 'Cumulative cost (SEK) vs context size' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Cost per request (SEK) vs context size' })).toBeTruthy()
+    // The unit lives on the chart (y-axis title and values), not in the card titles.
+    expect(screen.getByRole('heading', { name: 'Cumulative cost vs context size' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Cost per request vs context size' })).toBeTruthy()
     for (const metric of ['cum', 'req']) {
       expect(screen.getByTestId(`chart-${metric}`).getAttribute('data-currency')).toBe('SEK')
       expect(screen.getByTestId(`chart-${metric}`).getAttribute('data-rate')).toBe('10')
@@ -91,9 +95,9 @@ describe('currency: selecting another currency', () => {
     await screen.findByText(/Shown in SEK/)
     pick('EUR')
     await screen.findByText(/Shown in EUR at 1 USD = 0.9 EUR/)
-    expect(headline()).toContain('A €38.30 · B €26.03')
+    expect(summary()).toBe('€38.30 | €26.03')
     pick('USD')
-    expect(headline()).toContain('A $42.55 · B $28.92')
+    expect(summary()).toBe('$42.55 | $28.92')
     expect(document.querySelector('.rate-line')).toBeNull()
     expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
@@ -116,7 +120,7 @@ describe('currency: persistence', () => {
     render(<App />)
     expect(select().value).toBe('EUR')
     await screen.findByText(/Shown in EUR at 1 USD = 0.5 EUR · ECB reference rate 2026-10-01/)
-    expect(headline()).toContain('A €21.28 · B €14.46')
+    expect(summary()).toBe('€21.28 | €14.46')
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
@@ -157,8 +161,8 @@ describe('currency: failures', () => {
     pick('SEK')
     await screen.findByText("Couldn't load exchange rates, showing USD.")
     expect(select().value).toBe('SEK')
-    expect(headline()).toContain('A $42.55 · B $28.92')
-    expect(screen.getByRole('heading', { name: 'Cumulative cost (USD) vs context size' })).toBeTruthy()
+    expect(summary()).toBe('$42.55 | $28.92')
+    expect(screen.getByRole('heading', { name: 'Cumulative cost vs context size' })).toBeTruthy()
     expect(screen.getByTestId('chart-cum').getAttribute('data-currency')).toBe('USD')
     expect(screen.getByTestId('chart-cum').getAttribute('data-rate')).toBe('1')
     expect(document.body.textContent).not.toContain('NaN')
@@ -181,7 +185,7 @@ describe('currency: failures', () => {
     render(<App />)
     await screen.findByText(/couldn't refresh, showing the last known rate/)
     expect(document.querySelector('.rate-line')!.textContent).toContain('1 USD = 5 SEK · ECB reference rate 2026-10-01')
-    expect(headline()).toContain('A SEK 213')
+    expect(stat('Setup A').value).toBe('SEK 213')
   })
 
   it('a stored code missing from the fetched rates falls back to USD with the notice', async () => {
@@ -189,7 +193,7 @@ describe('currency: failures', () => {
     stubFetch()
     render(<App />)
     await screen.findByText("Couldn't load exchange rates, showing USD.")
-    expect(headline()).toContain('A $42.55')
+    expect(stat('Setup A').value).toBe('$42.55')
   })
 
   it('works when storage throws', async () => {
@@ -203,6 +207,6 @@ describe('currency: failures', () => {
     render(<App />)
     expect(select().value).toBe('USD')
     pick('EUR')
-    await waitFor(() => expect(headline()).toContain('A €38.30'))
+    await waitFor(() => expect(stat('Setup A').value).toBe('€38.30'))
   })
 })

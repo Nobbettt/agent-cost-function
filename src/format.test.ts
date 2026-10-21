@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fmtPrice, fmtTokens, fmtUsd, formatMoney } from './format'
+import { fmtPrice, fmtTokens, fmtUsd, formatMoney, signedMoney } from './format'
 
 describe('fmtTokens', () => {
   it('formats raw, K and M', () => {
@@ -73,5 +73,15 @@ describe('formatMoney', () => {
   it('shows an unknown currency code bare, and negatives with a leading minus', () => {
     expect(formatMoney(2, 'XXXX', 1)).toBe('XXXX 2.00')
     expect(formatMoney(-5, 'USD', 1)).toBe('-$5.00')
+  })
+})
+
+describe('signedMoney', () => {
+  it('uses a real minus sign, a plus sign, and plain zero', () => {
+    expect(signedMoney(13.63, fmtUsd)).toBe('+$13.63')
+    expect(signedMoney(-13.63, fmtUsd)).toBe('−$13.63')
+    expect(signedMoney(0, fmtUsd)).toBe('$0')
+    expect(signedMoney(1e-12, fmtUsd)).toBe('$0')
+    expect(signedMoney(-5, (v) => formatMoney(v, 'EUR', 0.9))).toBe('−€4.50')
   })
 })

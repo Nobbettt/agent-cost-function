@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { DOCKED_STORAGE_KEY } from './hooks/useSettingsPanel'
+import { stat } from './test-summary'
 import { mockMatchMedia } from './test-matchmedia'
 
 vi.mock('./components/CostChart', () => ({ CostChart: () => null }))
@@ -79,7 +80,7 @@ describe('settings panel: drawer mode (below 1024px)', () => {
     render(<App />)
     fireEvent.click(toggle())
     fireEvent.click(within(panel()).getAllByLabelText('OpenAI')[0])
-    expect(document.getElementById('headline')!.textContent).not.toContain('A $42.55')
+    expect(stat('Setup A').value).not.toBe('$42.55')
   })
 })
 

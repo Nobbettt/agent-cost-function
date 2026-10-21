@@ -1,4 +1,5 @@
 import { MODELS } from '../data/pricing'
+import { signedMoney } from '../format'
 import type { Run, Setup, Totals } from '../model/types'
 
 const COLS = ['Setup', 'Requests', 'Cache reads', 'Cache writes', 'Re-writes after pauses', 'Output + reasoning', 'Total']
@@ -7,7 +8,7 @@ const setupName = (s: Setup, id: string) => `${id}: ${MODELS[s.model].name}, ${s
 type Format = (usd: number) => string
 const line = (name: string, t: Totals, f: Format) =>
   [name, String(t.requests), f(t.read), f(t.write), f(t.rewrite), f(t.output), f(t.total)]
-const signed = (v: number, f: Format) => (Math.abs(v) < 1e-9 ? f(0) : `${v < 0 ? '−' : '+'}${f(Math.abs(v))}`)
+const signed = signedMoney
 
 interface Props {
   runs: readonly [Run, Run]

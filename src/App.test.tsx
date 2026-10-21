@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { MODELS, PRICES_CHECKED } from './data/pricing'
+import { stat, summaryText } from './test-summary'
 import type { Run } from './model/types'
 
 // Chart.js does not run in jsdom; expose the props the real chart would receive.
@@ -12,13 +13,33 @@ vi.mock('./components/CostChart', () => ({
 }))
 
 const setupBox = (id: 'A' | 'B') => within(screen.getByRole('group', { name: `Setup ${id}` }))
-const headline = () => document.getElementById('headline')!.textContent
-const DEFAULT_HEADLINE = 'At 995K tokens of context: A $42.55 · B $28.92. B is 32% cheaper.'
+const DEFAULT_SUMMARY = 'Setup A$42.55Claude Opus 5.5 · 5 min cacheSetup B$28.92Claude Opus 5.5 · 1 hour cacheDifference (B − A)−$13.63B is 32% cheaperCompared at995K tokenscontext size'
 
 describe('App', () => {
-  it('renders the default headline from the prototype', () => {
+  it('renders the default summary cards', () => {
     render(<App />)
-    expect(headline()).toBe(DEFAULT_HEADLINE)
+    expect(stat('Setup A')).toEqual({ value: '$42.55', sub: 'Claude Opus 5.5 · 5 min cache' })
+    expect(stat('Setup B')).toEqual({ value: '$28.92', sub: 'Claude Opus 5.5 · 1 hour cache' })
+    expect(stat('Difference (B − A)')).toEqual({ value: '−$13.63', sub: 'B is 32% cheaper' })
+    expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
+    expect(summaryText().replace(/ /g, '')).toBe(DEFAULT_SUMMARY.replace(/ /g, ''))
+  })
+
+  it('is a Summary region of four definition-list cards, with series keys on the setups only', () => {
+    render(<App />)
+    const summary = screen.getByRole('region', { name: 'Summary' })
+    expect(summary.querySelectorAll('dl > .stat')).toHaveLength(4)
+    expect(summary.querySelectorAll('dt .key')).toHaveLength(2)
+    expect(summary.querySelector('.stat[data-series="A"] dt .key')).toBeTruthy()
+    expect(summary.querySelector('.stat[data-series="B"] dt .key')).toBeTruthy()
+    expect(document.getElementById('headline')).toBeNull()
+  })
+
+  it('says when one model stops earlier at its max input', () => {
+    render(<App />)
+    fireEvent.click(setupBox('A').getByLabelText('OpenAI'))
+    expect(stat('Compared at')).toEqual({ value: '920K tokens', sub: 'One model stops earlier at its max input' })
+    expect(stat('Setup A').sub).toBe('GPT-5.6 Sol · 30 min cache')
   })
 
   it('has a Settings aside and a Results section, with the results first in DOM order', () => {
@@ -33,7 +54,7 @@ describe('App', () => {
     expect(within(settings).getByText('Shared assumptions')).toBeTruthy()
     expect(within(results).getByTestId('chart-cum')).toBeTruthy()
     expect(within(results).getByTestId('chart-req')).toBeTruthy()
-    expect(results.querySelector('#headline')).toBeTruthy()
+    expect(results.querySelector('.summary')).toBeTruthy()
   })
 
   it('keeps the breakdown and steps tables outside the results', () => {
@@ -120,17 +141,18 @@ describe('App', () => {
     const session = screen.getByLabelText('Session length (tokens)') as HTMLInputElement
     fireEvent.change(session, { target: { value: '5' } })
     expect(session.value).toBe('5')
-    expect(headline()).toContain('At 10K tokens of context')
+    expect(stat('Compared at').value).toBe('10K tokens')
     expect(screen.getByTestId('chart-cum').getAttribute('data-xmax')).toBe('10000')
   })
 
   it('falls back to the default when a number field is emptied', () => {
     render(<App />)
     const interruptions = setupBox('A').getByLabelText('Interruptions') as HTMLInputElement
+    const before = summaryText()
     fireEvent.change(interruptions, { target: { value: '0' } })
-    expect(headline()).not.toBe(DEFAULT_HEADLINE)
+    expect(summaryText()).not.toBe(before)
     fireEvent.change(interruptions, { target: { value: '' } })
-    expect(headline()).toBe(DEFAULT_HEADLINE)
+    expect(summaryText()).toBe(before)
   })
 
   it('keeps the min, max and step attributes of the prototype', () => {
