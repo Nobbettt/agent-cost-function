@@ -83,3 +83,14 @@ describe('avgBreakCost', () => {
     expect(avgBreakCost([])).toBe(0)
   })
 })
+
+describe('costCurve on a date', () => {
+  it('prices the same curve at the prices in force on that date', () => {
+    const argon = { ...DEFAULT_SETUPS.A, provider: 'google' as const, model: 'gemini-4-argon', cache: 'implicit' as const }
+    const before = costCurve(argon, DEFAULT_SHARED, 2, '2026-11-30')
+    const after = costCurve(argon, DEFAULT_SHARED, 2, '2026-12-01')
+    expect(after[0].cost5).toBeCloseTo(before[0].cost5 * 2, 9)
+    // Claude models have no schedule: the date changes nothing.
+    expect(costCurve(DEFAULT_SETUPS.A, DEFAULT_SHARED, 3, '2031-01-01')).toEqual(costCurve(DEFAULT_SETUPS.A, DEFAULT_SHARED, 3))
+  })
+})

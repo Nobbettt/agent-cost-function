@@ -198,6 +198,29 @@ describe('App', () => {
     expect(stat('Setup C').sub).toBe('Gemini 3.1 Pro Preview · implicit cache · no cache breaks')
   })
 
+  it('prices the calculator at today (UTC): Gemini 4 Argon on 2026-12-01 costs what the model says at that date', () => {
+    const run = (iso: string) => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${iso}T12:00:00Z`))
+      const { unmount } = render(<App />)
+      const c = setupBox('C')
+      fireEvent.click(c.getByLabelText('Google'))
+      fireEvent.change(c.getByLabelText('Model'), { target: { value: 'gemini-4-argon' } })
+      const value = stat('Setup C').value
+      unmount()
+      vi.useRealTimers()
+      return value
+    }
+    const argonC = { ...DEFAULT_SETUPS.C, provider: 'google' as const, model: 'gemini-4-argon', cache: 'implicit' as const, effort: 'medium' as const, reasoning: 'kept' as const }
+    const before = run('2026-11-30')
+    const after = run('2026-12-01')
+    // The card shows the cost at the size all setups reach (995K, where A and B end).
+    const cardCost = (iso: string) => fmtUsd(simulate(argonC, DEFAULT_SHARED, iso).points.filter((pt) => pt.x <= 995000).at(-1)!.cum)
+    expect(before).toBe(cardCost('2026-11-30'))
+    expect(after).toBe(cardCost('2026-12-01'))
+    expect(before).not.toBe(after)
+  })
+
   it('the xAI models: grok-4.5 has no xhigh, grok-4.20 only none, and earlier reasoning is dropped except on 4.7', () => {
     render(<App />)
     const c = setupBox('C')

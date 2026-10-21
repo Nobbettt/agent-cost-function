@@ -17,6 +17,7 @@ describe('HowItWorksPage', () => {
     expect(screen.getByText("Google caches implicitly (on by default, no lifetime stated, no write fee, no guarantee). Explicit caches with a TTL and an hourly storage fee aren't modelled. Every cache break means the next request pays the full input price for the whole context.")).toBeTruthy()
     expect(screen.getByText(/Gemini 3.1 Pro Preview bills 2× input and cached input and 1.5× output for the whole request once the prompt passes 200K tokens/)).toBeTruthy()
     expect(screen.getByText(/xAI models bill 2× input, cached input and output for the whole request once the prompt reaches 200K tokens/)).toBeTruthy()
+    expect(screen.getByText(/Where a provider has announced a price change, the site uses the price in force on the day you view it\./)).toBeTruthy()
     expect(screen.getByText(/Costs are calculated in USD and converted for display at the daily ECB reference rate/)).toBeTruthy()
   })
 

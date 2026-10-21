@@ -21,6 +21,7 @@ import { useCurrency } from './currency/context'
 import { NAV_WIDE_QUERY } from './data/breakpoints'
 import { MAX_SETUPS, SERIES } from './data/series'
 import { useMediaQuery } from './hooks/useMediaQuery'
+import { useToday } from './hooks/useToday'
 import { CUM_SCALE_STORAGE_KEY, REQ_SCALE_STORAGE_KEY, useChartScale } from './hooks/useChartScale'
 import { useSettingsPanel } from './hooks/useSettingsPanel'
 import { buildShareUrl, useShareUrlSync } from './hooks/useShareUrl'
@@ -48,7 +49,8 @@ function Calculator() {
   const [reqScale, setReqScale] = useChartScale(REQ_SCALE_STORAGE_KEY, 'log')
 
   const effective = useMemo(() => effectiveShared(shared), [shared])
-  const runs = useMemo(() => setups.map((s) => simulate(s, effective)), [setups, effective])
+  const today = useToday()
+  const runs = useMemo(() => setups.map((s) => simulate(s, effective, today)), [setups, effective, today])
   const comparison = useMemo(() => compare(setups.map((s, i) => ({ id: s.id, run: runs[i] }))), [setups, runs])
   // The address bar always holds the current shareable link.
   const query = useMemo(() => encodeState({ setups, shared, currency }), [setups, shared, currency])

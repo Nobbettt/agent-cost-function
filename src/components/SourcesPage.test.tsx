@@ -1,7 +1,12 @@
 import { render, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DOCS, MODELS, PRICES_CHECKED } from '../data/pricing'
 import { SourcesPage } from './SourcesPage'
+
+const at = (iso: string) => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date(`${iso}T12:00:00Z`)) }
+afterEach(() => vi.useRealTimers())
+const upcoming = () => [...document.querySelectorAll('li.upcoming > ul > li')].map((li) => li.textContent)
+const priceCells = (id: string) => { const r = [...document.querySelectorAll('table.sources tbody tr')].find((tr) => tr.textContent!.includes(`(${id})`))!; return [1, 2, 3].map((i) => r.children[i].textContent) }
 
 describe('SourcesPage', () => {
   it('renders the heading, the checked date and the model table', () => {
@@ -46,7 +51,6 @@ describe('SourcesPage', () => {
     expect(trs.map((r) => r.querySelector('a')!.getAttribute('href'))).toEqual(
       ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro-preview'].map((id) => `https://ai.google.dev/gemini-api/docs/models/${id}`),
     )
-    expect(screen.getByText(/Gemini 4 Argon rises to \$4 input, \$0.20 cached input and \$20 output from 2026-12-01; Gemini 3.8 Flash and 3.6 Flash rise to \$1.50, \$0.15 and \$7.50 from 2027-01-01/)).toBeTruthy()
     expect(screen.getByText(/Explicit caches \(a TTL and an hourly storage fee\) are not modelled/)).toBeTruthy()
     expect(screen.getByText("Gemini's `minimal` thinking level isn't offered here, so Gemini 3.5 Flash-Lite, whose default is minimal, has no default marked and falls back to low.")).toBeTruthy()
     expect(screen.getByText('Not included: Gemini 2.5 models (access limited to earlier users), Gemini 3 Flash Preview and Gemini 3.1 Flash-Lite (not checked).')).toBeTruthy()
@@ -79,5 +83,58 @@ describe('SourcesPage', () => {
     expect(nav.getByText('Sources').getAttribute('aria-current')).toBe('page')
     expect(nav.queryByRole('link', { name: 'Sources' })).toBeNull()
     expect(screen.getByRole('link', { name: 'calculator' }).getAttribute('href')).toBe('/')
+  })
+
+  it('before both announced dates: the table shows today\'s prices and both upcoming changes are listed', () => {
+    at('2026-10-21')
+    render(<SourcesPage />)
+    expect(priceCells('gemini-4-argon')).toEqual(['$2', '$0.1 (0.05×)', '$10'])
+    expect(priceCells('gemini-3.8-flash')).toEqual(['$0.75', '$0.075 (0.1×)', '$3.75'])
+    expect(upcoming()).toEqual([
+      'Gemini 4 Argon: $4.00 / $0.20 / $20.00 from 2026-12-01',
+      'Gemini 3.8 Flash and Gemini 3.6 Flash: $1.50 / $0.15 / $7.50 from 2027-01-01',
+    ])
+    expect(screen.getByText(/the table shows the prices in force today, 2026-10-21/)).toBeTruthy()
+  })
+
+  it('on the day of the first change: Argon is in the table at its new price and only the Flash change is upcoming', () => {
+    at('2026-12-01')
+    render(<SourcesPage />)
+    expect(priceCells('gemini-4-argon')).toEqual(['$4', '$0.2 (0.05×)', '$20'])
+    expect(priceCells('gemini-3.6-flash')).toEqual(['$0.75', '$0.075 (0.1×)', '$3.75'])
+    expect(upcoming()).toEqual(['Gemini 3.8 Flash and Gemini 3.6 Flash: $1.50 / $0.15 / $7.50 from 2027-01-01'])
+  })
+
+  it('between the two dates the same, and on 2026-11-30 the Argon change is still upcoming', () => {
+    at('2026-12-31')
+    const { unmount } = render(<SourcesPage />)
+    expect(priceCells('gemini-4-argon')).toEqual(['$4', '$0.2 (0.05×)', '$20'])
+    expect(upcoming()).toHaveLength(1)
+    unmount()
+    at('2026-11-30')
+    render(<SourcesPage />)
+    expect(priceCells('gemini-4-argon')).toEqual(['$2', '$0.1 (0.05×)', '$10'])
+    expect(upcoming()).toHaveLength(2)
+  })
+
+  it('after both dates: all Google prices are the new ones and no upcoming note is shown at all', () => {
+    at('2027-01-01')
+    render(<SourcesPage />)
+    expect(priceCells('gemini-4-argon')).toEqual(['$4', '$0.2 (0.05×)', '$20'])
+    expect(priceCells('gemini-3.8-flash')).toEqual(['$1.5', '$0.15 (0.1×)', '$7.5'])
+    expect(priceCells('gemini-3.6-flash')).toEqual(['$1.5', '$0.15 (0.1×)', '$7.5'])
+    expect(priceCells('gemini-3.5-flash-lite')).toEqual(['$0.3', '$0.03 (0.1×)', '$2.5'])
+    expect(document.querySelector('li.upcoming')).toBeNull()
+    expect(screen.queryByText(/Announced price changes/)).toBeNull()
+  })
+
+  it('models without a schedule show the same prices on every date', () => {
+    at('2026-10-21')
+    const { unmount } = render(<SourcesPage />)
+    const early = priceCells('claude-opus-5-5')
+    unmount()
+    at('2027-06-01')
+    render(<SourcesPage />)
+    expect(priceCells('claude-opus-5-5')).toEqual(early)
   })
 })

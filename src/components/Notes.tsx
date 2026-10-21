@@ -9,7 +9,7 @@ export function Notes() {
         <li>Reasoning tokens per effort level are not published by any provider. The numbers in Advanced settings are guesses, the same for every model, and the levels do not mean the same amount of work across models.</li>
         <li>xAI caches automatically with no documented lifetime and no write fee; entries can be evicted at any time. Here every cache break means the next request pays the full input price for the whole context. Reasoning tokens are assumed to cost the output rate.</li>
         <li>Google caches implicitly (on by default, no lifetime stated, no write fee, no guarantee). Explicit caches with a TTL and an hourly storage fee aren't modelled. Every cache break means the next request pays the full input price for the whole context.</li>
-        <li>Costs are calculated in USD and converted for display at the daily ECB reference rate (via Frankfurter). USD is the default and needs no network request; the rate is only fetched when another currency is selected.</li>
+        <li>Costs are calculated in USD and converted for display at the daily ECB reference rate (via Frankfurter). USD is the default and needs no network request; the rate is only fetched when another currency is selected. Where a provider has announced a price change, the site uses the price in force on the day you view it.</li>
         <li>Not modelled: compaction, subagents, fast/priority/flex/batch pricing, regional pricing, reasoning kept only within the current turn (treated as dropped), and effort changing how many requests a task takes.</li>
       </ul>
     </section>

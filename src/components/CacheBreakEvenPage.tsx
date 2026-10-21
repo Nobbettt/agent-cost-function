@@ -7,6 +7,7 @@ import { FIELD_HELP } from '../data/fieldHelp'
 import { DEFAULT_SHOWN, SHARED_LIMITS, SHOWN_LIMITS, TOKENS_PER_K } from '../data/limits'
 import { MODELS, modelsOf, reasoningDefault, reasoningOptions } from '../data/pricing'
 import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useToday } from '../hooks/useToday'
 import { avgBreakCost, breakEven, costCurve } from '../model/breakEven'
 import { effectiveShared, switchModel } from '../model/normalize'
 import type { CacheId, Effort, ReasoningMode, Setup, Shared } from '../model/types'
@@ -32,6 +33,7 @@ function Content() {
   const { format, displayCurrency, rate } = useCurrency()
   const wide = useMediaQuery(NAV_WIDE_QUERY, true)
   const uid = useId()
+  const today = useToday()
   const [setup, setSetup] = useState<Setup>(START)
   const [shared, setShared] = useState<Shared>(DEFAULT_SHARED)
   const [shown, setShown] = useState(DEFAULT_SHOWN)
@@ -39,7 +41,7 @@ function Content() {
 
   const model = MODELS[setup.model]
   const effective = useMemo(() => effectiveShared(shared), [shared])
-  const curve = useMemo(() => costCurve(setup, effective, shown), [setup, effective, shown])
+  const curve = useMemo(() => costCurve(setup, effective, shown, today), [setup, effective, shown, today])
   const result = useMemo(() => breakEven(curve), [curve])
   const avg = useMemo(() => avgBreakCost(curve), [curve])
   const first = curve[0]

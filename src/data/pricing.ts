@@ -21,6 +21,34 @@ export const DOCS = {
   frankfurter: { url: 'https://frankfurter.dev', proves: 'Exchange rates for the display currency (ECB reference rates, daily)' },
 } as const
 
+/**
+ * The model with the prices in force on `date` (YYYY-MM-DD): the latest scheduled change whose date is on or before
+ * it, else the base prices. Limits and the long-prompt rule never change. No date means the base prices.
+ */
+export function priceOn(model: ModelSpec, date?: string): ModelSpec {
+  const due = date === undefined ? undefined : model.schedule?.filter((c) => c.from <= date).at(-1)
+  return due ? { ...model, in: due.in, out: due.out, read: due.read ?? model.read } : model
+}
+
+/** One announced change, with every model it applies to (models with the same date and prices are grouped). */
+export interface UpcomingChange { from: string; models: string[]; in: number; cached: number; out: number }
+
+/** The scheduled changes dated after `today`, earliest first. Once a date has passed its change is gone from here. */
+export function upcomingChanges(today: string): UpcomingChange[] {
+  const groups = new Map<string, UpcomingChange>()
+  for (const model of Object.values(MODELS)) {
+    for (const c of model.schedule ?? []) {
+      if (c.from <= today) continue
+      const cached = +(c.in * (c.read ?? model.read)).toFixed(6)
+      const key = `${c.from}|${c.in}|${cached}|${c.out}`
+      const group = groups.get(key) ?? { from: c.from, models: [], in: c.in, cached, out: c.out }
+      group.models.push(model.name)
+      groups.set(key, group)
+    }
+  }
+  return [...groups.values()].sort((a, b) => a.from.localeCompare(b.from))
+}
+
 export const googlePage = (id: ModelId) => `https://ai.google.dev/gemini-api/docs/models/${id}`
 export const openaiPage = (id: ModelId) => `https://developers.openai.com/api/docs/models/${id}`
 
@@ -44,6 +72,7 @@ const NONE_TO_XHIGH: readonly Effort[] = ['none', 'low', 'medium', 'high', 'xhig
 const LOW_TO_XHIGH: readonly Effort[] = ['low', 'medium', 'high', 'xhigh']
 const LOW_TO_HIGH: readonly Effort[] = ['low', 'medium', 'high']
 const GOOGLE_LONG = { above: 200000, inMult: 2, outMult: 1.5 }
+const FLASH_RISE = { from: '2027-01-01', in: 1.5, out: 7.5 } // Gemini 3.8 and 3.6 Flash
 const OPENAI_LONG = { above: 272000, inMult: 2, outMult: 1.5 }
 // xAI bills the whole request at 2× once its prompt reaches 200K tokens (inclusive, unlike OpenAI's "above 272K").
 const XAI_LONG = { above: 200000, inclusive: true, inMult: 2, outMult: 2 }
@@ -75,9 +104,9 @@ export const MODELS: Readonly<Record<ModelId, ModelSpec>> = {
   'grok-4.6':          { provider: 'xai', name: 'Grok 4.6',  in: 2, out: 6, read: 0.25, maxInput: 500000, efforts: LOW_TO_XHIGH, defaultEffort: 'high', cache: XAI_CACHE, reasoning: DROPPED, longPrompt: XAI_LONG },
   'grok-4.5':          { provider: 'xai', name: 'Grok 4.5',  in: 2, out: 6, read: 0.15, maxInput: 500000, efforts: LOW_TO_HIGH, defaultEffort: 'high', cache: XAI_CACHE, reasoning: DROPPED, longPrompt: XAI_LONG },
   'grok-4.20-0309-non-reasoning': { provider: 'xai', name: 'Grok 4.20 (non-reasoning)', in: 1.25, out: 2.5, read: 0.16, maxInput: 1e6, efforts: ['none'], defaultEffort: null, cache: XAI_CACHE, reasoning: DROPPED, longPrompt: XAI_LONG },
-  'gemini-4-argon':        { provider: 'google', name: 'Gemini 4 Argon',         in: 2,    out: 10,   read: 0.05, maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'] },
-  'gemini-3.8-flash':      { provider: 'google', name: 'Gemini 3.8 Flash',       in: 0.75, out: 3.75, read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'] },
-  'gemini-3.6-flash':      { provider: 'google', name: 'Gemini 3.6 Flash',       in: 0.75, out: 3.75, read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'] },
+  'gemini-4-argon':        { provider: 'google', name: 'Gemini 4 Argon',         in: 2,    out: 10,   read: 0.05, maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'], schedule: [{ from: '2026-12-01', in: 4, out: 20 }] },
+  'gemini-3.8-flash':      { provider: 'google', name: 'Gemini 3.8 Flash',       in: 0.75, out: 3.75, read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'], schedule: [FLASH_RISE] },
+  'gemini-3.6-flash':      { provider: 'google', name: 'Gemini 3.6 Flash',       in: 0.75, out: 3.75, read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'], schedule: [FLASH_RISE] },
   'gemini-3.5-flash-lite': { provider: 'google', name: 'Gemini 3.5 Flash-Lite',  in: 0.3,  out: 2.5,  read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: null, fallbackEffort: 'low', cache: GOOGLE_CACHE, reasoning: ['kept'] },
   'gemini-3.1-pro-preview': { provider: 'google', name: 'Gemini 3.1 Pro Preview', in: 2,    out: 12,   read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'high', cache: GOOGLE_CACHE, reasoning: ['kept'], longPrompt: GOOGLE_LONG },
 }

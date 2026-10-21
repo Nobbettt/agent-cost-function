@@ -15,11 +15,11 @@ export interface CurvePoint {
  * than 5 minutes but shorter than an hour: they break the 5 minute cache (the next request re-writes the whole
  * context) and never the 1 hour cache. `base`'s cache and interruptions are ignored. Pricing lives in `simulate`.
  */
-export function costCurve(base: Setup, shared: Shared, maxK: number): CurvePoint[] {
-  const cost1h = simulate({ ...base, cache: '1h', interruptions: 0 }, shared).totals.total
+export function costCurve(base: Setup, shared: Shared, maxK: number, date?: string): CurvePoint[] {
+  const cost1h = simulate({ ...base, cache: '1h', interruptions: 0 }, shared, date).totals.total
   return Array.from({ length: maxK + 1 }, (_, k) => ({
     k,
-    cost5: simulate({ ...base, cache: '5m', interruptions: k }, shared).totals.total,
+    cost5: simulate({ ...base, cache: '5m', interruptions: k }, shared, date).totals.total,
     cost1h,
   }))
 }

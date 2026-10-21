@@ -22,6 +22,15 @@ export interface LongPrompt {
   outMult: number
 }
 
+/** A scheduled price change: from `from` (YYYY-MM-DD, inclusive) the model costs `in` and `out`, and `read` if given. */
+export interface PriceChange {
+  from: string
+  in: number
+  out: number
+  /** Cache-read multiplier from then on; the model's own when omitted. */
+  read?: number
+}
+
 /** Prices in USD per million tokens; `read` is the cache-read multiplier on input. */
 export interface ModelSpec {
   provider: Provider
@@ -38,6 +47,8 @@ export interface ModelSpec {
   /** [default, ...other allowed]; a null default means the docs state none. */
   reasoning: readonly (ReasoningMode | null)[]
   longPrompt?: LongPrompt
+  /** Announced price changes, sorted ascending by date. `in`, `out` and `read` above are the prices before the first one. */
+  schedule?: readonly PriceChange[]
 }
 
 /** Stable setup identity: its letter, and with it its colour and dash, never depends on position. */

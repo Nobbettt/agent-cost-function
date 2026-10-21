@@ -1,4 +1,4 @@
-import { MODELS } from '../data/pricing'
+import { MODELS, priceOn } from '../data/pricing'
 import type { ModelSpec, Point, Run, Setup, Shared, Totals } from './types'
 
 /** Per-token input and output USD rates for a request whose prompt is `promptTokens` long. */
@@ -8,10 +8,12 @@ export function rates(model: ModelSpec, promptTokens: number) {
   return { in: (model.in / 1e6) * (lp ? lp.inMult : 1), out: (model.out / 1e6) * (lp ? lp.outMult : 1) }
 }
 
-/** Runs one agent session request by request until the context reaches the session length or the model's max input. */
-export function simulate(setup: Setup, shared: Shared): Run {
-  const model = MODELS[setup.model]
-  if (!model) throw new Error(`Unknown model: ${setup.model}`)
+/** Runs one agent session request by request, at the prices in force on `date`, until the context reaches the session length or the model's max input. */
+export function simulate(setup: Setup, shared: Shared, date?: string): Run {
+  const base = MODELS[setup.model]
+  if (!base) throw new Error(`Unknown model: ${setup.model}`)
+  // The caller says which day's prices apply (YYYY-MM-DD); without one the base prices are used. Never reads the clock.
+  const model = priceOn(base, date)
   const cache = model.cache.find((c) => c.id === setup.cache) ?? model.cache[0]
   const end = Math.min(shared.session, model.maxInput)
   // Every interruption outlasts the cache lifetime: the request after it re-writes the whole context.

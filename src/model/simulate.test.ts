@@ -275,3 +275,34 @@ describe('simulate: Google known answer', () => {
     expect(think.points.at(-1)!.x).toBeLessThanOrEqual(300000)
   })
 })
+
+describe('simulate: prices on a date', () => {
+  const shared: Shared = { ...DEFAULT_SHARED, session: 300000, base: 100000, growth: 50000, visibleOut: 1000, thinking: { none: 0, low: 0, medium: 0, high: 0, xhigh: 0, max: 0 } }
+  const argon: Setup = { id: 'A', provider: 'google', model: 'gemini-4-argon', cache: 'implicit', effort: 'medium', reasoning: 'kept', interruptions: 0 }
+  const close = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThan(1e-9)
+
+  it('Gemini 4 Argon costs $0.72 on 2026-11-30 and exactly double, $1.44, on 2026-12-01', () => {
+    // 100K..300K in steps of 50K, 1K output: requests $0.21, $0.12, $0.125, $0.13, $0.135 at $2 in / $10 out / 0.05 read.
+    const before = simulate(argon, shared, '2026-11-30')
+    const after = simulate(argon, shared, '2026-12-01')
+    close(before.totals.total, 0.72)
+    close(after.totals.total, 1.44)
+    close(after.totals.read, before.totals.read * 2)
+    close(after.totals.write, before.totals.write * 2)
+    close(after.totals.output, before.totals.output * 2)
+    before.points.forEach((p, i) => close(after.points[i].req, p.req * 2))
+  })
+
+  it('without a date the base prices apply, and a date changes nothing for a model without a schedule', () => {
+    close(simulate(argon, shared).totals.total, 0.72)
+    const opus = PROTOTYPE_SETUPS.A
+    expect(simulate(opus, DEFAULT_SHARED, '2031-01-01').totals).toEqual(simulate(opus, DEFAULT_SHARED).totals)
+  })
+
+  it('Gemini 3.8 Flash doubles on 2027-01-01 and is unchanged on 2026-12-31', () => {
+    const flash: Setup = { ...argon, model: 'gemini-3.8-flash' }
+    const dec = simulate(flash, shared, '2026-12-31').totals.total
+    close(dec, simulate(flash, shared, '2026-11-30').totals.total)
+    close(simulate(flash, shared, '2027-01-01').totals.total, dec * 2)
+  })
+})
