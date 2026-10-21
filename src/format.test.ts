@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fmtPrice, fmtTokens, fmtUsd, formatMoney, signedMoney } from './format'
+import { everyOtherTickLabel, fmtPrice, fmtTokens, fmtUsd, formatMoney, signedMoney } from './format'
 
 describe('fmtTokens', () => {
   it('formats raw, K and M', () => {
@@ -83,5 +83,23 @@ describe('signedMoney', () => {
     expect(signedMoney(0, fmtUsd)).toBe('$0')
     expect(signedMoney(1e-12, fmtUsd)).toBe('$0')
     expect(signedMoney(-5, (v) => formatMoney(v, 'EUR', 0.9))).toBe('−€4.50')
+  })
+})
+
+describe('everyOtherTickLabel', () => {
+  it('labels even indexes, starting with the first tick', () => {
+    expect(everyOtherTickLabel(0, 0, fmtUsd)).toBe('$0')
+    expect(everyOtherTickLabel(20, 2, fmtUsd)).toBe('$20.00')
+    expect(everyOtherTickLabel(40, 4, fmtUsd)).toBe('$40.00')
+  })
+
+  it('returns an empty string, not null, for odd indexes so the gridline stays', () => {
+    for (const i of [1, 3, 5, 7]) expect(everyOtherTickLabel(i * 10, i, fmtUsd)).toBe('')
+  })
+
+  it('uses the given formatter (the display currency)', () => {
+    const sek = (v: number) => formatMoney(v, 'SEK', 10)
+    expect(everyOtherTickLabel(2, 2, sek).replace(/\s/g, ' ')).toBe('SEK 20.00')
+    expect(everyOtherTickLabel(2, 3, sek)).toBe('')
   })
 })

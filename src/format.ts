@@ -55,6 +55,13 @@ export function formatMoney(usd: number, currency = 'USD', rate = 1): string {
 export const signedMoney = (v: number, format: (usd: number) => string): string =>
   Math.abs(v) < 1e-9 ? format(0) : `${v < 0 ? '−' : '+'}${format(Math.abs(v))}`
 
+/**
+ * Axis tick label rule: label every other tick, starting with the first (index 0). The ticks in between
+ * get '' rather than null, so they keep their gridline and lose only the label.
+ */
+export const everyOtherTickLabel = (value: number, index: number, format: (v: number) => string): string =>
+  index % 2 === 0 ? format(value) : ''
+
 export const fmtUsd = (v: number): string => formatMoney(v, 'USD', 1)
 
 export const fmtPrice = (v: number): string => `$${+v.toFixed(4)}`

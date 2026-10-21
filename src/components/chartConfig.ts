@@ -2,7 +2,7 @@ import {
   Chart, Interaction, Legend, LinearScale, LineController, LineElement, PointElement, Tooltip,
   type ChartConfiguration, type ChartType, type InteractionItem, type InteractionModeFunction, type Plugin,
 } from 'chart.js'
-import { fmtTokens } from '../format'
+import { everyOtherTickLabel, fmtTokens } from '../format'
 import type { Point, Run, SetupId } from '../model/types'
 import { css } from '../theme'
 
@@ -135,7 +135,7 @@ export function lineConfig(showEndLabels: boolean, getFormat: () => (usd: number
       scales: {
         x: { type: 'linear', min: 0, ticks: { callback: (v) => fmtTokens(Number(v)), maxTicksLimit: 11 },
              title: { display: true, text: 'Context size (tokens)' } },
-        y: { beginAtZero: true, ticks: { callback: (v) => getFormat()(Number(v)) }, title: { display: true, text: 'USD' } },
+        y: { beginAtZero: true, ticks: { callback: (v, i) => everyOtherTickLabel(Number(v), i, getFormat()) }, title: { display: true, text: 'USD' } },
       },
       plugins: {
         endLabels: { enabled: showEndLabels },
