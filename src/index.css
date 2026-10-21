@@ -3,6 +3,9 @@
   --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
   --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.10);
   --series-a: #2a78d6; --series-b: #008300; --series-c: #e87ba4; --series-d: #eda100;
+  /* The break-even page's diverging pair (blue = 5 min cache cheaper, red = 1 hour cache cheaper, grey between), and a red ramp for the savings lines. */
+  --pole-blue: #2a78d6; --pole-red: #e34948; --pole-neutral: #f0efec;
+  --red-1: #ff9890; --red-2: #ec7b74; --red-3: #cd605a; --red-4: #ae4441; --red-5: #902828;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -10,6 +13,8 @@
     --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7;
     --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
     --series-a: #3987e5; --series-b: #008300; --series-c: #d55181; --series-d: #c98500;
+    --pole-blue: #3987e5; --pole-red: #e66767; --pole-neutral: #383835;
+    --red-1: #9c433f; --red-2: #b75b55; --red-3: #d5766f; --red-4: #f4928a; --red-5: #ffaea6;
   }
 }
 :root[data-theme="dark"] {
@@ -17,6 +22,8 @@
   --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7;
   --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
   --series-a: #3987e5; --series-b: #008300; --series-c: #d55181; --series-d: #c98500;
+  --pole-blue: #3987e5; --pole-red: #e66767; --pole-neutral: #383835;
+  --red-1: #9c433f; --red-2: #b75b55; --red-3: #d5766f; --red-4: #f4928a; --red-5: #ffaea6;
 }
 * { box-sizing: border-box; }
 /* App shell: the window never scrolls. The navbar is the first row; the page's own scroll container is the second,
@@ -269,3 +276,20 @@ footer nav { display: inline; }
 .be-settings .advanced { margin-top: 12px; }
 /* Long card labels wrap instead of being cut off (the calculator's labels are setup names, which are cut). */
 .summary.wrap-labels .stat-label { white-space: normal; overflow-wrap: anywhere; }
+
+/* Decision map: a diverging grid (blue: 5 min cache cheaper, red: 1 hour cache cheaper, grey: about equal). */
+.map-key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 8px; padding: 0; list-style: none; font-size: 12.5px; color: var(--ink-2); }
+.map-key li { display: inline-flex; align-items: center; gap: 6px; }
+.map-key .swatch { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); }
+.map-scroll { overflow-x: auto; }
+.map-box { position: relative; }
+.map-cell { cursor: crosshair; outline: none; }
+.map-cell:focus-visible { stroke: var(--ink); stroke-width: 2px; }
+.map-axis text { font-size: 11px; fill: var(--muted); }
+.map-axis .map-title { font-size: 12px; fill: var(--ink-2); }
+.map-boundary { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 5 4; stroke-linejoin: round; pointer-events: none; }
+.map-yours { stroke: var(--ink); stroke-width: 2; pointer-events: none; }
+.map-dot { fill: var(--ink); pointer-events: none; }
+.map-tip { position: absolute; z-index: 5; width: max-content; max-width: 240px; padding: 8px 10px; font-size: 12.5px; line-height: 1.4; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); pointer-events: none; }
+.map-tip-title { font-weight: 600; margin-bottom: 2px; }
+.chart-note { margin: 0 0 8px; font-size: 12.5px; color: var(--ink-2); }

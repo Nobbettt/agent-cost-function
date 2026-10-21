@@ -9,8 +9,11 @@ import { stat } from '../test-summary'
 import { CacheBreakEvenPage } from './CacheBreakEvenPage'
 
 vi.mock('./BreakEvenChart', async () => ({ BreakEvenChart: (await import('../test-be-chart-mock')).BreakEvenChartMock }))
+vi.mock('./SavingsChart', async () => ({ SavingsChart: (await import('../test-savings-chart-mock')).SavingsChartMock }))
 
 const chart = () => screen.getByTestId('be-chart')
+const savings = () => screen.getByTestId('savings-chart')
+const mapCells = () => document.querySelectorAll('.map-cell')
 const attr = (name: string) => chart().getAttribute(`data-${name}`)!
 const field = (label: string) => screen.getByLabelText(label) as HTMLInputElement | HTMLSelectElement
 const money = (usd: number) => `$${usd.toFixed(2)}`
@@ -290,3 +293,109 @@ describe('Claude Cache Break-even page: navigation and currency', () => {
     expect(document.querySelector('details.card tbody tr')!.children[2].textContent!.replace(/\s/g, ' ')).toBe('SEK 289')
   })
 })
+
+describe('Claude Cache Break-even page: the decision map and the savings chart', () => {
+  it('shows them after the cards and before the line chart, in this order', () => {
+    render(<CacheBreakEvenPage />)
+    const headings = [...document.querySelectorAll('main h2')].map((h) => h.textContent)
+    expect(headings).toEqual(['Which cache is cheaper?', 'How much the 1-hour cache saves', 'Session cost vs pauses of 5–60 min', 'How this is calculated'])
+    const order = [document.querySelector('.summary'), document.querySelector('.decision-map'), savings(), chart()]
+    for (let i = 1; i < order.length; i++) expect(order[i - 1]!.compareDocumentPosition(order[i]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const details = [...document.querySelectorAll('details.card summary')].map((d) => d.textContent)
+    expect(details).toEqual(['Cost at each number of pauses (table view)', 'Decision map values (table view)'])
+  })
+
+  it('by default the map is 13 by 7 (range 12, 6 rows of longer pauses), with your cell at 2, 0 and the viewer-facing key', () => {
+    render(<CacheBreakEvenPage />)
+    expect(mapCells()).toHaveLength(13 * 7)
+    const mine = document.querySelector('.map-yours')!
+    const own = document.querySelector('.map-cell[data-short="2"][data-long="0"]')!
+    expect(mine.getAttribute('x')).toBe(own.getAttribute('x'))
+    expect(mine.getAttribute('y')).toBe(own.getAttribute('y'))
+    expect(screen.getByRole('list', { name: 'Key' }).textContent).toContain('1 hour cache cheaper')
+  })
+
+  it('the map has blue at few short pauses turning red to the right, and a boundary through about 1.3 at row 0 and 3.1 at row 3', () => {
+    render(<CacheBreakEvenPage />)
+    const side = (s: number, l: number) => document.querySelector(`.map-cell[data-short="${s}"][data-long="${l}"]`)!.getAttribute('data-side')
+    expect([side(0, 0), side(1, 0), side(2, 0), side(12, 0)]).toEqual(['5m', '5m', '1h', '1h'])
+    // Row 3 crosses at 3.1: blue before it, grey right at it (under 1% apart), red after it.
+    expect([side(2, 3), side(3, 3), side(4, 3)]).toEqual(['5m', 'even', '1h'])
+    const points = document.querySelector('.map-boundary')!.getAttribute('points')!.split(' ').map((p) => Number(p.split(',')[0]))
+    const cellX = (s: number) => Number(document.querySelector(`.map-cell[data-short="${s}"][data-long="0"]`)!.getAttribute('x'))
+    const w = cellX(1) - cellX(0)
+    // Cells start 1px inside their slot (the 2px gap), so the slot starts at cellX - 1.
+    expect((points[0] - (cellX(0) - 1)) / w - 0.5).toBeCloseTo(1.2587, 3)
+    expect((points[3] - (cellX(0) - 1)) / w - 0.5).toBeCloseTo(3.1186, 3)
+  })
+
+  it('the savings chart gets a line for 0 to 3 pauses over an hour, and the viewer\'s own point and count', () => {
+    render(<CacheBreakEvenPage />)
+    expect(savings().getAttribute('data-lines')).toBe('0,1,2,3')
+    expect(savings().getAttribute('data-yourshort')).toBe('2')
+    expect(savings().getAttribute('data-yourlong')).toBe('0')
+    expect(savings().getAttribute('data-points')).toBe('13,13,13,13')
+    expect(savings().getAttribute('data-maxshort')).toBe('12')
+    // The first point of each line is the saving at no short pauses: negative (the 5 min cache is cheaper) and shrinking with more long pauses.
+    const first = savings().getAttribute('data-first-savings')!.split(',').map(Number)
+    expect(first[0]).toBeCloseTo(25.9325 - 28.9175, 3)
+    expect(first.every((v) => v < 0)).toBe(true)
+  })
+
+  it('with 2 long pauses the viewer\'s line is one of the four; with 8 a fifth line is added, and the map grows to 11 rows', () => {
+    render(<CacheBreakEvenPage />)
+    const long = field('Pauses over 60 min') as HTMLInputElement
+    fireEvent.change(long, { target: { value: '2' } })
+    expect(savings().getAttribute('data-lines')).toBe('0,1,2,3')
+    expect(savings().getAttribute('data-yourlong')).toBe('2')
+    expect(mapCells()).toHaveLength(13 * 7)
+    fireEvent.change(long, { target: { value: '8' } })
+    expect(savings().getAttribute('data-lines')).toBe('0,1,2,3,8')
+    expect(savings().getAttribute('data-yourlong')).toBe('8')
+    expect(savings().getAttribute('data-rows')).toBe('11')
+    expect(mapCells()).toHaveLength(13 * 11)
+    expect(document.querySelectorAll('.decision-map [role="row"]')).toHaveLength(11)
+    fireEvent.change(long, { target: { value: '0' } })
+    expect(mapCells()).toHaveLength(13 * 7)
+  })
+
+  it('the map and the savings chart follow your 5–60 min pauses past the range (30 gives 33 columns)', () => {
+    render(<CacheBreakEvenPage />)
+    fireEvent.change(field('Pauses 5–60 min'), { target: { value: '30' } })
+    expect(mapCells()).toHaveLength(33 * 7)
+    expect(savings().getAttribute('data-maxshort')).toBe('32')
+    expect(savings().getAttribute('data-yourshort')).toBe('30')
+    expect(document.querySelector('.map-yours')!.getAttribute('x')).toBe(document.querySelector('.map-cell[data-short="30"][data-long="0"]')!.getAttribute('x'))
+  })
+
+  it('both follow the model, the currency and the date like the cards do', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => body })))
+    render(<CacheBreakEvenPage />)
+    const before = document.querySelector('.map-cell[data-short="2"][data-long="0"]')!.getAttribute('aria-label')
+    fireEvent.change(field('Model'), { target: { value: 'claude-fable-5-1' } })
+    expect(document.querySelector('.map-cell[data-short="2"][data-long="0"]')!.getAttribute('aria-label')).not.toBe(before)
+    fireEvent.change(within(screen.getByRole('navigation', { name: 'Main' })).getByLabelText('Currency'), { target: { value: 'SEK' } })
+    await screen.findByText(/Shown in SEK/)
+    expect(document.querySelector('.map-cell[data-short="2"][data-long="0"]')!.getAttribute('aria-label')).toMatch(/SEK/)
+    expect(savings().getAttribute('data-currency')).toBe('SEK')
+    expect(savings().getAttribute('data-rate')).toBe('10')
+  })
+
+  it('has a values table for the map, drawn only when it is opened: every cell with who is cheaper and by how much', () => {
+    render(<CacheBreakEvenPage />)
+    const details = [...document.querySelectorAll('details.card')].find((d) => d.textContent!.includes('Decision map values')) as HTMLDetailsElement
+    expect(details.querySelector('table')).toBeNull()
+    details.open = true
+    fireEvent(details, new Event('toggle'))
+    expect([...details.querySelectorAll('thead th')].map((h) => h.textContent)).toEqual(['Pauses of 5–60 min', 'Pauses over 60 min', '5 min cache', '1 hour cache', 'Cheaper', 'Difference'])
+    const rows = [...details.querySelectorAll('tbody tr')].map((r) => [...r.children].map((c) => c.textContent))
+    expect(rows).toHaveLength(13 * 7)
+    expect(rows[2]).toEqual(['2', '0', '$30.70', '$28.92', '1 hour', '$1.78'])
+    expect(rows.find((r) => r[0] === '2' && r[1] === '3')).toEqual(['2', '3', '$37.82', '$40.50', '5 min', '$2.68'])
+    expect(rows[0][4]).toBe('5 min')
+    details.open = false
+    fireEvent(details, new Event('toggle'))
+    expect(details.querySelector('table')).toBeNull()
+  })
+})
+

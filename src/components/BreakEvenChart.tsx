@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 import { css, useColorScheme } from '../theme'
 import type { CurvePoint } from '../model/breakEven'
 import { applyTheme } from './chartConfig'
-import { breakEvenConfig, makeBreakEvenDataset, type BreakEvenChartType } from './breakEvenChartConfig'
+import { LINE_COLORS, breakEvenConfig, makeBreakEvenDataset, type BreakEvenChartType } from './breakEvenChartConfig'
 
 interface Props {
   curve: readonly CurvePoint[]
@@ -43,8 +43,8 @@ export function BreakEvenChart({ curve, exact, yourK, markerText, label, format,
     if (!c) return
     if (c.data.datasets.length === 0) c.data.datasets.push(makeBreakEvenDataset('5 min cache', true), makeBreakEvenDataset('1 hour cache', false))
     const [five, hour] = c.data.datasets
-    five.borderColor = css('--series-a')
-    hour.borderColor = css('--series-b')
+    five.borderColor = css(LINE_COLORS.five)
+    hour.borderColor = css(LINE_COLORS.hour)
     five.data = curve.map((p) => ({ x: p.k, y: p.cost5 * rate }))
     hour.data = curve.map((p) => ({ x: p.k, y: p.cost1h * rate }))
     c.options.scales!.x!.max = curve.at(-1)?.k ?? 0

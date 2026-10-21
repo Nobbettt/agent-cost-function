@@ -10,6 +10,9 @@ declare module 'chart.js' {
   }
 }
 
+/** The CSS colour of each line: the 5 minute cache is the blue pole, the 1 hour cache the red pole, as on the decision map. */
+export const LINE_COLORS = { five: '--pole-blue', hour: '--pole-red' } as const
+
 /** One plotted point: interruptions on x, session cost (display currency) on y. */
 export interface BreakEvenPoint { x: number; y: number }
 export type BreakEvenChartType = Chart<'line', BreakEvenPoint[]>

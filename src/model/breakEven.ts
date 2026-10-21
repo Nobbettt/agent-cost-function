@@ -64,3 +64,49 @@ export function cheaperAt(point: Pick<CurvePoint, 'cost5' | 'cost1h'>): { cheape
   const dearer = Math.max(point.cost5, point.cost1h)
   return { cheaper: diff > 0 ? '1h' : '5m', saving: Math.abs(diff), percent: Math.round((Math.abs(diff) / dearer) * 100) }
 }
+
+/** One cell of the short x long map: the session cost on each cache, and what the 1 hour cache saves (negative: it costs more). */
+export interface GridCell {
+  /** Pauses of 5 to 60 minutes. */
+  short: number
+  /** Pauses over an hour. */
+  long: number
+  cost5: number
+  cost1h: number
+  saving: number
+}
+
+/**
+ * Both kinds of pause at once: for short = 0..maxShort and long = 0..maxLong, long-major. The rules are those of `costCurve`:
+ * the 5 minute cache breaks on every pause (short + long), the 1 hour cache only on the long ones, so its cost is worked
+ * out once per `long` and is the same along a row.
+ */
+export function breakEvenGrid(base: Setup, shared: Shared, maxShort: number, maxLong: number, date?: string): GridCell[] {
+  const cells: GridCell[] = []
+  for (let long = 0; long <= maxLong; long++) {
+    const cost1h = simulate({ ...base, cache: '1h', interruptions: long }, shared, date).totals.total
+    for (let short = 0; short <= maxShort; short++) {
+      const cost5 = simulate({ ...base, cache: '5m', interruptions: short + long }, shared, date).totals.total
+      cells.push({ short, long, cost5, cost1h, saving: cost5 - cost1h })
+    }
+  }
+  return cells
+}
+
+/** Rows of a grid as break-even curves, by `long`. */
+export function gridRows(grid: readonly GridCell[]): { long: number; cells: GridCell[] }[] {
+  const rows = new Map<number, GridCell[]>()
+  for (const c of grid) rows.set(c.long, [...(rows.get(c.long) ?? []), c])
+  return [...rows].map(([long, cells]) => ({ long, cells }))
+}
+
+/** For each `long`, the exact short count where the two caches cost the same (as `breakEven` finds it), or null within range. */
+export function boundary(grid: readonly GridCell[]): { long: number; exact: number | null }[] {
+  return gridRows(grid).map(({ long, cells }) => ({
+    long,
+    exact: breakEven(cells.map((c) => ({ k: c.short, cost5: c.cost5, cost1h: c.cost1h }))).exact,
+  }))
+}
+
+/** How many rows (pauses over an hour) the map shows: at least 6, and always your own count plus 2, at most `max`. */
+export const longRange = (long: number, max: number): number => Math.min(max, Math.max(6, long + 2))

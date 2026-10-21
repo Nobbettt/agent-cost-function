@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETUPS, DEFAULT_SHARED } from '../data/defaults'
-import { avgBreakCost, breakEven, cheaperAt, chartRange, costCurve, costsAt, type CurvePoint } from './breakEven'
+import { avgBreakCost, boundary, breakEven, breakEvenGrid, cheaperAt, chartRange, costCurve, costsAt, gridRows, longRange, type CurvePoint } from './breakEven'
 import { switchModel } from './normalize'
 import { simulate } from './simulate'
 
@@ -167,5 +167,74 @@ describe('costsAt, chartRange and cheaperAt', () => {
     expect(cheaperAt(costsAt(curve, 0))).toMatchObject({ cheaper: '5m', percent: 10 })
     expect(cheaperAt({ cost5: 10, cost1h: 10 })).toEqual({ cheaper: null, saving: 0, percent: 0 })
     expect(cheaperAt({ cost5: 8, cost1h: 10 })).toEqual({ cheaper: '5m', saving: 2, percent: 20 })
+  })
+})
+
+describe('breakEvenGrid', () => {
+  const grid = breakEvenGrid(base, DEFAULT_SHARED, 12, 6)
+  const cell = (short: number, long: number) => grid.find((c) => c.short === short && c.long === long)!
+
+  it('has one cell for every short 0..maxShort and long 0..maxLong, long-major', () => {
+    expect(grid).toHaveLength(13 * 7)
+    expect(grid.slice(0, 3).map((c) => [c.short, c.long])).toEqual([[0, 0], [1, 0], [2, 0]])
+    expect(grid.at(-1)).toMatchObject({ short: 12, long: 6 })
+    expect(breakEvenGrid(base, DEFAULT_SHARED, 0, 0)).toHaveLength(1)
+  })
+
+  it('matches the round-35 numbers: short 2, long 0 is $30.70 / $28.92; short 2, long 3 is $37.82 / $40.50', () => {
+    expect([cell(2, 0).cost5.toFixed(2), cell(2, 0).cost1h.toFixed(2)]).toEqual(['30.70', '28.92'])
+    expect([cell(2, 3).cost5.toFixed(2), cell(2, 3).cost1h.toFixed(2)]).toEqual(['37.82', '40.50'])
+    expect(cell(2, 0).saving).toBeCloseTo(30.6965 - 28.9175, 9)
+    expect(cell(2, 3).saving).toBeCloseTo(37.8245 - 40.5005, 9)
+  })
+
+  it('is the same as costCurve: every row is a curve for that number of long pauses', () => {
+    for (const long of [0, 2, 5]) {
+      const curve = costCurve(base, DEFAULT_SHARED, 12, long)
+      for (const p of curve) {
+        expect(cell(p.k, long).cost5).toBeCloseTo(p.cost5, 9)
+        expect(cell(p.k, long).cost1h).toBeCloseTo(p.cost1h, 9)
+      }
+    }
+  })
+
+  it('has cost1h constant along a row, cost5 rising along it, and saving = cost5 - cost1h', () => {
+    for (const { cells } of gridRows(grid)) {
+      expect(new Set(cells.map((c) => c.cost1h)).size).toBe(1)
+      for (let i = 1; i < cells.length; i++) expect(cells[i].cost5).toBeGreaterThan(cells[i - 1].cost5)
+      for (const c of cells) expect(c.saving).toBeCloseTo(c.cost5 - c.cost1h, 12)
+    }
+  })
+
+  it('cost5 depends only on short + long, and cost1h only on long', () => {
+    expect(cell(1, 3).cost5).toBeCloseTo(cell(3, 1).cost5, 9)
+    expect(cell(0, 4).cost5).toBeCloseTo(cell(4, 0).cost5, 9)
+    expect(cell(1, 3).cost1h).toBeCloseTo(cell(9, 3).cost1h, 12)
+  })
+
+  it('passes the date through to the prices', () => {
+    const argon = { ...base, provider: 'google' as const, model: 'gemini-4-argon', cache: 'implicit' as const }
+    expect(breakEvenGrid(argon, DEFAULT_SHARED, 1, 1, '2026-12-01')[3].cost1h).toBeCloseTo(breakEvenGrid(argon, DEFAULT_SHARED, 1, 1, '2026-11-30')[3].cost1h * 2, 9)
+  })
+})
+
+describe('boundary and longRange', () => {
+  const grid = breakEvenGrid(base, DEFAULT_SHARED, 12, 6)
+
+  it('is the break-even of each row: 1.2587, 1.8725, 2.5144, 3.1186 for long 0 to 3', () => {
+    const edge = boundary(grid)
+    expect(edge.map((e) => e.long)).toEqual([0, 1, 2, 3, 4, 5, 6])
+    expect(edge.slice(0, 4).map((e) => +e.exact!.toFixed(4))).toEqual([1.2587, 1.8725, 2.5144, 3.1186])
+    for (const e of edge) expect(e.exact).toBeCloseTo(breakEven(costCurve(base, DEFAULT_SHARED, 12, e.long)).exact!, 9)
+    for (let i = 1; i < edge.length; i++) expect(edge[i].exact!).toBeGreaterThan(edge[i - 1].exact!)
+  })
+
+  it('is null for a row without a crossing within the range', () => {
+    expect(boundary(breakEvenGrid(base, DEFAULT_SHARED, 3, 6)).map((e) => e.exact === null)).toEqual([false, false, false, true, true, true, true])
+    expect(boundary(breakEvenGrid(base, { ...DEFAULT_SHARED, session: 10000 }, 4, 2)).every((e) => e.exact === null)).toBe(true)
+  })
+
+  it('longRange is at least 6, your count + 2, at most the maximum', () => {
+    expect([0, 3, 4, 5, 8, 38, 40].map((l) => longRange(l, 40))).toEqual([6, 6, 6, 7, 10, 40, 40])
   })
 })

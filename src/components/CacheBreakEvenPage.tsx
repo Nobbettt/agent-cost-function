@@ -8,12 +8,14 @@ import { DEFAULT_LONG_PAUSES, DEFAULT_SHORT_PAUSES, DEFAULT_SHOWN, PAUSE_LIMITS,
 import { MODELS, modelsOf, reasoningDefault, reasoningOptions } from '../data/pricing'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useToday } from '../hooks/useToday'
-import { breakEven, cheaperAt, chartRange, costCurve, costsAt } from '../model/breakEven'
+import { breakEven, breakEvenGrid, cheaperAt, chartRange, costCurve, costsAt, longRange } from '../model/breakEven'
 import { cacheBreaks } from '../model/setups'
 import { effectiveShared, switchModel } from '../model/normalize'
 import type { CacheId, Effort, ReasoningMode, Setup, Shared } from '../model/types'
 import { AdvancedSettings } from './AdvancedSettings'
 import { BreakEvenChart } from './BreakEvenChart'
+import { DecisionMap } from './DecisionMap'
+import { SavingsChart } from './SavingsChart'
 import { CurrencyField } from './CurrencyField'
 import { CurrencySelect } from './CurrencySelect'
 import { Field } from './Field'
@@ -41,6 +43,7 @@ function Content() {
   const [short, setShort] = useState(DEFAULT_SHORT_PAUSES)
   const [long, setLong] = useState(DEFAULT_LONG_PAUSES)
   const [advanced, setAdvanced] = useState(false)
+  const [mapRows, setMapRows] = useState(false)
 
   const model = MODELS[setup.model]
   const effective = useMemo(() => effectiveShared(shared), [shared])
@@ -48,6 +51,10 @@ function Content() {
   const range = chartRange(shown, short, SHOWN_LIMITS.max)
   const curve = useMemo(() => costCurve(setup, effective, range, long, today), [setup, effective, range, long, today])
   const result = useMemo(() => breakEven(curve), [curve])
+  // The map and the savings chart cover both kinds of pause at once: the short range as above, and rows up to `long + 2` (at least 6).
+  const maxLong = longRange(long, PAUSE_LIMITS.max)
+  const grid = useMemo(() => breakEvenGrid(setup, effective, range, maxLong, today), [setup, effective, range, maxLong, today])
+  const savingLines = useMemo(() => [0, 1, 2, 3, ...(long > 3 ? [long] : [])], [long])
   const mine = costsAt(curve, short)
   const verdict = cheaperAt(mine)
   const exactText = result.exact === null ? null : result.exact.toFixed(1)
@@ -126,6 +133,21 @@ function Content() {
           <RateStatus />
 
           <section className="card">
+            <h2>Which cache is cheaper?</h2>
+            <p className="chart-note">Each square is one mix of pauses. The dashed line is where the two caches cost the same; your own mix is outlined.</p>
+            <DecisionMap grid={grid} maxShort={range} maxLong={maxLong} yourShort={short} yourLong={long} format={format} />
+          </section>
+
+          <section className="card">
+            <h2>How much the 1-hour cache saves</h2>
+            <p className="chart-note">Above zero the 1-hour cache is cheaper. One line for each number of pauses over an hour.</p>
+            <SavingsChart
+              grid={grid} lines={savingLines} maxShort={range} yourShort={short} yourLong={long} format={format} currency={displayCurrency} rate={rate}
+              label="What the 1 hour cache saves over the 5 minute cache as pauses of 5 to 60 minutes increase, for 0 to 3 pauses over an hour"
+            />
+          </section>
+
+          <section className="card">
             <h2>Session cost vs pauses of 5–60 min</h2>
             <BreakEvenChart
               curve={curve} exact={result.exact} yourK={short} markerText={markerText} format={format} currency={displayCurrency} rate={rate}
@@ -148,6 +170,25 @@ function Content() {
                 </tbody>
               </table>
             </div>
+          </details>
+
+          <details className="card" onToggle={(e) => setMapRows(e.currentTarget.open)}>
+            <summary>Decision map values (table view)</summary>
+            {mapRows && (
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Pauses of 5–60 min</th><th>Pauses over 60 min</th><th>5 min cache</th><th>1 hour cache</th><th>Cheaper</th><th>Difference</th></tr></thead>
+                  <tbody>
+                    {grid.map((c) => (
+                      <tr key={`${c.short}-${c.long}`}>
+                        <td>{c.short}</td><td>{c.long}</td><td>{format(c.cost5)}</td><td>{format(c.cost1h)}</td>
+                        <td>{c.saving > 0 ? '1 hour' : c.saving < 0 ? '5 min' : 'equal'}</td><td>{format(Math.abs(c.saving))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </details>
 
           <section className="card">
