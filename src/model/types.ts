@@ -1,8 +1,8 @@
-export type Provider = 'claude' | 'openai' | 'xai'
+export type Provider = 'claude' | 'openai' | 'xai' | 'google'
 export type ModelId = string
 export type Effort = 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 export type ReasoningMode = 'kept' | 'dropped'
-export type CacheId = '5m' | '1h' | '30m' | '24h' | 'in_memory' | 'auto'
+export type CacheId = '5m' | '1h' | '30m' | '24h' | 'in_memory' | 'auto' | 'implicit'
 
 export interface CacheOption {
   id: CacheId
@@ -32,6 +32,8 @@ export interface ModelSpec {
   maxInput: number
   efforts: readonly Effort[]
   defaultEffort: Effort | null
+  /** Effort to fall back to when the docs state no default (otherwise 'medium'), e.g. the lowest one for a model whose default is not offered here. */
+  fallbackEffort?: Effort
   cache: readonly CacheOption[]
   /** [default, ...other allowed]; a null default means the docs state none. */
   reasoning: readonly (ReasoningMode | null)[]

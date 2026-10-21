@@ -11,9 +11,9 @@ describe('xAI models', () => {
   it('are exactly the four documented ones, after the OpenAI models', () => {
     expect(modelsOf('xai').map(([id]) => id)).toEqual(GROK)
     const order = Object.keys(MODELS)
-    expect(order.slice(-4)).toEqual(GROK)
+    expect(order.indexOf('grok-4.7')).toBe(order.indexOf('gpt-5.4-mini') + 1)
     expect(PROVIDERS.xai).toEqual({ name: 'xAI', defaultModel: 'grok-4.7', sources: ['xaiPricing', 'xaiCaching', 'xaiReasoning'] })
-    expect(Object.keys(PROVIDERS)).toEqual(['claude', 'openai', 'xai'])
+    expect(Object.keys(PROVIDERS)).toEqual(['claude', 'openai', 'xai', 'google'])
     for (const excluded of ['grok-4.3', 'grok-4.20-0309-reasoning', 'grok-4.20-multi-agent', 'grok-build-0.1']) expect(MODELS[excluded]).toBeUndefined()
   })
 

@@ -14,9 +14,14 @@ export const DOCS = {
   xaiPricing: { url: 'https://docs.x.ai/docs/models', proves: 'xAI input, cached input and output prices, context windows, and 2× prices for prompts that reach 200K tokens (checked 2026-10-21)' },
   xaiCaching: { url: 'https://docs.x.ai/developers/advanced-api-usage/prompt-caching/how-it-works', proves: 'xAI caches prefixes automatically: no lifetime is stated or settable, entries can be evicted at any time, and no cache write fee is documented' },
   xaiReasoning: { url: 'https://docs.x.ai/docs/guides/reasoning', proves: 'Which xAI models support which reasoning_effort levels; reasoning tokens billed as part of total consumption (no rate is stated, so the output rate is assumed); carrying reasoning across turns on grok-4.7' },
+  googlePricing: { url: 'https://ai.google.dev/gemini-api/docs/pricing', proves: 'Gemini input, cached input and output prices (thinking included in output), scheduled price increases, and 2× / 1.5× prices above 200K tokens on Gemini 3.1 Pro Preview (page updated 2026-10-19)' },
+  googleModels: { url: 'https://ai.google.dev/gemini-api/docs/models', proves: 'Gemini model list and input token limits (each model page lists its own limit)' },
+  googleCaching: { url: 'https://ai.google.dev/gemini-api/docs/caching', proves: 'Gemini implicit caching: on by default, automatic, no savings guarantee, no lifetime stated, no write or storage fee; explicit caching with a TTL and hourly storage fee (not modelled)' },
+  googleThinking: { url: 'https://ai.google.dev/gemini-api/docs/thinking', proves: 'Gemini thinking levels per model and their defaults; thinking tokens billed with output; thought blocks resent on later turns' },
   frankfurter: { url: 'https://frankfurter.dev', proves: 'Exchange rates for the display currency (ECB reference rates, daily)' },
 } as const
 
+export const googlePage = (id: ModelId) => `https://ai.google.dev/gemini-api/docs/models/${id}`
 export const openaiPage = (id: ModelId) => `https://developers.openai.com/api/docs/models/${id}`
 
 const CLAUDE_CACHE: readonly CacheOption[] = [
@@ -25,6 +30,9 @@ const CLAUDE_CACHE: readonly CacheOption[] = [
 ]
 // xAI: automatic prefix caching, no stated lifetime and no documented write fee. A cache break re-reads the context at the full input price.
 const XAI_CACHE: readonly CacheOption[] = [{ id: 'auto', label: 'best-effort · no write fee', minutes: 0, write: 1 }]
+// Google: implicit caching is on by default and automatic: no stated lifetime, no write or storage fee, no guarantee of savings.
+// Explicit caches (a TTL and an hourly storage fee) are not modelled.
+const GOOGLE_CACHE: readonly CacheOption[] = [{ id: 'implicit', label: 'implicit · no write fee', minutes: 0, write: 1 }]
 const OPENAI_30M: CacheOption = { id: '30m', label: '30 min · write 1.25×', minutes: 30, write: 1.25 }
 const OPENAI_24H: CacheOption = { id: '24h', label: '24h · ~30 min typical · no write fee', minutes: 30, write: 1 }
 const OPENAI_IN_MEMORY: CacheOption = { id: 'in_memory', label: 'in_memory · ~5–10 min · no write fee', minutes: 5, write: 1 }
@@ -35,6 +43,7 @@ const NONE_TO_MAX: readonly Effort[] = ['none', ...LOW_TO_MAX]
 const NONE_TO_XHIGH: readonly Effort[] = ['none', 'low', 'medium', 'high', 'xhigh']
 const LOW_TO_XHIGH: readonly Effort[] = ['low', 'medium', 'high', 'xhigh']
 const LOW_TO_HIGH: readonly Effort[] = ['low', 'medium', 'high']
+const GOOGLE_LONG = { above: 200000, inMult: 2, outMult: 1.5 }
 const OPENAI_LONG = { above: 272000, inMult: 2, outMult: 1.5 }
 // xAI bills the whole request at 2× once its prompt reaches 200K tokens (inclusive, unlike OpenAI's "above 272K").
 const XAI_LONG = { above: 200000, inclusive: true, inMult: 2, outMult: 2 }
@@ -66,12 +75,18 @@ export const MODELS: Readonly<Record<ModelId, ModelSpec>> = {
   'grok-4.6':          { provider: 'xai', name: 'Grok 4.6',  in: 2, out: 6, read: 0.25, maxInput: 500000, efforts: LOW_TO_XHIGH, defaultEffort: 'high', cache: XAI_CACHE, reasoning: DROPPED, longPrompt: XAI_LONG },
   'grok-4.5':          { provider: 'xai', name: 'Grok 4.5',  in: 2, out: 6, read: 0.15, maxInput: 500000, efforts: LOW_TO_HIGH, defaultEffort: 'high', cache: XAI_CACHE, reasoning: DROPPED, longPrompt: XAI_LONG },
   'grok-4.20-0309-non-reasoning': { provider: 'xai', name: 'Grok 4.20 (non-reasoning)', in: 1.25, out: 2.5, read: 0.16, maxInput: 1e6, efforts: ['none'], defaultEffort: null, cache: XAI_CACHE, reasoning: DROPPED, longPrompt: XAI_LONG },
+  'gemini-4-argon':        { provider: 'google', name: 'Gemini 4 Argon',         in: 2,    out: 10,   read: 0.05, maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'] },
+  'gemini-3.8-flash':      { provider: 'google', name: 'Gemini 3.8 Flash',       in: 0.75, out: 3.75, read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'] },
+  'gemini-3.6-flash':      { provider: 'google', name: 'Gemini 3.6 Flash',       in: 0.75, out: 3.75, read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'] },
+  'gemini-3.5-flash-lite': { provider: 'google', name: 'Gemini 3.5 Flash-Lite',  in: 0.3,  out: 2.5,  read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: null, fallbackEffort: 'low', cache: GOOGLE_CACHE, reasoning: ['kept'] },
+  'gemini-3.1-pro-preview': { provider: 'google', name: 'Gemini 3.1 Pro Preview', in: 2,    out: 12,   read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'high', cache: GOOGLE_CACHE, reasoning: ['kept'], longPrompt: GOOGLE_LONG },
 }
 
 export const PROVIDERS: Readonly<Record<Provider, { name: string; defaultModel: ModelId; sources: readonly (keyof typeof DOCS)[] }>> = {
   claude: { name: 'Claude', defaultModel: 'claude-opus-5-5', sources: ['claudePricing', 'claudeModels', 'claudeEffort', 'claudeThinking'] },
   openai: { name: 'OpenAI', defaultModel: 'gpt-5.6-sol', sources: ['openaiPricing', 'openaiCaching', 'openaiReasoning'] },
   xai: { name: 'xAI', defaultModel: 'grok-4.7', sources: ['xaiPricing', 'xaiCaching', 'xaiReasoning'] },
+  google: { name: 'Google', defaultModel: 'gemini-3.8-flash', sources: ['googlePricing', 'googleModels', 'googleCaching', 'googleThinking'] },
 }
 
 /** Models of one provider, in table order. */

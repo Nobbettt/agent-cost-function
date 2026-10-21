@@ -134,16 +134,16 @@ describe('App', () => {
     expect((setupBox('B').getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('1h')
   })
 
-  it('has three providers in each setup: Claude, OpenAI and xAI, with unique radio names per setup', () => {
+  it('has four providers in each setup: Claude, OpenAI, xAI and Google, with unique radio names per setup', () => {
     render(<App />)
     for (const id of ['A', 'B', 'C'] as const) {
       const group = setupBox(id).getByRole('radiogroup', { name: `Provider for Setup ${id}`, hidden: true })
       const radios = within(group).getAllByRole('radio', { hidden: true }) as HTMLInputElement[]
-      expect(radios.map((r) => r.value)).toEqual(['claude', 'openai', 'xai'])
-      expect([...group.querySelectorAll('label')].map((l) => l.textContent)).toEqual(['Claude', 'OpenAI', 'xAI'])
+      expect(radios.map((r) => r.value)).toEqual(['claude', 'openai', 'xai', 'google'])
+      expect([...group.querySelectorAll('label')].map((l) => l.textContent)).toEqual(['Claude', 'OpenAI', 'xAI', 'Google'])
       expect(new Set(radios.map((r) => r.name))).toEqual(new Set([`provider-${id}`]))
     }
-    expect(new Set([...document.querySelectorAll<HTMLInputElement>('input[type=radio][name^="provider-"]')].map((r) => r.id)).size).toBe(9)
+    expect(new Set([...document.querySelectorAll<HTMLInputElement>('input[type=radio][name^="provider-"]')].map((r) => r.id)).size).toBe(12)
   })
 
   it('switching a setup to xAI selects Grok 4.7 with the best-effort cache, high effort and kept reasoning, and the card says so', () => {
@@ -164,6 +164,38 @@ describe('App', () => {
     expect((c.getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
     expect((c.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('5m')
     expect(stat('Setup C').sub).toBe('Claude Opus 5.5 · 5 min cache · no cache breaks')
+  })
+
+  it('switching a setup to Google selects Gemini 3.8 Flash with the implicit cache, medium effort and kept reasoning, and the card says so', () => {
+    render(<App />)
+    const c = setupBox('C')
+    fireEvent.click(c.getByLabelText('Google'))
+    expect((c.getByLabelText('Model') as HTMLSelectElement).value).toBe('gemini-3.8-flash')
+    expect([...(c.getByLabelText('Model') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual([
+      'Gemini 4 Argon', 'Gemini 3.8 Flash', 'Gemini 3.6 Flash', 'Gemini 3.5 Flash-Lite', 'Gemini 3.1 Pro Preview',
+    ])
+    expect((c.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('implicit')
+    expect([...(c.getByLabelText('Prompt cache') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['implicit · no write fee'])
+    expect((c.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('medium')
+    expect([...(c.getByLabelText('Reasoning effort') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['low', 'medium (default)', 'high'])
+    expect([...(c.getByLabelText('Earlier reasoning in context') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['kept (default)'])
+    expect(stat('Setup C').sub).toBe('Gemini 3.8 Flash · implicit cache · no cache breaks')
+    fireEvent.click(c.getByLabelText('Claude'))
+    expect((c.getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
+    expect(stat('Setup C').sub).toBe('Claude Opus 5.5 · 5 min cache · no cache breaks')
+  })
+
+  it('Gemini 3.5 Flash-Lite has no default effort marked and falls back to low; 3.1 Pro defaults to high', () => {
+    render(<App />)
+    const c = setupBox('C')
+    fireEvent.click(c.getByLabelText('Google'))
+    fireEvent.change(c.getByLabelText('Reasoning effort'), { target: { value: 'high' } })
+    fireEvent.change(c.getByLabelText('Model'), { target: { value: 'gemini-3.5-flash-lite' } })
+    expect([...(c.getByLabelText('Reasoning effort') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['low', 'medium', 'high'])
+    expect((c.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('high')
+    fireEvent.change(c.getByLabelText('Model'), { target: { value: 'gemini-3.1-pro-preview' } })
+    expect([...(c.getByLabelText('Reasoning effort') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['low', 'medium', 'high (default)'])
+    expect(stat('Setup C').sub).toBe('Gemini 3.1 Pro Preview · implicit cache · no cache breaks')
   })
 
   it('the xAI models: grok-4.5 has no xhigh, grok-4.20 only none, and earlier reasoning is dropped except on 4.7', () => {

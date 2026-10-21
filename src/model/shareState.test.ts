@@ -341,3 +341,31 @@ describe('xAI models in links', () => {
     expect(d.setups.every((s) => !s.model.startsWith('grok'))).toBe(true)
   })
 })
+
+describe('Google models in links', () => {
+  const GEMINI = ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro-preview']
+  const gem = (model: string, extra: Partial<Setup> = {}): Setup => ({ id: 'A', provider: 'google', model, cache: 'implicit', effort: 'high', reasoning: 'kept', interruptions: 3, ...extra })
+
+  it('round-trips every Gemini id, dots and dashes included, with the provider derived from the model', () => {
+    for (const model of GEMINI) {
+      const s = gem(model)
+      const q = encodeState(state([s, B]))
+      expect(new URLSearchParams(q).get('a')).toBe(`${model},implicit,high,kept,3`)
+      expect(decodeState(`?${q}`).setups[0]).toEqual(s)
+    }
+  })
+
+  it('normalises like a model switch: minimal and max are not Gemini efforts, dropped reasoning becomes kept, the cache is implicit', () => {
+    expect(decodeState('?v=1&a=gemini-3.8-flash,5m,minimal,dropped,2&b=gemini-3.5-flash-lite,auto,max,kept,1').setups).toEqual([
+      gem('gemini-3.8-flash', { effort: 'medium', interruptions: 2 }),
+      gem('gemini-3.5-flash-lite', { id: 'B', effort: 'low', interruptions: 1 }),
+    ])
+  })
+
+  it('a link with all four providers loads each one with its own provider and model', () => {
+    const q = 'v=1&a=claude-opus-5-5,5m,high,kept,6&b=gpt-5.6-sol,30m,medium,kept,1&c=grok-4.7,auto,high,kept,0&d=gemini-3.1-pro-preview,implicit,high,kept,2'
+    const d = decodeState(`?${q}`)
+    expect(d.setups.map((s) => s.provider)).toEqual(['claude', 'openai', 'xai', 'google'])
+    expect(encodeState(state(d.setups))).toBe(q)
+  })
+})

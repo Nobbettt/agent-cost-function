@@ -127,6 +127,16 @@ describe('rates: long prompt multipliers', () => {
     expect(rates(MODELS['claude-haiku-5-5'], 100001).in).toBeCloseTo(0.5 / 1e6, 15)
   })
 
+  it('Gemini 3.1 Pro Preview bills 2x input and 1.5x output above 200K: 200,000 is short, 200,001 is long', () => {
+    const pro = MODELS['gemini-3.1-pro-preview']
+    expect(pro.longPrompt).toEqual({ above: 200000, inMult: 2, outMult: 1.5 })
+    expect(rates(pro, 200000)).toEqual({ in: 2 / 1e6, out: 12 / 1e6 })
+    const long = rates(pro, 200001)
+    expect(long.in).toBeCloseTo(4 / 1e6, 15)
+    expect(long.out).toBeCloseTo(18 / 1e6, 15)
+    for (const id of ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']) expect(MODELS[id].longPrompt).toBeUndefined()
+  })
+
   it('models without a long-prompt rule never change rate', () => {
     expect(rates(MODELS['gpt-5.4-mini'], 1e6)).toEqual({ in: 0.75 / 1e6, out: 4.5 / 1e6 })
   })
@@ -221,5 +231,47 @@ describe('simulate: xAI known answer', () => {
     const high = simulate({ ...grok, interruptions: 0, reasoning: 'dropped' }, { ...shared, thinking: { ...shared.thinking, high: 2000 } })
     // 2000 extra output tokens on each of the 5 requests: 2 short ones at 6 per M, 3 long ones at 12 per M.
     close(high.totals.total - none.totals.total, 2000 * 6e-6 * 2 + 2000 * 12e-6 * 3)
+  })
+})
+
+describe('simulate: Google known answer', () => {
+  // Gemini 3.8 Flash, base 100K, +50K per request, 1K output, no thinking tokens, 300K session, one cache break.
+  const shared: Shared = { ...DEFAULT_SHARED, session: 300000, base: 100000, growth: 50000, visibleOut: 1000, thinking: { none: 0, low: 0, medium: 0, high: 0, xhigh: 0, max: 0 } }
+  const flash: Setup = { id: 'A', provider: 'google', model: 'gemini-3.8-flash', cache: 'implicit', effort: 'medium', reasoning: 'kept', interruptions: 1 }
+  const run = simulate(flash, shared)
+  const close = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThan(1e-9)
+
+  it('prices every request by hand: $0.07875, $0.11625, $0.0525, $0.05625, $0.06', () => {
+    expect(run.points.map((p) => p.x)).toEqual([100000, 150000, 200000, 250000, 300000])
+    expect(run.points.map((p) => p.miss)).toEqual([false, true, false, false, false])
+    ;[0.07875, 0.11625, 0.0525, 0.05625, 0.06].forEach((v, i) => close(run.points[i].req, v))
+  })
+
+  it('totals: reads $0.045, writes $0.225, the break re-writes $0.075 at 1x input, output $0.01875, total $0.36375', () => {
+    close(run.totals.read, 0.045)
+    close(run.totals.write, 0.225)
+    close(run.totals.rewrite, 0.075)
+    close(run.totals.output, 0.01875)
+    close(run.totals.total, 0.36375)
+  })
+
+  it('3.1 Pro crosses its 200K tier: the request after 200K costs more than twice the one before per new token', () => {
+    const pro = simulate({ ...flash, model: 'gemini-3.1-pro-preview', interruptions: 0 }, { ...shared, session: 250000 })
+    // 100K, 150K, 200K are short (200K is not above 200K); 250K is long: read 200K*4*0.1/M = 0.08, write 50K*4/M = 0.2, out 1K*18/M = 0.018
+    close(pro.points[3].req, 200000 * 4e-6 * 0.1 + 50000 * 4e-6 + 1000 * 18e-6)
+    close(pro.points[2].req, 150000 * 2e-6 * 0.1 + 50000 * 2e-6 + 1000 * 12e-6)
+  })
+
+  it('stops at 1,048,576 tokens at most, which the 1M session does not reach', () => {
+    expect(simulate({ ...flash, interruptions: 0 }, DEFAULT_SHARED).end).toBe(1000000)
+    expect(MODELS['gemini-3.8-flash'].maxInput).toBe(1048576)
+  })
+
+  it('thinking is billed at the output rate and stays in context (kept)', () => {
+    const base = simulate({ ...flash, interruptions: 0 }, shared)
+    const think = simulate({ ...flash, interruptions: 0 }, { ...shared, thinking: { ...shared.thinking, medium: 1000 } })
+    // 1000 thinking tokens more output per request at 3.75/M, and the context grows 1000 faster (fewer requests).
+    expect(think.totals.output).toBeGreaterThan(base.totals.output)
+    expect(think.points.at(-1)!.x).toBeLessThanOrEqual(300000)
   })
 })

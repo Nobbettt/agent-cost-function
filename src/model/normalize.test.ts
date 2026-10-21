@@ -30,6 +30,16 @@ describe('normalizeSetup', () => {
     expect(normalizeSetup({ ...A, effort: 'none' }, MODELS['gpt-6-astra']).effort).toBe('medium')
   })
 
+  it("uses the model's fallback effort when it documents no default: Gemini 3.5 Flash-Lite falls back to low", () => {
+    const lite = MODELS['gemini-3.5-flash-lite']
+    expect([lite.defaultEffort, lite.fallbackEffort]).toEqual([null, 'low'])
+    expect(normalizeSetup({ ...A, effort: 'xhigh' }, lite).effort).toBe('low')
+    expect(normalizeSetup({ ...A, effort: 'high' }, lite).effort).toBe('high')
+    expect(switchModel({ ...A, effort: 'max' }, 'gemini-3.5-flash-lite').effort).toBe('low')
+    // Models without a fallback keep the 'medium' fallback.
+    expect(MODELS['gpt-6-astra'].fallbackEffort).toBeUndefined()
+  })
+
   it('falls back to the first effort when neither wanted nor default is allowed', () => {
     const odd = { ...MODELS['gpt-5.5'], efforts: ['low', 'high'] as const, defaultEffort: null }
     expect(normalizeSetup({ ...A, effort: 'none' }, odd).effort).toBe('low')
@@ -80,6 +90,12 @@ describe('switchProvider', () => {
 
   it('xAI: the default model with its automatic cache, high effort and kept reasoning', () => {
     expect(switchProvider(A, 'xai')).toMatchObject({ provider: 'xai', model: 'grok-4.7', cache: 'auto', effort: 'high', reasoning: 'kept' })
+  })
+
+  it('Google: the default model with its implicit cache, medium effort and kept reasoning', () => {
+    expect(switchProvider(A, 'google')).toMatchObject({ provider: 'google', model: 'gemini-3.8-flash', cache: 'implicit', effort: 'medium', reasoning: 'kept' })
+    expect(switchProvider(switchProvider(A, 'google'), 'xai')).toMatchObject({ provider: 'xai', model: 'grok-4.7', cache: 'auto' })
+    expect(switchProvider(switchProvider(A, 'google'), 'claude')).toMatchObject({ provider: 'claude', model: 'claude-opus-5-5', cache: '5m' })
   })
 
   it('every provider default model belongs to that provider', () => {

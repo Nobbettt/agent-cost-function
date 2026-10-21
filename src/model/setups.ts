@@ -4,7 +4,7 @@ import type { CacheId, Setup, SetupId } from './types'
 
 /** Short cache names, shared by the setup summaries and the stat cards. */
 export const CACHE_LABEL: Readonly<Record<CacheId, string>> = {
-  '5m': '5 min', '1h': '1 hour', '30m': '30 min', '24h': '24h', in_memory: 'in_memory', auto: 'best-effort',
+  '5m': '5 min', '1h': '1 hour', '30m': '30 min', '24h': '24h', in_memory: 'in_memory', auto: 'best-effort', implicit: 'implicit',
 }
 
 /** "Claude Opus 5.5 · 5 min cache": the model and its cache. */

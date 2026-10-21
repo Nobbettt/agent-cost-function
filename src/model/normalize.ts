@@ -17,7 +17,7 @@ export function normalizeSetup(setup: Setup, model: ModelSpec): Setup {
   return {
     ...setup,
     cache: pick(model.cache.map((c) => c.id), setup.cache),
-    effort: pick(model.efforts, setup.effort, model.defaultEffort ?? 'medium'),
+    effort: pick(model.efforts, setup.effort, model.defaultEffort ?? model.fallbackEffort ?? 'medium'),
     reasoning: pick(reasoningOptions(model), setup.reasoning, reasoningDefault(model)),
   }
 }
@@ -36,7 +36,7 @@ export function switchProvider(setup: Setup, provider: Provider): Setup {
     provider,
     model,
     cache: pick(spec.cache.map((c) => c.id)),
-    effort: pick(spec.efforts, null, spec.defaultEffort ?? 'medium'),
+    effort: pick(spec.efforts, null, spec.defaultEffort ?? spec.fallbackEffort ?? 'medium'),
     reasoning: pick(reasoningOptions(spec), null, reasoningDefault(spec)),
   }
 }

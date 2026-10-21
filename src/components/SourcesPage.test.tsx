@@ -31,6 +31,27 @@ describe('SourcesPage', () => {
     expect(rows.find((r) => r[0]!.startsWith('GPT-5.6 Sol'))![5]).toBe('>272K: in 2×, out 1.5×')
   })
 
+  it('lists the five Gemini models with model-page links, the 200K rule on 3.1 Pro, and the Google notes', () => {
+    render(<SourcesPage />)
+    const trs = [...document.querySelectorAll('table.sources tbody tr')].filter((r) => r.textContent!.includes('Gemini'))
+    const rows = trs.map((r) => [...r.children].map((c) => c.textContent))
+    expect(rows.map((r) => r[0])).toEqual([
+      'Gemini 4 Argon (gemini-4-argon)', 'Gemini 3.8 Flash (gemini-3.8-flash)', 'Gemini 3.6 Flash (gemini-3.6-flash)',
+      'Gemini 3.5 Flash-Lite (gemini-3.5-flash-lite)', 'Gemini 3.1 Pro Preview (gemini-3.1-pro-preview)',
+    ])
+    expect(rows[0]).toEqual(['Gemini 4 Argon (gemini-4-argon)', '$2', '$0.1 (0.05×)', '$10', 'implicit 1×', '—', '1.05M', 'low medium* high', 'kept*', 'model page'])
+    expect(rows[3][7]).toBe('low medium high')
+    expect(rows[4][5]).toBe('>200K: in 2×, out 1.5×')
+    expect(rows[4][7]).toBe('low medium high*')
+    expect(trs.map((r) => r.querySelector('a')!.getAttribute('href'))).toEqual(
+      ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro-preview'].map((id) => `https://ai.google.dev/gemini-api/docs/models/${id}`),
+    )
+    expect(screen.getByText(/Gemini 4 Argon rises to \$4 input, \$0.20 cached input and \$20 output from 2026-12-01; Gemini 3.8 Flash and 3.6 Flash rise to \$1.50, \$0.15 and \$7.50 from 2027-01-01/)).toBeTruthy()
+    expect(screen.getByText(/Explicit caches \(a TTL and an hourly storage fee\) are not modelled/)).toBeTruthy()
+    expect(screen.getByText("Gemini's `minimal` thinking level isn't offered here, so Gemini 3.5 Flash-Lite, whose default is minimal, has no default marked and falls back to low.")).toBeTruthy()
+    expect(screen.getByText('Not included: Gemini 2.5 models (access limited to earlier users), Gemini 3 Flash Preview and Gemini 3.1 Flash-Lite (not checked).')).toBeTruthy()
+  })
+
   it('lists every doc with what it proves', () => {
     render(<SourcesPage />)
     for (const d of Object.values(DOCS)) {
