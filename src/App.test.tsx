@@ -13,7 +13,7 @@ vi.mock('./components/CostChart', () => ({
 
 const setupBox = (id: 'A' | 'B') => within(screen.getByRole('group', { name: `Setup ${id}` }))
 const headline = () => document.getElementById('headline')!.textContent
-const DEFAULT_HEADLINE = 'At 920K tokens of context: A $30.18 · B $60.64. A is 50% cheaper. One model stops earlier at its max input.'
+const DEFAULT_HEADLINE = 'At 995K tokens of context: A $42.55 · B $28.92. B is 32% cheaper.'
 
 describe('App', () => {
   it('renders the default headline from the prototype', () => {
@@ -47,7 +47,7 @@ describe('App', () => {
     render(<App />)
     for (const metric of ['cum', 'req']) {
       const chart = screen.getByTestId(`chart-${metric}`)
-      expect(chart.getAttribute('data-last')).toBe('995000,920000')
+      expect(chart.getAttribute('data-last')).toBe('995000,995000')
       expect(chart.getAttribute('data-xmax')).toBe('1000000')
     }
   })
@@ -59,8 +59,21 @@ describe('App', () => {
     const names = groups.map((g) => new Set(within(g).getAllByRole('radio').map((r) => (r as HTMLInputElement).name)))
     expect(names.map((n) => [...n])).toEqual([['provider-A'], ['provider-B']])
     expect((setupBox('A').getByLabelText('Claude') as HTMLInputElement).checked).toBe(true)
-    expect((setupBox('B').getByLabelText('OpenAI') as HTMLInputElement).checked).toBe(true)
-    expect((setupBox('B').getByLabelText('Claude') as HTMLInputElement).checked).toBe(false)
+    expect((setupBox('B').getByLabelText('Claude') as HTMLInputElement).checked).toBe(true)
+    expect((setupBox('B').getByLabelText('OpenAI') as HTMLInputElement).checked).toBe(false)
+  })
+
+  it('starts with the cache TTL comparison: Opus 5.5 on a 5 min and a 1 hour cache, 7 pauses of 6 min', () => {
+    render(<App />)
+    for (const [id, cache] of [['A', '5m'], ['B', '1h']] as const) {
+      const box = setupBox(id)
+      expect((box.getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
+      expect((box.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe(cache)
+      expect((box.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('high')
+      expect((box.getByLabelText('Earlier reasoning in context') as HTMLSelectElement).value).toBe('kept')
+      expect((box.getByLabelText('Interruptions') as HTMLInputElement).value).toBe('7')
+      expect((box.getByLabelText('Pause per interruption (min)') as HTMLInputElement).value).toBe('6')
+    }
   })
 
   it('switching provider selects its default model and resets cache, effort and reasoning', () => {
@@ -74,7 +87,8 @@ describe('App', () => {
     expect((a.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('medium')
     expect((a.getByLabelText('Earlier reasoning in context') as HTMLSelectElement).value).toBe('kept')
     // Setup B is untouched.
-    expect((setupBox('B').getByLabelText('Model') as HTMLSelectElement).value).toBe('gpt-5.6-sol')
+    expect((setupBox('B').getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
+    expect((setupBox('B').getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('1h')
   })
 
   it('lists only the provider\'s models, with "(default)" on documented defaults', () => {
@@ -130,8 +144,13 @@ describe('App', () => {
   it('shows the breakdown and steps tables', () => {
     render(<App />)
     expect(screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept')).toBeTruthy()
+    expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
     expect(screen.getByText('B − A')).toBeTruthy()
-    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+    // No run is capped by default, so every step has a cost.
+    expect(screen.queryAllByText('—')).toHaveLength(0)
+    // GPT-5.6 Sol stops at 922K, so the 1M step shows a dash for that setup.
+    fireEvent.click(setupBox('A').getByLabelText('OpenAI'))
+    expect(screen.getAllByText('—')).toHaveLength(1)
   })
 
   it('no longer renders the sources table or the notes, but links to both subpages from the footer', () => {

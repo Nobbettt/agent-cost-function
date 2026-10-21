@@ -1,8 +1,9 @@
 import type { Setup, Shared } from '../model/types'
 
+// The default comparison is the cache TTL trade-off: a 6 minute pause outlives the 5 minute cache but not the 1 hour one.
 export const DEFAULT_SETUPS: Readonly<Record<'A' | 'B', Setup>> = {
-  A: { provider: 'claude', model: 'claude-opus-5-5', cache: '5m', effort: 'high', reasoning: 'kept', interruptions: 3, pause: 20 },
-  B: { provider: 'openai', model: 'gpt-5.6-sol', cache: '30m', effort: 'high', reasoning: 'kept', interruptions: 3, pause: 20 },
+  A: { provider: 'claude', model: 'claude-opus-5-5', cache: '5m', effort: 'high', reasoning: 'kept', interruptions: 7, pause: 6 },
+  B: { provider: 'claude', model: 'claude-opus-5-5', cache: '1h', effort: 'high', reasoning: 'kept', interruptions: 7, pause: 6 },
 }
 
 export const DEFAULT_SHARED: Shared = {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SETUPS, DEFAULT_SHARED } from '../data/defaults'
+import { DEFAULT_SHARED } from '../data/defaults'
+import { PROTOTYPE_SETUPS } from './prototype-fixtures'
 import { fmtTokens, fmtUsd } from '../format'
 import { compare } from './compare'
 import { simulate } from './simulate'
@@ -13,7 +14,7 @@ const run = (cums: number[], end = 100): Run => ({
 
 describe('compare: parity with the prototype defaults', () => {
   it('compares at 920K: A $30.18, B $60.64, A is 50% cheaper', () => {
-    const c = compare(simulate(DEFAULT_SETUPS.A, DEFAULT_SHARED), simulate(DEFAULT_SETUPS.B, DEFAULT_SHARED))
+    const c = compare(simulate(PROTOTYPE_SETUPS.A, DEFAULT_SHARED), simulate(PROTOTYPE_SETUPS.B, DEFAULT_SHARED))
     expect(c.common).toBe(920000)
     expect(fmtTokens(c.common)).toBe('920K')
     expect(c.a.toFixed(2)).toBe('30.18')

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SETUPS, DEFAULT_SHARED } from '../data/defaults'
+import { DEFAULT_SHARED } from '../data/defaults'
+import { PROTOTYPE_SETUPS } from './prototype-fixtures'
 import { MODELS, PROVIDERS, modelsOf, reasoningDefault, reasoningOptions } from '../data/pricing'
 import { clampValue, effectiveShared, normalizeSetup, switchModel, switchProvider } from './normalize'
 import type { Setup } from './types'
 
-const A = DEFAULT_SETUPS.A
+const A = PROTOTYPE_SETUPS.A
 const withModel = (setup: Setup, model: string) => ({ ...setup, model, provider: MODELS[model].provider })
 
 describe('normalizeSetup', () => {
@@ -72,7 +73,7 @@ describe('switchProvider', () => {
     expect(switchProvider(s, 'openai')).toEqual({
       ...s, provider: 'openai', model: 'gpt-5.6-sol', cache: '30m', effort: 'medium', reasoning: 'kept',
     })
-    expect(switchProvider({ ...DEFAULT_SETUPS.B, effort: 'none' }, 'claude')).toMatchObject({
+    expect(switchProvider({ ...PROTOTYPE_SETUPS.B, effort: 'none' }, 'claude')).toMatchObject({
       provider: 'claude', model: 'claude-opus-5-5', cache: '5m', effort: 'medium', reasoning: 'kept',
     })
   })

@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SETUPS, DEFAULT_SHARED } from '../data/defaults'
+import { DEFAULT_SHARED } from '../data/defaults'
+import { PROTOTYPE_SETUPS } from './prototype-fixtures'
 import { MODELS } from '../data/pricing'
 import { rates, simulate } from './simulate'
 import type { Setup, Shared } from './types'
 
 const usd = (v: number) => v.toFixed(2)
-const setupOf = (patch: Partial<Setup>): Setup => ({ ...DEFAULT_SETUPS.A, ...patch })
+const setupOf = (patch: Partial<Setup>): Setup => ({ ...PROTOTYPE_SETUPS.A, ...patch })
 
 describe('simulate: known answer', () => {
   it('Sonnet 5.5, 10K base, 10K growth, 30K session, no output costs 0.078', () => {
@@ -21,7 +22,7 @@ describe('simulate: known answer', () => {
 
 describe('simulate: parity with the prototype defaults', () => {
   it('setup A: Claude Opus 5.5, 5m cache', () => {
-    const { totals } = simulate(DEFAULT_SETUPS.A, DEFAULT_SHARED)
+    const { totals } = simulate(PROTOTYPE_SETUPS.A, DEFAULT_SHARED)
     expect(totals.requests).toBe(131)
     expect(usd(totals.read)).toBe('12.80')
     expect(usd(totals.write)).toBe('4.97')
@@ -31,7 +32,7 @@ describe('simulate: parity with the prototype defaults', () => {
   })
 
   it('setup B: GPT-5.6 Sol, 30m cache, ends at the 922K max input', () => {
-    const run = simulate(DEFAULT_SETUPS.B, DEFAULT_SHARED)
+    const run = simulate(PROTOTYPE_SETUPS.B, DEFAULT_SHARED)
     expect(run.end).toBe(922000)
     expect(run.points.at(-1)?.x).toBe(920000)
     expect(run.totals.requests).toBe(121)
@@ -43,8 +44,8 @@ describe('simulate: parity with the prototype defaults', () => {
   })
 
   it('marks the three expired pauses of A as misses and none for B', () => {
-    const a = simulate(DEFAULT_SETUPS.A, DEFAULT_SHARED)
-    const b = simulate(DEFAULT_SETUPS.B, DEFAULT_SHARED)
+    const a = simulate(PROTOTYPE_SETUPS.A, DEFAULT_SHARED)
+    const b = simulate(PROTOTYPE_SETUPS.B, DEFAULT_SHARED)
     expect(a.points.filter((p) => p.paused)).toHaveLength(3)
     expect(a.points.filter((p) => p.miss)).toHaveLength(3)
     expect(b.points.filter((p) => p.paused)).toHaveLength(3)
@@ -70,7 +71,7 @@ describe('simulate: cache lifetime', () => {
 
   it('falls back to the first cache option when the setup names one the model lacks', () => {
     const run = simulate(setupOf({ cache: '30m' }), DEFAULT_SHARED)
-    expect(run.totals.total).toBe(simulate(DEFAULT_SETUPS.A, DEFAULT_SHARED).totals.total)
+    expect(run.totals.total).toBe(simulate(PROTOTYPE_SETUPS.A, DEFAULT_SHARED).totals.total)
   })
 })
 
@@ -96,7 +97,7 @@ describe('rates: long prompt multipliers', () => {
   })
 
   it('shows up in the per-request cost curve', () => {
-    const run = simulate(DEFAULT_SETUPS.B, DEFAULT_SHARED)
+    const run = simulate(PROTOTYPE_SETUPS.B, DEFAULT_SHARED)
     const before = run.points.filter((p) => p.x <= 272000 && p.x > 200000)
     const after = run.points.filter((p) => p.x > 272000 && p.x < 400000)
     // Same-size request, doubled input rate: the step jumps once the prompt passes 272K.
@@ -116,7 +117,7 @@ describe('simulate: max input cap', () => {
   })
 
   it('a session shorter than the model max wins', () => {
-    expect(simulate(DEFAULT_SETUPS.A, { ...DEFAULT_SHARED, session: 100000 }).end).toBe(100000)
+    expect(simulate(PROTOTYPE_SETUPS.A, { ...DEFAULT_SHARED, session: 100000 }).end).toBe(100000)
   })
 })
 
@@ -131,7 +132,7 @@ describe('simulate: earlier reasoning kept vs dropped', () => {
 
 describe('simulate: purity', () => {
   it('does not mutate its inputs or the model table', () => {
-    const setup = Object.freeze({ ...DEFAULT_SETUPS.A })
+    const setup = Object.freeze({ ...PROTOTYPE_SETUPS.A })
     const shared = Object.freeze({ ...DEFAULT_SHARED, thinking: Object.freeze({ ...DEFAULT_SHARED.thinking }) })
     const model = JSON.stringify(MODELS)
     expect(() => simulate(setup, shared)).not.toThrow()
