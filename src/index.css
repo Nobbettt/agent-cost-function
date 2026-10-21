@@ -101,6 +101,10 @@ footer nav { display: inline; }
   .brand-full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .brand-short { display: inline; }
   .currency-wrap .info-tip { display: none; }
+  .share-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  /* No room beside the buttons: the status drops below the navbar instead. */
+  .share-status { position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; padding: 6px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
+  .share-btn { padding: 0 8px; }
   .currency-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .navbar nav { gap: 12px; }
   .nav-links { gap: 12px; }
@@ -145,6 +149,16 @@ footer nav { display: inline; }
   .summary[data-count] dl { --n: 1; }
   .summary[data-count="5"] .stat:last-child { grid-column: auto; }
 }
+.nav-end { position: relative; }
+.share { display: inline-flex; align-items: center; gap: 8px; }
+.share-btn { flex: none; height: 28px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; font: inherit; font-size: 13px; color: var(--ink); background: transparent; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+.share-btn:hover { background: var(--page); }
+.share-btn:focus-visible, .share-close:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+.share-status { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
+.share-popover { position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; width: min(380px, calc(100vw - 16px)); display: flex; gap: 8px; align-items: center; padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
+.share-popover input { flex: 1; min-width: 0; font-size: 12.5px; }
+.share-close { flex: none; padding: 5px 10px; font: inherit; font-size: 13px; color: var(--ink); background: transparent; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+.page-header .share-notice { flex-basis: 100%; margin: 6px 0 0; font-size: 13px; color: var(--ink-2); }
 .currency-wrap { flex: none; display: inline-flex; align-items: center; gap: 4px; }
 
 /* Field label row: label text and "?" tip on one line, the control below. */

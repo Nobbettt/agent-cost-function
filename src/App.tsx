@@ -10,33 +10,41 @@ import { RateInfo } from './components/RateInfo'
 import { RateStatus } from './components/RateStatus'
 import { ScrollRegion } from './components/ScrollRegion'
 import { SettingsSidebar } from './components/SettingsSidebar'
+import { ShareButton } from './components/ShareButton'
 import { SetupPanel } from './components/SetupPanel'
 import { StepsTable } from './components/StepsTable'
 import { SummaryCards } from './components/SummaryCards'
 import { CurrencyProvider } from './currency/CurrencyProvider'
 import { useCurrency } from './currency/context'
-import { DEFAULT_SETUP_LIST, DEFAULT_SHARED } from './data/defaults'
 import { MAX_SETUPS, SERIES } from './data/series'
 import { useSettingsPanel } from './hooks/useSettingsPanel'
+import { buildShareUrl, useShareUrlSync } from './hooks/useShareUrl'
 import { compare } from './model/compare'
 import { effectiveShared } from './model/normalize'
+import { decodeState, encodeState } from './model/shareState'
 import { addSetup, canAddSetup, canRemoveSetup, focusAfterRemove, removeSetup } from './model/setups'
 import { simulate } from './model/simulate'
 import type { Setup, SetupId, Shared } from './model/types'
 
 function Calculator() {
-  const [setups, setSetups] = useState<readonly Setup[]>(DEFAULT_SETUP_LIST)
+  // The page link may carry a whole comparison; decoded once, strictly (see shareState), and it replaces the defaults.
+  const [fromLink] = useState(() => decodeState(window.location.search))
+  const [setups, setSetups] = useState<readonly Setup[]>(fromLink.setups)
   // Accordion: at most one panel item (Advanced settings or a setup) is expanded; null means all collapsed.
-  const [expandedId, setExpandedId] = useState<'advanced' | SetupId | null>('A')
-  const [shared, setShared] = useState<Shared>(DEFAULT_SHARED)
+  const [expandedId, setExpandedId] = useState<'advanced' | SetupId | null>(fromLink.hadParams ? fromLink.setups[0].id : 'A')
+  const [shared, setShared] = useState<Shared>(fromLink.shared)
   const panel = useSettingsPanel()
-  const { displayCurrency, format, rate } = useCurrency()
+  const { currency, displayCurrency, format, rate } = useCurrency()
   const toggleRef = useRef<HTMLButtonElement>(null)
   const pendingFocus = useRef<SetupId | null>(null)
 
   const effective = useMemo(() => effectiveShared(shared), [shared])
   const runs = useMemo(() => setups.map((s) => simulate(s, effective)), [setups, effective])
   const comparison = useMemo(() => compare(setups.map((s, i) => ({ id: s.id, run: runs[i] }))), [setups, runs])
+  // The address bar always holds the current shareable link.
+  const query = useMemo(() => encodeState({ setups, shared, currency }), [setups, shared, currency])
+  useShareUrlSync(query)
+  const shareUrl = buildShareUrl(query)
   const series = useMemo<ChartSeries[]>(
     () => setups.map((s, i) => ({ id: s.id, ...SERIES[s.id], run: runs[i] })),
     [setups, runs],
@@ -71,7 +79,7 @@ function Calculator() {
     <div className="app">
       <NavBar
         page="calculator" settings={{ open: panel.open, onToggle: panel.toggle }} settingsButtonRef={toggleRef}
-        controls={<CurrencySelect />}
+        controls={<><ShareButton url={shareUrl} /><CurrencySelect /></>}
       />
       <div className="layout" data-open={panel.open}>
         <ScrollRegion className="content">
@@ -80,6 +88,9 @@ function Calculator() {
               <header className="page-header">
                 <h1>Agent cost function</h1>
                 <p className="lede">What one agent session costs on Claude or OpenAI as its context grows, for up to four setups side by side. Change a setting and the charts update.</p>
+                              {fromLink.versionMismatch && (
+                  <p className="share-notice" role="status">This link was made with a newer version of the calculator; showing the defaults.</p>
+                )}
               </header>
 
               <section className="results" aria-label="Results">

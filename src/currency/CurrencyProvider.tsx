@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { isCurrencyCode, type CurrencyCode, type FxRates } from '../data/fx'
 import { formatMoney } from '../format'
+import { decodeState } from '../model/shareState'
 import { CurrencyContext, type CurrencyState, type FxStatus } from './context'
 import { isFresh, loadRates, readCachedRates, readStoredCurrency, writeStoredCurrency } from './fxClient'
 
@@ -21,8 +22,14 @@ function initialFx(currency: CurrencyCode): FxState {
  * loaded once a non-USD currency is selected, whether picked now or restored from storage.
  */
 export function CurrencyProvider({ children }: { children: ReactNode }) {
-  const [currency, setCurrencyState] = useState<CurrencyCode>(readStoredCurrency)
+  // A valid `cur` in the page link wins over the stored choice, and is stored as usual.
+  const [fromLink] = useState(() => decodeState(window.location.search).currency)
+  const [currency, setCurrencyState] = useState<CurrencyCode>(() => fromLink ?? readStoredCurrency())
   const [fx, setFx] = useState<FxState>(() => initialFx(currency))
+
+  useEffect(() => {
+    if (fromLink) writeStoredCurrency(fromLink)
+  }, [fromLink])
 
   useEffect(() => {
     if (currency === 'USD') return

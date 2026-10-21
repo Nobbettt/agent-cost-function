@@ -1,6 +1,7 @@
 import { Fragment, useId } from 'react'
 import { DEFAULT_SETUPS } from '../data/defaults'
 import { FIELD_HELP } from '../data/fieldHelp'
+import { INTERRUPTION_LIMITS } from '../data/limits'
 import { MODELS, PROVIDERS, modelsOf, reasoningDefault, reasoningOptions } from '../data/pricing'
 import { switchModel, switchProvider } from '../model/normalize'
 import { summarizeSetup } from '../model/setups'
@@ -97,7 +98,7 @@ export function SetupPanel({ setup, expanded, onToggle, onChange, onRemove }: Pr
             </select>
           </Field>
           <NumberField
-            label="Cache breaking interruptions" help={FIELD_HELP.interruptions} name="interruptions" min={0} max={50} step={1}
+            label="Cache breaking interruptions" help={FIELD_HELP.interruptions} name="interruptions" {...INTERRUPTION_LIMITS} step={1}
             fallback={d.interruptions} value={setup.interruptions}
             onChange={(v) => set({ interruptions: Math.round(v) })}
           />

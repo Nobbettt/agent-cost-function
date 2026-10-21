@@ -33,6 +33,10 @@ Prices, cache rules and model limits live in `src/data/pricing.ts` (verified 202
 - https://developers.openai.com/api/docs/guides/prompt-caching
 - https://developers.openai.com/api/docs/guides/reasoning
 
+## Sharing
+
+The Share button copies a link that holds the whole comparison in readable query params (`?v=1&a=model,cache,effort,reasoning,interruptions&b=…&adv=…&cur=…`); the address bar always shows the current link. Links are parsed strictly (`src/model/shareState.ts`): unknown or invalid values fall back to the defaults. The site is static, so link previews (Open Graph, Twitter card) are the same for every link and cannot show the specific setups.
+
 ## Display currency
 
 All maths is in USD, which is the default and makes no network request. Picking another currency fetches the daily ECB reference rates once (cached for 24h in `localStorage`) from [Frankfurter](https://frankfurter.dev); the URL is `FX_URL` in `src/data/fx.ts`.
