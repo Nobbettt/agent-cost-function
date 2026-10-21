@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { STORAGE_KEYS } from './hooks/useSettingsPanel'
+import { DOCKED_STORAGE_KEY } from './hooks/useSettingsPanel'
 import { mockMatchMedia } from './test-matchmedia'
 
 vi.mock('./components/CostChart', () => ({ CostChart: () => null }))
@@ -61,12 +61,17 @@ describe('settings panel: drawer mode (below 1024px)', () => {
     expect(toggle().getAttribute('aria-expanded')).toBe('true')
   })
 
-  it('does not grab focus on mount when the drawer was left open', () => {
-    localStorage.setItem(STORAGE_KEYS.drawer, 'true')
+  it('always starts closed, even with a stale open value in storage, and nothing is stored', () => {
+    localStorage.setItem('acf.settings.drawer', 'true')
     mockMatchMedia(false)
     render(<App />)
-    expect(toggle().getAttribute('aria-expanded')).toBe('true')
+    expect(toggle().getAttribute('aria-expanded')).toBe('false')
+    expect(isInert()).toBe(true)
     expect(document.activeElement).toBe(document.body)
+    fireEvent.click(toggle())
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(localStorage.getItem('acf.settings.drawer')).toBe('true')
+    expect(localStorage.getItem(DOCKED_STORAGE_KEY)).toBeNull()
   })
 
   it('keeps the settings usable inside the drawer', () => {
@@ -111,7 +116,7 @@ describe('settings panel: docked mode (1024px and up)', () => {
   })
 
   it('respects a remembered closed state', () => {
-    localStorage.setItem(STORAGE_KEYS.docked, 'false')
+    localStorage.setItem(DOCKED_STORAGE_KEY, 'false')
     mockMatchMedia(true)
     render(<App />)
     expect(toggle().getAttribute('aria-expanded')).toBe('false')

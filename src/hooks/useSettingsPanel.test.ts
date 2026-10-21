@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { mockMatchMedia } from '../test-matchmedia'
-import { STORAGE_KEYS, useSettingsPanel } from './useSettingsPanel'
+import { DOCKED_STORAGE_KEY, useSettingsPanel } from './useSettingsPanel'
 
 describe('useSettingsPanel', () => {
   it('is open and docked on large screens, closed and a drawer on small ones', () => {
@@ -15,44 +15,54 @@ describe('useSettingsPanel', () => {
     expect(renderHook(() => useSettingsPanel()).result.current).toMatchObject({ mode: 'docked', open: true })
   })
 
-  it('toggle and close change the state and remember it per mode', () => {
+  it('drawer toggle and close change the state without touching storage', () => {
     mockMatchMedia(false)
     const { result } = renderHook(() => useSettingsPanel())
     act(() => result.current.toggle())
     expect(result.current.open).toBe(true)
-    expect(localStorage.getItem(STORAGE_KEYS.drawer)).toBe('true')
-    expect(localStorage.getItem(STORAGE_KEYS.docked)).toBeNull()
     act(() => result.current.close())
     expect(result.current.open).toBe(false)
-    expect(localStorage.getItem(STORAGE_KEYS.drawer)).toBe('false')
+    expect(localStorage.length).toBe(0)
   })
 
-  it('respects stored values', () => {
-    localStorage.setItem(STORAGE_KEYS.docked, 'false')
-    localStorage.setItem(STORAGE_KEYS.drawer, 'true')
+  it('docked toggle remembers the choice in storage', () => {
+    mockMatchMedia(true)
+    const { result } = renderHook(() => useSettingsPanel())
+    act(() => result.current.toggle())
+    expect(result.current.open).toBe(false)
+    expect(localStorage.getItem(DOCKED_STORAGE_KEY)).toBe('false')
+    act(() => result.current.toggle())
+    expect(localStorage.getItem(DOCKED_STORAGE_KEY)).toBe('true')
+  })
+
+  it('respects the stored docked value and ignores a stale drawer value', () => {
+    localStorage.setItem(DOCKED_STORAGE_KEY, 'false')
+    localStorage.setItem('acf.settings.drawer', 'true')
     mockMatchMedia(true)
     expect(renderHook(() => useSettingsPanel()).result.current.open).toBe(false)
     mockMatchMedia(false)
-    expect(renderHook(() => useSettingsPanel()).result.current.open).toBe(true)
+    expect(renderHook(() => useSettingsPanel()).result.current.open).toBe(false)
   })
 
   it('ignores garbage in storage', () => {
-    localStorage.setItem(STORAGE_KEYS.docked, 'maybe')
+    localStorage.setItem(DOCKED_STORAGE_KEY, 'maybe')
     mockMatchMedia(true)
     expect(renderHook(() => useSettingsPanel()).result.current.open).toBe(true)
   })
 
-  it('switches to the other mode\'s own value when the breakpoint flips', () => {
-    localStorage.setItem(STORAGE_KEYS.drawer, 'true')
+  it('docked keeps its remembered value across flips; the drawer is closed on every flip into drawer mode', () => {
     const media = mockMatchMedia(true)
     const { result } = renderHook(() => useSettingsPanel())
-    expect(result.current).toMatchObject({ mode: 'docked', open: true })
     act(() => result.current.close())
-    expect(result.current.open).toBe(false)
+    expect(result.current).toMatchObject({ mode: 'docked', open: false })
     act(() => media.set(false))
-    expect(result.current).toMatchObject({ mode: 'drawer', open: true })
+    expect(result.current).toMatchObject({ mode: 'drawer', open: false })
+    act(() => result.current.toggle())
+    expect(result.current.open).toBe(true)
     act(() => media.set(true))
     expect(result.current).toMatchObject({ mode: 'docked', open: false })
+    act(() => media.set(false))
+    expect(result.current).toMatchObject({ mode: 'drawer', open: false })
   })
 
   it('works when storage throws', () => {
