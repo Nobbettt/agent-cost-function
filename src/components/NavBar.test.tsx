@@ -5,15 +5,20 @@ import { NavBar } from './NavBar'
 const bar = () => within(screen.getByRole('navigation', { name: 'Main' }))
 
 describe('NavBar', () => {
-  it('on the calculator: Explore is the current page (plain text), the brand is a plain link, Settings is present', () => {
+  it('on the calculator: Explore is a link to / that is the current page, the brand is a plain link, Settings is present', () => {
     render(<NavBar page="calculator" settings={{ open: true, onToggle: () => {} }} />)
-    const explore = bar().getByText('Explore')
+    const explore = bar().getByRole('link', { name: 'Explore' })
+    expect(explore.tagName).toBe('A')
+    expect(explore.getAttribute('href')).toBe('/')
     expect(explore.getAttribute('aria-current')).toBe('page')
-    expect(explore.tagName).not.toBe('A')
+    expect(explore.getAttribute('target')).toBeNull()
     const brand = bar().getByRole('link', { name: 'Agent Cost Function' })
     expect(brand.getAttribute('href')).toBe('/')
     expect(brand.getAttribute('aria-current')).toBeNull()
-    expect(bar().getAllByRole('link').map((l) => [l.textContent, l.getAttribute('href')])).toEqual([['Agent Cost FunctionACF', '/']])
+    expect(bar().getAllByRole('link').map((l) => [l.textContent, l.getAttribute('href')])).toEqual([
+      ['Agent Cost FunctionACF', '/'],
+      ['Explore', '/'],
+    ])
     expect(bar().getByRole('button', { name: 'Settings' })).toBeTruthy()
   })
 
@@ -28,10 +33,11 @@ describe('NavBar', () => {
     expect(bar().queryByRole('button')).toBeNull()
   })
 
-  it('has exactly one current marker, and no How it is calculated or Sources links', () => {
+  it('has exactly one current marker (Explore, on the calculator only), and no How it is calculated or Sources links', () => {
     for (const page of ['calculator', 'how-it-works', 'sources'] as const) {
       const { unmount } = render(<NavBar page={page} />)
       expect(document.querySelectorAll('.navbar [aria-current]')).toHaveLength(page === 'calculator' ? 1 : 0)
+      if (page === 'calculator') expect(document.querySelector('.navbar [aria-current]')!.textContent).toBe('Explore')
       expect(bar().queryByText(/how it is calculated|how it works|sources/i)).toBeNull()
       expect([...document.querySelectorAll('.navbar a')].map((a) => a.getAttribute('href')).every((h) => h === '/')).toBe(true)
       unmount()

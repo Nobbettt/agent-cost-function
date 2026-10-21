@@ -91,7 +91,8 @@ footer nav { display: inline; }
 .nav-end { flex: none; display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .nav-links a { color: var(--ink-2); text-decoration: none; }
 .nav-links a:hover { color: var(--ink); text-decoration: underline; }
-.nav-links [aria-current="page"] { color: var(--ink); }
+.nav-links a[aria-current="page"] { color: var(--ink); }
+.nav-links a:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; border-radius: 2px; }
 .settings-toggle { flex: none; height: 28px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; font: inherit; font-size: 13px; color: var(--ink); background: transparent; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
 .settings-toggle:hover, .settings-toggle[aria-expanded="true"] { background: var(--page); }
 .settings-toggle:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }

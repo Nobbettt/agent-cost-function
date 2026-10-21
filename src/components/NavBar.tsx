@@ -37,8 +37,8 @@ export function NavBar({ page, settings, settingsButtonRef, controls }: Props) {
           <span className="brand-short" aria-hidden="true">ACF</span>
         </a>
         <div className="nav-links">
-          {/* The one page link: the calculator itself. The footer links the other pages. */}
-          {page === 'calculator' ? <span aria-current="page">Explore</span> : <a href="/">Explore</a>}
+          {/* The one page link: the calculator itself, always a real link; current (aria-current) on the calculator. */}
+          <a href="/" aria-current={page === 'calculator' ? 'page' : undefined}>Explore</a>
         </div>
         {(controls || settings) && (
           <div className="nav-end">
