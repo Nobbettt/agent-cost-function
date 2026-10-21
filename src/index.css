@@ -53,38 +53,81 @@ th, td { padding: 6px 8px; border-bottom: 1px solid var(--grid); text-align: rig
 th:first-child, td:first-child { text-align: left; }
 .sources td, .sources th { text-align: left; }
 th { color: var(--ink-2); font-weight: 600; font-size: 13px; }
-.notes { color: var(--ink-2); margin: 0; padding-left: 18px; }
+.notes { color: var(--ink-2); margin: 0; padding-left: 18px; overflow-wrap: anywhere; }
 footer { max-width: 1100px; margin: 0 auto; padding: 0 16px 32px; color: var(--muted); font-size: 13px; }
 footer > div { padding-top: 12px; border-top: 1px solid var(--grid); }
 footer nav { display: inline; }
 
-/* Large screens: the calculator page is a full-window workspace (results left, settings right).
+/* Top bar, sticky on every page. */
+.navbar { position: sticky; top: 0; z-index: 30; height: 40px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.navbar nav { height: 100%; display: flex; align-items: center; gap: 12px; padding: 0 16px; }
+.brand { flex: none; font-size: 14px; font-weight: 600; color: var(--ink); text-decoration: none; white-space: nowrap; }
+.brand-short { display: none; }
+.nav-links { display: flex; gap: 14px; margin-left: auto; min-width: 0; overflow-x: auto; scrollbar-width: none; font-size: 13px; white-space: nowrap; }
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a { color: var(--ink-2); text-decoration: none; }
+.nav-links a:hover { color: var(--ink); text-decoration: underline; }
+.nav-links [aria-current="page"] { color: var(--ink); }
+.settings-toggle { flex: none; height: 28px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; font: inherit; font-size: 13px; color: var(--ink); background: transparent; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+.settings-toggle:hover, .settings-toggle[aria-expanded="true"] { background: var(--page); }
+.settings-toggle:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+@media (max-width: 639px) {
+  /* Short brand; the full name stays in the accessibility tree, visually hidden. */
+  .brand-full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .brand-short { display: inline; }
+  .navbar nav { gap: 8px; }
+  .nav-links { gap: 10px; }
+}
+@media (min-width: 1024px) { .navbar nav { padding: 0 24px; } }
+
+/* Settings panel. Below 1024px: an off-canvas drawer sliding in from the right. */
+.controls {
+  position: fixed; top: 40px; right: 0; bottom: 0; z-index: 20; width: min(380px, 92vw);
+  overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 12px;
+  background: var(--surface); border-left: 1px solid var(--border); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+  transform: translateX(100%); visibility: hidden;
+  transition: transform 200ms ease, visibility 0s linear 200ms;
+}
+.layout[data-open="true"] .controls { transform: none; visibility: visible; transition: transform 200ms ease, visibility 0s; }
+@media (prefers-reduced-motion: reduce) {
+  .controls, .layout[data-open="true"] .controls { transition: none; }
+}
+.backdrop { position: fixed; top: 40px; right: 0; bottom: 0; left: 0; z-index: 15; background: rgba(0, 0, 0, 0.4); }
+.controls > * { flex: none; margin: 0; }
+.controls .setups { grid-template-columns: 1fr; }
+.controls .fields, .controls .setup .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 359px) {
+  .controls .fields, .controls .setup .fields { grid-template-columns: 1fr; }
+}
+
+/* Large screens: results fill the first screen on the left, the settings are a docked sidebar pinned
+   under the top bar on the right. The sidebar can be toggled away; the left column then takes the full width.
    Scoped to main.calc / footer.wide so the sub pages keep their 1100px column. */
 @media (min-width: 1024px) {
-  main.calc { max-width: none; padding: 0 24px 48px; }
-  footer.wide { max-width: none; padding: 0 24px 32px; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 26vw, 440px); align-items: start; }
+  .layout[data-open="false"] { grid-template-columns: minmax(0, 1fr); }
+  .layout[data-open="false"] .controls { display: none; }
+  .backdrop { display: none; }
+  .content { min-width: 0; }
 
-  /* One screen tall: the header takes its natural height, the workspace the rest. */
-  .screen { display: flex; flex-direction: column; height: 100vh; height: 100dvh; padding-bottom: 16px; }
+  .layout .controls, .layout[data-open="true"] .controls {
+    position: sticky; top: 40px; z-index: auto; width: auto; height: calc(100vh - 40px); height: calc(100dvh - 40px);
+    transform: none; visibility: visible; transition: none; padding: 16px 24px 16px 0;
+    background: transparent; border: 0; box-shadow: none;
+  }
+
+  main.calc { max-width: none; margin: 0; padding: 0 24px 48px; }
+  footer.wide { max-width: none; margin: 0; padding: 0 24px 32px; }
+
+  /* One screen tall below the top bar: the header takes its natural height, the results the rest. */
+  .screen { display: flex; flex-direction: column; height: calc(100vh - 40px); height: calc(100dvh - 40px); padding-bottom: 16px; }
   .screen + .card { margin-top: 0; }
 
   .page-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 16px; padding: 16px 0 12px; }
   .page-header h1, .page-header .lede { margin: 0; }
 
-  .workspace {
-    flex: 1; min-height: 0; display: grid; gap: 16px;
-    grid-template-columns: minmax(0, 1fr) clamp(340px, 26vw, 440px);
-    grid-template-rows: minmax(0, 1fr);
-    grid-template-areas: "results controls";
-  }
-
-  .controls { grid-area: controls; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
-  .controls > * { flex: none; margin: 0; }
-  .controls .setups { grid-template-columns: 1fr; }
-  .controls .fields, .controls .setup .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
   /* overflow-y: if the window is too short for two 260px charts, the results scroll instead of overlapping the tables. */
-  .results { grid-area: results; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .results { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
   .results .headline { margin: 0; flex: none; }
   .results .card { margin: 0; flex: 1 1 0; min-height: 260px; display: flex; flex-direction: column; }
   .results .card h2 { flex: none; }

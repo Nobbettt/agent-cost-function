@@ -21,13 +21,13 @@ describe('App', () => {
     expect(headline()).toBe(DEFAULT_HEADLINE)
   })
 
-  it('has a Settings aside and a Results section, with the inputs first in DOM order', () => {
+  it('has a Settings aside and a Results section, with the results first in DOM order', () => {
     render(<App />)
     const settings = screen.getByRole('complementary', { name: 'Settings' })
     const results = screen.getByRole('region', { name: 'Results' })
     expect(settings.tagName).toBe('ASIDE')
     expect(results.tagName).toBe('SECTION')
-    expect(settings.compareDocumentPosition(results) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(results.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(within(settings).getByRole('group', { name: 'Setup A' })).toBeTruthy()
     expect(within(settings).getByRole('group', { name: 'Setup B' })).toBeTruthy()
     expect(within(settings).getByText('Shared assumptions')).toBeTruthy()
@@ -36,11 +36,11 @@ describe('App', () => {
     expect(results.querySelector('#headline')).toBeTruthy()
   })
 
-  it('keeps the breakdown and steps tables outside the workspace', () => {
+  it('keeps the breakdown and steps tables outside the results', () => {
     render(<App />)
-    const workspace = document.querySelector('.workspace')!
-    expect(workspace.contains(screen.getByText('B − A'))).toBe(false)
-    expect(workspace.contains(screen.getByText('Cumulative cost at regular steps (table view)'))).toBe(false)
+    const results = screen.getByRole('region', { name: 'Results' })
+    expect(results.contains(screen.getByText('B − A'))).toBe(false)
+    expect(results.contains(screen.getByText('Cumulative cost at regular steps (table view)'))).toBe(false)
   })
 
   it('feeds both charts with the two runs', () => {

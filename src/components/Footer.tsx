@@ -1,20 +1,13 @@
 import { Fragment } from 'react'
 import { PRICES_CHECKED } from '../data/pricing'
-
-type Page = 'calculator' | 'how-it-works' | 'sources'
-
-const LINKS: { page: Page; href: string; label: string }[] = [
-  { page: 'calculator', href: '/', label: 'Calculator' },
-  { page: 'how-it-works', href: '/how-it-works/', label: 'How it is calculated' },
-  { page: 'sources', href: '/sources/', label: 'Sources' },
-]
+import { SITE_LINKS, type Page } from './siteLinks'
 
 /**
  * Site nav shared by all pages. Same-site links: absolute paths (vite `base` is '/'), same tab.
  * The current page is plain text; the calculator has no entry of its own on its page.
  */
 export function Footer({ page }: { page: Page }) {
-  const entries = LINKS.filter((l) => l.page !== 'calculator' || page !== 'calculator')
+  const entries = SITE_LINKS.filter((l) => l.page !== 'calculator' || page !== 'calculator')
   return (
     <footer className={page === 'calculator' ? 'wide' : undefined}>
       <div>
