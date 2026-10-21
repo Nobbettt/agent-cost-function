@@ -77,29 +77,17 @@ Interaction.modes.nearestPerDataset = nearestPerDataset
 
 const raw = (c: { raw: unknown }) => c.raw as ChartPoint | undefined
 
-/** A 16×4 legend key drawn with the series dash. Chart.js ignores borderDash for line-style legend keys, so it is drawn here. */
-function dashedKey(color: string, dash: readonly number[]): HTMLCanvasElement {
-  const key = document.createElement('canvas')
-  key.width = 16
-  key.height = 4
-  const ctx = key.getContext('2d')
-  if (ctx) {
-    ctx.strokeStyle = color
-    ctx.lineWidth = 2
-    ctx.setLineDash([...dash])
-    ctx.beginPath()
-    ctx.moveTo(0, 2)
-    ctx.lineTo(16, 2)
-    ctx.stroke()
-  }
-  return key
-}
-
-/** The default legend items, with a dashed key for each dashed series (the colour alone is not enough for C and D). */
-function legendLabels(chart: Chart) {
+/**
+ * The default legend items, with each key styled from its dataset line. With `usePointStyle`, Chart.js takes a key's stroke
+ * from the dataset's *point* options (here the surface-coloured ring, which is invisible) and never passes the dash on, so
+ * the line key would be blank. The key is drawn by Chart.js itself ('line' point style, `pointStyleWidth` wide), so it stays
+ * crisp at any devicePixelRatio and follows the theme: the colour is read from the dataset on every update.
+ */
+export function legendLabels(chart: Chart) {
   return Chart.defaults.plugins.legend.labels.generateLabels(chart).map((item) => {
-    const dash = (item.datasetIndex === undefined ? undefined : (chart.data.datasets[item.datasetIndex] as { borderDash?: number[] } | undefined)?.borderDash)
-    return dash?.length ? { ...item, pointStyle: dashedKey(String(item.strokeStyle), dash) } : item
+    const ds = item.datasetIndex === undefined ? undefined : (chart.data.datasets[item.datasetIndex] as { borderColor?: unknown; borderDash?: number[]; borderWidth?: number } | undefined)
+    if (!ds) return item
+    return { ...item, strokeStyle: ds.borderColor as string, lineDash: ds.borderDash ?? [], lineWidth: ds.borderWidth ?? 2 }
   })
 }
 
@@ -139,7 +127,7 @@ export function lineConfig(showEndLabels: boolean, getFormat: () => (usd: number
       },
       plugins: {
         endLabels: { enabled: showEndLabels },
-        legend: { align: 'start', labels: { usePointStyle: true, pointStyle: 'line', boxWidth: 16, generateLabels: legendLabels } },
+        legend: { align: 'start', labels: { usePointStyle: true, pointStyle: 'line', pointStyleWidth: 16, boxWidth: 16, generateLabels: legendLabels } },
         tooltip: {
           callbacks: {
             title: (items) => `${fmtTokens(items[0].parsed.x as number)} tokens in context`,
