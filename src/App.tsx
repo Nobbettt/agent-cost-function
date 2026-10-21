@@ -3,6 +3,7 @@ import { AdvancedSettings } from './components/AdvancedSettings'
 import { BreakdownTable } from './components/BreakdownTable'
 import type { ChartSeries } from './components/chartConfig'
 import { CostChart } from './components/CostChart'
+import { CurrencyField } from './components/CurrencyField'
 import { CurrencySelect } from './components/CurrencySelect'
 import { Footer } from './components/Footer'
 import { NavBar } from './components/NavBar'
@@ -17,6 +18,7 @@ import { SummaryCards } from './components/SummaryCards'
 import { CurrencyProvider } from './currency/CurrencyProvider'
 import { useCurrency } from './currency/context'
 import { MAX_SETUPS, SERIES } from './data/series'
+import { useMediaQuery } from './hooks/useMediaQuery'
 import { useSettingsPanel } from './hooks/useSettingsPanel'
 import { buildShareUrl, useShareUrlSync } from './hooks/useShareUrl'
 import { compare } from './model/compare'
@@ -35,6 +37,8 @@ function Calculator() {
   const [shared, setShared] = useState<Shared>(fromLink.shared)
   const panel = useSettingsPanel()
   const { currency, displayCurrency, format, rate } = useCurrency()
+  // From 640px the currency select lives in the navbar; below that it is the first field of the settings panel.
+  const wide = useMediaQuery('(min-width: 640px)', true)
   const toggleRef = useRef<HTMLButtonElement>(null)
   const pendingFocus = useRef<SetupId | null>(null)
 
@@ -79,7 +83,7 @@ function Calculator() {
     <div className="app">
       <NavBar
         page="calculator" settings={{ open: panel.open, onToggle: panel.toggle }} settingsButtonRef={toggleRef}
-        controls={<><ShareButton url={shareUrl} /><CurrencySelect /></>}
+        controls={<><ShareButton url={shareUrl} />{wide && <CurrencySelect />}</>}
       />
       <div className="layout" data-open={panel.open}>
         <ScrollRegion className="content">
@@ -127,6 +131,7 @@ function Calculator() {
         </ScrollRegion>
 
         <SettingsSidebar open={panel.open} mode={panel.mode} onClose={panel.close} returnFocusRef={toggleRef}>
+          {!wide && <CurrencyField />}
           <AdvancedSettings shared={shared} onChange={setShared} expanded={expandedId === 'advanced'} onToggle={() => toggleItem('advanced')} />
           <div className="setups">
             {setups.map((s) => (

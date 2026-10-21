@@ -27,8 +27,8 @@ export function SettingsSidebar({ open, mode, onClose, returnFocusRef, children 
     const before = previous.current
     previous.current = { open, mode }
     if (mode !== 'drawer' || before.mode !== mode || before.open === open) return
-    // Skip the "?" tip buttons: focusing one would pop its tooltip open.
-    if (open) Array.from(panel.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).find((el) => !el.classList.contains('info-btn'))?.focus()
+    // Skip the "?" tip buttons (focusing one would pop its tooltip open) and the currency field: the first accordion header is the target.
+    if (open) Array.from(panel.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).find((el) => !el.classList.contains('info-btn') && !el.closest('.currency-field'))?.focus()
     else returnFocusRef.current?.focus()
   }, [open, mode, returnFocusRef])
 

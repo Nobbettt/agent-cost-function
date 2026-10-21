@@ -100,12 +100,10 @@ footer nav { display: inline; }
   /* Short brand; the full name stays in the accessibility tree, visually hidden. */
   .brand-full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .brand-short { display: inline; }
-  .currency-wrap .info-tip { display: none; }
   .share-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   /* No room beside the buttons: the status drops below the navbar instead. */
   .share-status { position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; padding: 6px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
   .share-btn { padding: 0 8px; }
-  .currency-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .navbar nav { gap: 12px; }
   .nav-links { gap: 12px; }
 }
@@ -159,6 +157,7 @@ footer nav { display: inline; }
 .share-popover input { flex: 1; min-width: 0; font-size: 12.5px; }
 .share-close { flex: none; padding: 5px 10px; font: inherit; font-size: 13px; color: var(--ink); background: transparent; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
 .page-header .share-notice { flex-basis: 100%; margin: 6px 0 0; font-size: 13px; color: var(--ink-2); }
+.currency-field { padding: 0 4px; }
 .currency-wrap { flex: none; display: inline-flex; align-items: center; gap: 4px; }
 
 /* Field label row: label text and "?" tip on one line, the control below. */
