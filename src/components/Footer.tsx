@@ -16,7 +16,7 @@ const LINKS: { page: Page; href: string; label: string }[] = [
 export function Footer({ page }: { page: Page }) {
   const entries = LINKS.filter((l) => l.page !== 'calculator' || page !== 'calculator')
   return (
-    <footer>
+    <footer className={page === 'calculator' ? 'wide' : undefined}>
       <div>
         Prices and settings checked {PRICES_CHECKED} ·{' '}
         <nav aria-label="Site">

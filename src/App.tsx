@@ -26,27 +26,38 @@ export default function App() {
 
   return (
     <>
-      <main>
-        <h1>Agent cost function</h1>
-        <p className="lede">What one agent session costs on Claude or OpenAI as its context grows, for two setups side by side. Change a setting and the charts update.</p>
+      <main className="calc">
+        <div className="screen">
+          <header className="page-header">
+            <h1>Agent cost function</h1>
+            <p className="lede">What one agent session costs on Claude or OpenAI as its context grows, for two setups side by side. Change a setting and the charts update.</p>
+          </header>
 
-        <div className="setups">
-          <SetupPanel id="A" setup={setupA} onChange={setSetupA} />
-          <SetupPanel id="B" setup={setupB} onChange={setSetupB} />
+          {/* DOM order is inputs first, results second; the grid puts the results on the left from 1024px. */}
+          <div className="workspace">
+            <aside className="controls" aria-label="Settings">
+              <div className="setups">
+                <SetupPanel id="A" setup={setupA} onChange={setSetupA} />
+                <SetupPanel id="B" setup={setupB} onChange={setSetupB} />
+              </div>
+              <SharedAssumptions shared={shared} onChange={setShared} />
+            </aside>
+
+            <section className="results" aria-label="Results">
+              <Headline comparison={comparison} />
+
+              <section className="card">
+                <h2>Cumulative cost (USD) vs context size</h2>
+                <CostChart runs={runs} metric="cum" xMax={effective.session} endLabels label="Cumulative cost per setup as context grows" />
+              </section>
+
+              <section className="card">
+                <h2>Cost per request (USD) vs context size</h2>
+                <CostChart runs={runs} metric="req" xMax={effective.session} label="Cost of each request per setup as context grows" />
+              </section>
+            </section>
+          </div>
         </div>
-
-        <SharedAssumptions shared={shared} onChange={setShared} />
-        <Headline comparison={comparison} />
-
-        <section className="card">
-          <h2>Cumulative cost (USD) vs context size</h2>
-          <CostChart runs={runs} metric="cum" xMax={effective.session} endLabels label="Cumulative cost per setup as context grows" />
-        </section>
-
-        <section className="card">
-          <h2>Cost per request (USD) vs context size</h2>
-          <CostChart runs={runs} metric="req" xMax={effective.session} label="Cost of each request per setup as context grows" />
-        </section>
 
         <section className="card">
           <h2>Breakdown at end of session</h2>

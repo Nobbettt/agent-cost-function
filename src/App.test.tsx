@@ -21,6 +21,28 @@ describe('App', () => {
     expect(headline()).toBe(DEFAULT_HEADLINE)
   })
 
+  it('has a Settings aside and a Results section, with the inputs first in DOM order', () => {
+    render(<App />)
+    const settings = screen.getByRole('complementary', { name: 'Settings' })
+    const results = screen.getByRole('region', { name: 'Results' })
+    expect(settings.tagName).toBe('ASIDE')
+    expect(results.tagName).toBe('SECTION')
+    expect(settings.compareDocumentPosition(results) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(settings).getByRole('group', { name: 'Setup A' })).toBeTruthy()
+    expect(within(settings).getByRole('group', { name: 'Setup B' })).toBeTruthy()
+    expect(within(settings).getByText('Shared assumptions')).toBeTruthy()
+    expect(within(results).getByTestId('chart-cum')).toBeTruthy()
+    expect(within(results).getByTestId('chart-req')).toBeTruthy()
+    expect(results.querySelector('#headline')).toBeTruthy()
+  })
+
+  it('keeps the breakdown and steps tables outside the workspace', () => {
+    render(<App />)
+    const workspace = document.querySelector('.workspace')!
+    expect(workspace.contains(screen.getByText('B − A'))).toBe(false)
+    expect(workspace.contains(screen.getByText('Cumulative cost at regular steps (table view)'))).toBe(false)
+  })
+
   it('feeds both charts with the two runs', () => {
     render(<App />)
     for (const metric of ['cum', 'req']) {
