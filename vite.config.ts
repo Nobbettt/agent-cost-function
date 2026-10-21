@@ -19,6 +19,11 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['src/test-setup.ts'],
+    // Full-App integration tests render the whole page in jsdom and use Testing Library's whole-DOM queries; on a
+    // 2-vCPU CI runner with coverage on they are legitimately several times slower than on a laptop.
+    testTimeout: 20_000,
+    // CI runners have 2 vCPUs: more workers than that only time-slice the same two cores, which stretches every test.
+    ...(process.env.CI ? { maxWorkers: 2 } : {}),
     coverage: {
       provider: 'v8',
       include: ['src/model/**', 'src/format.ts', 'src/data/**', 'src/hooks/**', 'src/currency/**'],

@@ -6,8 +6,17 @@ import { stat } from './test-summary'
 
 vi.mock('./components/CostChart', async () => ({ CostChart: (await import('./test-chart-mock')).CostChartMock }))
 
-const renameBtn = (name: string) => screen.getByRole('button', { name: `Rename ${name}` })
-const nameInput = (id: string) => screen.getByLabelText(`Name for setup ${id}`) as HTMLInputElement
+// Testing Library's role and label queries scan the whole App DOM (70 to 90 ms each here, several times slower on a
+// 2-vCPU CI runner), so the plumbing below finds controls by their aria-label directly. Which controls are exposed to
+// assistive technology is still asserted with real role queries in the tests that are about that.
+const byLabel = (label: string) => document.querySelector<HTMLElement>(`[aria-label="${label}"]`)
+const need = (label: string) => {
+  const el = byLabel(label)
+  if (!el) throw new Error(`No element labelled "${label}"`)
+  return el
+}
+const renameBtn = (name: string) => need(`Rename ${name}`) as HTMLButtonElement
+const nameInput = (id: string) => need(`Name for setup ${id}`) as HTMLInputElement
 const toggle = (id: string) => document.getElementById(`setup-${id}-toggle`) as HTMLButtonElement
 const head = (id: string) => document.querySelector(`.setup[data-id="${id}"] .setup-head`)!
 const type = (id: string, value: string) => fireEvent.change(nameInput(id), { target: { value } })
@@ -68,7 +77,7 @@ describe('renaming a setup: editing', () => {
   it('Enter commits, shows the name in the header, and puts focus on the edit button', () => {
     render(<App />)
     rename('Setup B', 'B', '  Fast   cache ')
-    expect(screen.queryByLabelText('Name for setup B')).toBeNull()
+    expect(byLabel('Name for setup B')).toBeNull()
     expect(document.getElementById('setup-B-title')!.textContent).toBe('Fast cache')
     expect(document.activeElement).toBe(renameBtn('Fast cache'))
   })
@@ -123,21 +132,21 @@ describe('renaming a setup: editing', () => {
   it('Esc in the drawer cancels the edit and leaves the drawer open; a second Esc closes it', () => {
     mockMatchMedia(false)
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Show settings' }))
+    fireEvent.click(need('Show settings'))
     fireEvent.click(renameBtn('Setup B'))
     type('B', 'Nope')
     fireEvent.keyDown(nameInput('B'), { key: 'Escape' })
-    expect(screen.queryByLabelText('Name for setup B')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Hide settings' })).toBeTruthy()
+    expect(byLabel('Name for setup B')).toBeNull()
+    expect(byLabel('Hide settings')).toBeTruthy()
     expect(document.getElementById('setup-B-title')!.textContent).toBe('Setup B')
     fireEvent.keyDown(document, { key: 'Escape' })
-    expect(screen.getByRole('button', { name: 'Show settings' })).toBeTruthy()
+    expect(byLabel('Show settings')).toBeTruthy()
   })
 
   it('renaming works in the drawer and the new name sticks after it closes', () => {
     mockMatchMedia(false)
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Show settings' }))
+    fireEvent.click(need('Show settings'))
     rename('Setup B', 'B', 'Drawer name')
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(stat('Drawer name').sub).toContain('1 hour cache')
