@@ -12,8 +12,8 @@ const ids = (list: readonly Setup[]) => list.map((s) => s.id)
 
 describe('summarizeSetup', () => {
   it('summarises a Claude setup', () => {
-    expect(summarizeSetup(A)).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 7 cache breaks')
-    expect(summarizeSetup(B)).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · 7 cache breaks')
+    expect(summarizeSetup(A)).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 6 cache breaks')
+    expect(summarizeSetup(B)).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · 1 cache break')
   })
 
   it('summarises an OpenAI setup', () => {

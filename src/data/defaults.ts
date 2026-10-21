@@ -1,10 +1,10 @@
 import type { Setup, Shared } from '../model/types'
 
-// The default comparison: the same session on a 5 minute and a 1 hour cache with 7 cache breaking interruptions each,
+// The default comparison: the same session on a 5 minute and a 1 hour cache with 6 and 1 cache breaking interruptions,
 // and the 5 minute cache again with no interruptions at all (the best case, for reference).
 export const DEFAULT_SETUPS: Readonly<Record<'A' | 'B' | 'C', Setup>> = {
-  A: { id: 'A', provider: 'claude', model: 'claude-opus-5-5', cache: '5m', effort: 'high', reasoning: 'kept', interruptions: 7 },
-  B: { id: 'B', provider: 'claude', model: 'claude-opus-5-5', cache: '1h', effort: 'high', reasoning: 'kept', interruptions: 7 },
+  A: { id: 'A', provider: 'claude', model: 'claude-opus-5-5', cache: '5m', effort: 'high', reasoning: 'kept', interruptions: 6 },
+  B: { id: 'B', provider: 'claude', model: 'claude-opus-5-5', cache: '1h', effort: 'high', reasoning: 'kept', interruptions: 1 },
   C: { id: 'C', provider: 'claude', model: 'claude-opus-5-5', cache: '5m', effort: 'high', reasoning: 'kept', interruptions: 0 },
 }
 

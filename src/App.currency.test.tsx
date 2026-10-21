@@ -28,7 +28,7 @@ describe('currency: USD default', () => {
     await Promise.resolve()
     expect(fetchSpy).not.toHaveBeenCalled()
     expect(select().value).toBe('USD')
-    expect(summary()).toBe('$42.55 | $55.93')
+    expect(summary()).toBe('$40.22 | $32.76')
     expect(document.querySelector('.rate-status, .rate-info')).toBeNull()
     expect(screen.getByRole('heading', { name: 'Cumulative cost vs context size' })).toBeTruthy()
     expect(screen.getByTestId('chart-cum').getAttribute('data-currency')).toBe('USD')
@@ -61,10 +61,10 @@ describe('currency: selecting another currency', () => {
     expect(screen.getByText('Loading exchange rate…')).toBeTruthy()
     await screen.findByText(/Shown in SEK at 1 USD = 10 SEK/)
     expect(fetchSpy).toHaveBeenCalledTimes(1)
-    expect(summary()).toBe('SEK 426 | SEK 559')
+    expect(summary()).toBe('SEK 402 | SEK 328')
     expect(stat('Setup C').value.replace(/\s/g, ' ')).toBe('SEK 259')
     expect(stat('Cheapest').value).toBe('Setup C')
-    expect(stat('Cheapest').sub.replace(/\s/g, ' ')).toBe('saves SEK 300 (54%) vs Setup B')
+    expect(stat('Cheapest').sub.replace(/\s/g, ' ')).toBe('saves SEK 143 (36%) vs Setup A')
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
     const line = document.querySelector('.rate-info')!
     expect(line.textContent!.replace(/\s/g, ' ')).toBe('Shown in SEK at 1 USD = 10 SEK · ECB reference rate 2026-10-21 via Frankfurter')
@@ -78,10 +78,10 @@ describe('currency: selecting another currency', () => {
       expect(screen.getByTestId(`chart-${metric}`).getAttribute('data-rate')).toBe('10')
       expect(screen.getByTestId(`chart-${metric}`).getAttribute('data-sample')!.replace(/\s/g, ' ')).toBe('SEK 12345')
     }
-    // Breakdown totals: A $42.55 -> SEK 426, B $55.93 -> SEK 559, vs cheapest in SEK.
+    // Breakdown totals: A $40.22 -> SEK 402, B $32.76 -> SEK 328, vs cheapest in SEK.
     const cells = screen.getByText('Setup A: Claude Opus 5.5, 5m, high, reasoning kept').closest('tr')!.textContent!.replace(/\s/g, ' ')
-    expect(cells).toContain('SEK 426')
-    expect(screen.getByText('Setup B: Claude Opus 5.5, 1h, high, reasoning kept').closest('tr')!.lastElementChild!.textContent!.replace(/\s/g, ' ')).toBe('+SEK 300')
+    expect(cells).toContain('SEK 402')
+    expect(screen.getByText('Setup B: Claude Opus 5.5, 1h, high, reasoning kept').closest('tr')!.lastElementChild!.textContent!.replace(/\s/g, ' ')).toBe('+SEK 68.26')
     expect(localStorage.getItem(CURRENCY_STORAGE_KEY)).toBe('SEK')
   })
 
@@ -92,9 +92,9 @@ describe('currency: selecting another currency', () => {
     await screen.findByText(/Shown in SEK/)
     pick('EUR')
     await screen.findByText(/Shown in EUR at 1 USD = 0.9 EUR/)
-    expect(summary()).toBe('€38.30 | €50.33')
+    expect(summary()).toBe('€36.20 | €29.48')
     pick('USD')
-    expect(summary()).toBe('$42.55 | $55.93')
+    expect(summary()).toBe('$40.22 | $32.76')
     expect(document.querySelector('.rate-status, .rate-info')).toBeNull()
     expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
@@ -171,7 +171,7 @@ describe('currency: persistence', () => {
     render(<App />)
     expect(select().value).toBe('EUR')
     await screen.findByText(/Shown in EUR at 1 USD = 0.5 EUR · ECB reference rate 2026-10-01/)
-    expect(summary()).toBe('€21.28 | €27.96')
+    expect(summary()).toBe('€20.11 | €16.38')
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
@@ -212,7 +212,7 @@ describe('currency: failures', () => {
     pick('SEK')
     await screen.findByText("Couldn't load exchange rates, showing USD.")
     expect(select().value).toBe('SEK')
-    expect(summary()).toBe('$42.55 | $55.93')
+    expect(summary()).toBe('$40.22 | $32.76')
     expect(screen.getByRole('heading', { name: 'Cumulative cost vs context size' })).toBeTruthy()
     expect(screen.getByTestId('chart-cum').getAttribute('data-currency')).toBe('USD')
     expect(screen.getByTestId('chart-cum').getAttribute('data-rate')).toBe('1')
@@ -236,7 +236,7 @@ describe('currency: failures', () => {
     render(<App />)
     await screen.findByText(/couldn't refresh, showing the last known rate/)
     expect(document.querySelector('.rate-info')!.textContent).toContain('1 USD = 5 SEK · ECB reference rate 2026-10-01')
-    expect(stat('Setup A').value).toBe('SEK 213')
+    expect(stat('Setup A').value).toBe('SEK 201')
   })
 
   it('a stored code missing from the fetched rates falls back to USD with the notice', async () => {
@@ -244,7 +244,7 @@ describe('currency: failures', () => {
     stubFetch()
     render(<App />)
     await screen.findByText("Couldn't load exchange rates, showing USD.")
-    expect(stat('Setup A').value).toBe('$42.55')
+    expect(stat('Setup A').value).toBe('$40.22')
   })
 
   it('works when storage throws', async () => {
@@ -258,6 +258,6 @@ describe('currency: failures', () => {
     render(<App />)
     expect(select().value).toBe('USD')
     pick('EUR')
-    await waitFor(() => expect(stat('Setup A').value).toBe('€38.30'))
+    await waitFor(() => expect(stat('Setup A').value).toBe('€36.20'))
   })
 })

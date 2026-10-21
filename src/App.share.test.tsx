@@ -115,7 +115,7 @@ describe('the address bar follows the state', () => {
     expect(spy).not.toHaveBeenCalled()
     act(() => { vi.advanceTimersByTime(1) })
     expect(spy).toHaveBeenCalledTimes(1)
-    expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,2&c=claude-opus-5-5,5m,high,kept,0')
+    expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,2&c=claude-opus-5-5,5m,high,kept,0')
     expect(window.history.length).toBe(length)
   })
 
@@ -139,7 +139,7 @@ describe('the address bar follows the state', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Remove Setup C' }))
     act(() => { vi.advanceTimersByTime(300) })
-    expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,7')
+    expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,1')
   })
 
   it('the share button copies the same link as the address bar', async () => {

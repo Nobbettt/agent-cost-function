@@ -83,8 +83,8 @@ describe('adding setups', () => {
     add()
     fireEvent.change(box('C').getByLabelText('Cache breaking interruptions'), { target: { value: '3' } })
     expect((box('C').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('3')
-    expect((box('B').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('7')
-    expect((box('A').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('7')
+    expect((box('B').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('1')
+    expect((box('A').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('6')
   })
 })
 
@@ -195,10 +195,10 @@ describe('the settings panel is an accordion', () => {
   it('the summary line shows only on collapsed setups', () => {
     renderTwo()
     expect(toggle('A').querySelector('.setup-summary')).toBeNull()
-    expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · 7 cache breaks')
+    expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · 1 cache break')
     fireEvent.click(toggle('B'))
     expect(toggle('B').querySelector('.setup-summary')).toBeNull()
-    expect(toggle('A').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 7 cache breaks')
+    expect(toggle('A').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 6 cache breaks')
     // Advanced settings has just its title.
     expect(advToggle().querySelector('.setup-summary')).toBeNull()
   })
@@ -267,9 +267,9 @@ describe('everything follows the number of setups', () => {
     renderTwo()
     add()
     expect(document.querySelector('.summary')!.getAttribute('data-count')).toBe('5')
-    expect(stat('Setup C')).toEqual({ value: '$55.93', sub: 'Claude Opus 5.5 · 1 hour cache' })
-    // C is a copy of B, so B and C tie for most expensive; the first of them is named.
-    expect(stat('Cheapest')).toEqual({ value: 'Setup A', sub: 'saves $13.37 (24%) vs Setup B' })
+    expect(stat('Setup C')).toEqual({ value: '$32.76', sub: 'Claude Opus 5.5 · 1 hour cache' })
+    // C is a copy of B, so B and C tie for cheapest; the first of them is named.
+    expect(stat('Cheapest')).toEqual({ value: 'Setup B', sub: 'saves $7.47 (19%) vs Setup A' })
     expect(stat('Compared at').value).toBe('995K tokens')
   })
 
@@ -278,7 +278,7 @@ describe('everything follows the number of setups', () => {
     add()
     fireEvent.change(box('C').getByLabelText('Model'), { target: { value: 'claude-haiku-5-5' } })
     expect(stat('Cheapest').value).toBe('Setup C')
-    expect(stat('Cheapest').sub).toMatch(/^saves \$\d+\.\d\d \(\d+%\) vs Setup B$/)
+    expect(stat('Cheapest').sub).toMatch(/^saves \$\d+\.\d\d \(\d+%\) vs Setup A$/)
   })
 
   it('the breakdown has a row per setup and a "vs cheapest" column; the steps table a column per setup', () => {
@@ -286,7 +286,7 @@ describe('everything follows the number of setups', () => {
     add()
     const rows = [...document.querySelectorAll('table')[0].querySelectorAll('tbody tr')]
     expect(rows).toHaveLength(3)
-    expect(rows.map((r) => r.lastElementChild!.textContent)).toEqual(['cheapest', '+$13.37', '+$13.37'])
+    expect(rows.map((r) => r.lastElementChild!.textContent)).toEqual(['+$7.47', 'cheapest', 'cheapest'])
     const heads = [...document.querySelectorAll('table')[1].querySelectorAll('thead th')].map((h) => h.textContent)
     expect(heads).toEqual(['Context', 'Setup A', 'Setup B', 'Setup C'])
     expect(document.querySelectorAll('table')[1].querySelectorAll('tbody tr:first-child td')).toHaveLength(4)
@@ -304,7 +304,7 @@ describe('everything follows the number of setups', () => {
     renderTwo()
     add()
     fireEvent.click(removeBtn('B')!)
-    expect(stat('Cheapest')).toEqual({ value: 'Setup A', sub: 'saves $13.37 (24%) vs Setup C' })
+    expect(stat('Cheapest')).toEqual({ value: 'Setup C', sub: 'saves $7.47 (19%) vs Setup A' })
     const rows = [...document.querySelectorAll('table')[0].querySelectorAll('tbody tr')]
     expect(rows.map((r) => r.firstElementChild!.textContent!.slice(0, 8))).toEqual(['Setup A:', 'Setup C:'])
   })

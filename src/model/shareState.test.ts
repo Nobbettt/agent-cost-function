@@ -18,12 +18,19 @@ describe('encodeState', () => {
   })
 
   it('writes v=1, one readable param per setup id, and nothing else by default', () => {
-    expect(encodeState(state([A, { ...B, interruptions: 2 }]))).toBe('v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,2')
+    expect(encodeState(state([A, { ...B, interruptions: 2 }]))).toBe('v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,2')
+  })
+
+  it('an old link that spells out the previous defaults (7 and 7) is no longer the default state and keeps exactly 7', () => {
+    const old = 'v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,7&c=claude-opus-5-5,5m,high,kept,0'
+    const d = decodeState(`?${old}`)
+    expect(d.setups.map((x) => x.interruptions)).toEqual([7, 7, 0])
+    expect(encodeState(state(d.setups))).toBe(old)
   })
 
   it('the two-setup state is no longer the default, so it is written out and decodes to exactly A and B', () => {
     const q = encodeState(state([A, B]))
-    expect(q).toBe('v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,7')
+    expect(q).toBe('v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,1')
     expect(roundTrip(state([A, B])).setups).toEqual([A, B])
   })
 
@@ -34,13 +41,13 @@ describe('encodeState', () => {
   })
 
   it('keys setups by their id, so a link with A and C shows A and C', () => {
-    expect(encodeState(state([A, C]))).toBe('v=1&a=claude-opus-5-5,5m,high,kept,7&c=gpt-5.6-sol,30m,medium,dropped,3')
+    expect(encodeState(state([A, C]))).toBe('v=1&a=claude-opus-5-5,5m,high,kept,6&c=gpt-5.6-sol,30m,medium,dropped,3')
   })
 
   it('adds adv only when the shared numbers differ, in the documented order', () => {
     const shared: Shared = { ...DEFAULT_SHARED, growth: 7000, thinking: { ...DEFAULT_SHARED.thinking, max: 12000 } }
     expect(encodeState(state(DEFAULT_SETUP_LIST, { shared }))).toBe(
-      'v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,7&c=claude-opus-5-5,5m,high,kept,0&adv=1000000,20000,7000,500,0,300,1000,2500,5000,12000',
+      'v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,1&c=claude-opus-5-5,5m,high,kept,0&adv=1000000,20000,7000,500,0,300,1000,2500,5000,12000',
     )
   })
 
@@ -132,15 +139,15 @@ describe('decodeState: setups', () => {
     expect(decodeState('a=gpt-5.6-sol,30m,medium,dropped,1&b=claude-opus-5-5,1h,high,kept,3').setups[0].provider).toBe('openai')
   })
 
-  it('clamps interruptions to the input range and falls back for non-numbers', () => {
+  it('clamps interruptions to the input range and falls back (to the default 6) for non-numbers', () => {
     const get = (v: string) => decodeState(`a=claude-opus-5-5,5m,high,kept,${v}&b=claude-opus-5-5,1h,high,kept,3`).setups[0].interruptions
     expect(get('999')).toBe(50)
     expect(get('0')).toBe(0)
-    expect(get('-4')).toBe(7)
-    expect(get('abc')).toBe(7)
-    expect(get('2.5')).toBe(7)
-    expect(get('')).toBe(7)
-    expect(decodeState('a=claude-opus-5-5,5m,high,kept&b=claude-opus-5-5,1h,high,kept,3').setups[0].interruptions).toBe(7)
+    expect(get('-4')).toBe(6)
+    expect(get('abc')).toBe(6)
+    expect(get('2.5')).toBe(6)
+    expect(get('')).toBe(6)
+    expect(decodeState('a=claude-opus-5-5,5m,high,kept&b=claude-opus-5-5,1h,high,kept,3').setups[0].interruptions).toBe(6)
   })
 
   it('accepts only the ids A to D, each at most once, so never more than four', () => {

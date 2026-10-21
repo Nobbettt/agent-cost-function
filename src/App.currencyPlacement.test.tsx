@@ -59,7 +59,7 @@ describe('the currency select moves with the width', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show settings' }))
     fireEvent.change(within(panel()).getByLabelText('Currency'), { target: { value: 'SEK' } })
     await screen.findByText(/Shown in SEK/)
-    expect(stat('Setup A').value.replace(/\s/g, ' ')).toBe('SEK 426')
+    expect(stat('Setup A').value.replace(/\s/g, ' ')).toBe('SEK 402')
     expect((within(panel()).getByLabelText('Currency') as HTMLSelectElement).value).toBe('SEK')
     expect(localStorage.getItem('acf.currency')).toBe('SEK')
   })

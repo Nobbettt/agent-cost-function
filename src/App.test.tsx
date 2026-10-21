@@ -9,15 +9,15 @@ import type { SetupId } from './model/types'
 vi.mock('./components/CostChart', async () => ({ CostChart: (await import('./test-chart-mock')).CostChartMock }))
 
 const setupBox = (id: SetupId) => within(screen.getByRole('group', { name: `Setup ${id}` }))
-const DEFAULT_SUMMARY = 'Setup A$42.55Claude Opus 5.5 · 5 min cacheSetup B$55.93Claude Opus 5.5 · 1 hour cacheSetup C$25.93Claude Opus 5.5 · 5 min cacheCheapestSetup Csaves $29.99 (54%) vs Setup BCompared at995K tokenscontext size'
+const DEFAULT_SUMMARY = 'Setup A$40.22Claude Opus 5.5 · 5 min cacheSetup B$32.76Claude Opus 5.5 · 1 hour cacheSetup C$25.93Claude Opus 5.5 · 5 min cacheCheapestSetup Csaves $14.29 (36%) vs Setup ACompared at995K tokenscontext size'
 
 describe('App', () => {
   it('renders the default summary cards', () => {
     render(<App />)
-    expect(stat('Setup A')).toEqual({ value: '$42.55', sub: 'Claude Opus 5.5 · 5 min cache' })
-    expect(stat('Setup B')).toEqual({ value: '$55.93', sub: 'Claude Opus 5.5 · 1 hour cache' })
+    expect(stat('Setup A')).toEqual({ value: '$40.22', sub: 'Claude Opus 5.5 · 5 min cache' })
+    expect(stat('Setup B')).toEqual({ value: '$32.76', sub: 'Claude Opus 5.5 · 1 hour cache' })
     expect(stat('Setup C')).toEqual({ value: '$25.93', sub: 'Claude Opus 5.5 · 5 min cache' })
-    expect(stat('Cheapest')).toEqual({ value: 'Setup C', sub: 'saves $29.99 (54%) vs Setup B' })
+    expect(stat('Cheapest')).toEqual({ value: 'Setup C', sub: 'saves $14.29 (36%) vs Setup A' })
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
     expect(summaryText().replace(/ /g, '')).toBe(DEFAULT_SUMMARY.replace(/ /g, ''))
   })
@@ -103,9 +103,9 @@ describe('App', () => {
     expect((setupBox('B').getByLabelText('OpenAI') as HTMLInputElement).checked).toBe(false)
   })
 
-  it('starts with Opus 5.5 on a 5 min, a 1 hour and a 5 min cache with 7, 7 and 0 cache breaking interruptions', () => {
+  it('starts with Opus 5.5 on a 5 min, a 1 hour and a 5 min cache with 6, 1 and 0 cache breaking interruptions', () => {
     render(<App />)
-    for (const [id, cache, breaks] of [['A', '5m', '7'], ['B', '1h', '7'], ['C', '5m', '0']] as const) {
+    for (const [id, cache, breaks] of [['A', '5m', '6'], ['B', '1h', '1'], ['C', '5m', '0']] as const) {
       const box = setupBox(id)
       expect((box.getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
       expect((box.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe(cache)
@@ -188,8 +188,8 @@ describe('App', () => {
     expect(screen.getByText('Setup B: Claude Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
     expect(screen.getByText('vs cheapest')).toBeTruthy()
     const vs = (label: string) => screen.getByText(label).closest('tr')!.lastElementChild!.textContent
-    expect(vs('Setup A: Claude Opus 5.5, 5m, high, reasoning kept')).toBe('+$16.62')
-    expect(vs('Setup B: Claude Opus 5.5, 1h, high, reasoning kept')).toBe('+$29.99')
+    expect(vs('Setup A: Claude Opus 5.5, 5m, high, reasoning kept')).toBe('+$14.29')
+    expect(vs('Setup B: Claude Opus 5.5, 1h, high, reasoning kept')).toBe('+$6.83')
     expect(vs('Setup C: Claude Opus 5.5, 5m, high, reasoning kept')).toBe('cheapest')
     // No run is capped by default, so every step has a cost.
     expect(screen.queryAllByText('—')).toHaveLength(0)

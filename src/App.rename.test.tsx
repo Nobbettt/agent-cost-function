@@ -155,7 +155,7 @@ describe('renaming a setup: editing', () => {
     const before = stat('Setup B').value
     rename('Setup B', 'B', 'Fast cache')
     expect(stat('Fast cache').value).toBe(before)
-    expect(stat('Setup A').value).toBe('$42.55')
+    expect(stat('Setup A').value).toBe('$40.22')
   })
 })
 
@@ -166,7 +166,7 @@ describe('renaming a setup: the name is used everywhere', () => {
     expect(stat('Fast cache').sub).toBe('Claude Opus 5.5 · 1 hour cache')
     expect(screen.queryByText('Setup B', { selector: '.summary dt' })).toBeNull()
     expect(stat('Cheapest')).toMatchObject({ value: 'Setup C' })
-    expect(stat('Cheapest').sub).toBe('saves $29.99 (54%) vs Fast cache')
+    expect(stat('Cheapest').sub).toBe('saves $14.29 (36%) vs Setup A')
     expect(screen.getByText('Fast cache: Claude Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
     const steps = [...document.querySelectorAll('details table th')].map((th) => th.textContent)
     expect(steps).toEqual(['Context', 'Setup A', 'Fast cache', 'Setup C'])

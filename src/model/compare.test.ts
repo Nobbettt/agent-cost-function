@@ -32,13 +32,13 @@ describe('compare: parity with the prototype defaults (two runs)', () => {
     expect(c.capped).toBe(true)
   })
 
-  it('the new defaults: A (5m cache) is 24% cheaper than B (1h cache), neither capped', () => {
+  it('the new defaults: B (1h cache, 1 break) is 19% cheaper than A (5m cache, 6 breaks), neither capped', () => {
     const c = compare([
       { id: 'A', run: simulate(DEFAULT_SETUPS.A, DEFAULT_SHARED) },
       { id: 'B', run: simulate(DEFAULT_SETUPS.B, DEFAULT_SHARED) },
     ])
-    expect(c).toMatchObject({ common: 995000, cheapest: 'A', mostExpensive: 'B', percent: 24, capped: false })
-    expect(c.saving.toFixed(2)).toBe('13.37')
+    expect(c).toMatchObject({ common: 995000, cheapest: 'B', mostExpensive: 'A', percent: 19, capped: false })
+    expect(c.saving.toFixed(2)).toBe('7.47')
   })
 })
 

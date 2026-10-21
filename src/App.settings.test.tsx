@@ -143,7 +143,7 @@ describe('settings panel: drawer mode (below 1024px)', () => {
     render(<App />)
     fireEvent.click(show())
     fireEvent.click(within(panel()).getAllByLabelText('OpenAI')[0])
-    expect(stat('Setup A').value).not.toBe('$42.55')
+    expect(stat('Setup A').value).not.toBe('$40.22')
   })
 })
 
