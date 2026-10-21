@@ -3,9 +3,9 @@
   --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
   --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.10);
   --series-a: #2a78d6; --series-b: #008300; --series-c: #e87ba4; --series-d: #eda100;
-  /* The break-even page's diverging pair (blue = 5 min cache cheaper, red = 1 hour cache cheaper, grey between), and a red ramp for the savings lines. */
-  --pole-blue: #2a78d6; --pole-red: #e34948; --pole-neutral: #f0efec;
-  --red-1: #ff9890; --red-2: #ec7b74; --red-3: #cd605a; --red-4: #ae4441; --red-5: #902828;
+  /* The break-even page's diverging pair (the 5 min cache pole, the 1 hour cache pole, a grey between), and a ramp of the 1 hour pole for the savings lines. */
+  --pole-5m: #2a78d6; --pole-1h: #008300; --pole-neutral: #f0efec;
+  --ramp-1h-1: #59bb53; --ramp-1h-2: #3ea239; --ramp-1h-3: #20891c; --ramp-1h-4: #007000; --ramp-1h-5: #005900;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -13,8 +13,8 @@
     --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7;
     --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
     --series-a: #3987e5; --series-b: #008300; --series-c: #d55181; --series-d: #c98500;
-    --pole-blue: #3987e5; --pole-red: #e66767; --pole-neutral: #383835;
-    --red-1: #9c433f; --red-2: #b75b55; --red-3: #d5766f; --red-4: #f4928a; --red-5: #ffaea6;
+    --pole-5m: #3987e5; --pole-1h: #008300; --pole-neutral: #383835;
+    --ramp-1h-1: #007900; --ramp-1h-2: #2c9228; --ramp-1h-3: #4cae46; --ramp-1h-4: #69cb63; --ramp-1h-5: #87e97f;
   }
 }
 :root[data-theme="dark"] {
@@ -22,8 +22,8 @@
   --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7;
   --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
   --series-a: #3987e5; --series-b: #008300; --series-c: #d55181; --series-d: #c98500;
-  --pole-blue: #3987e5; --pole-red: #e66767; --pole-neutral: #383835;
-  --red-1: #9c433f; --red-2: #b75b55; --red-3: #d5766f; --red-4: #f4928a; --red-5: #ffaea6;
+  --pole-5m: #3987e5; --pole-1h: #008300; --pole-neutral: #383835;
+  --ramp-1h-1: #007900; --ramp-1h-2: #2c9228; --ramp-1h-3: #4cae46; --ramp-1h-4: #69cb63; --ramp-1h-5: #87e97f;
 }
 * { box-sizing: border-box; }
 /* App shell: the window never scrolls. The navbar is the first row; the page's own scroll container is the second,
@@ -277,7 +277,7 @@ footer nav { display: inline; }
 /* Long card labels wrap instead of being cut off (the calculator's labels are setup names, which are cut). */
 .summary.wrap-labels .stat-label { white-space: normal; overflow-wrap: anywhere; }
 
-/* Decision map: a diverging grid (blue: 5 min cache cheaper, red: 1 hour cache cheaper, grey: about equal). */
+/* Decision map: a diverging grid (5 min cache cheaper, 1 hour cache cheaper, grey: about equal). */
 .map-key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 8px; padding: 0; list-style: none; font-size: 12.5px; color: var(--ink-2); }
 .map-key li { display: inline-flex; align-items: center; gap: 6px; }
 .map-key .swatch { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); }

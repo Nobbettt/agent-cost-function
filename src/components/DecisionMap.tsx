@@ -35,7 +35,7 @@ function useWidth<T extends HTMLElement>(ref: React.RefObject<T | null>): number
 
 /**
  * Which cache is cheaper for every mix of pauses: x = pauses of 5 to 60 minutes, y = pauses over an hour (0 at the bottom).
- * A diverging scale (blue: the 5 minute cache is cheaper, red: the 1 hour cache is, grey: about equal), the break-even
+ * A diverging scale (the 5 minute cache pole where it is cheaper, the 1 hour cache pole where that is, grey: about equal), the break-even
  * boundary as a dashed line, and the viewer's own cell outlined. One focusable grid with arrow-key navigation (roving
  * tabindex); every cell has its tooltip on hover and on focus, and an aria-label with the same words.
  */
@@ -91,9 +91,9 @@ export function DecisionMap({ grid, maxShort, maxLong, yourShort, yourLong, form
   return (
     <div className="decision-map">
       <ul className="map-key" aria-label="Key">
-        <li><span className="swatch" style={{ background: 'var(--pole-blue)' }} />5 min cache cheaper</li>
+        <li><span className="swatch" style={{ background: 'var(--pole-5m)' }} />5 min cache cheaper</li>
         <li><span className="swatch" style={{ background: 'var(--pole-neutral)' }} />about equal</li>
-        <li><span className="swatch" style={{ background: 'var(--pole-red)' }} />1 hour cache cheaper</li>
+        <li><span className="swatch" style={{ background: 'var(--pole-1h)' }} />1 hour cache cheaper</li>
         <li><svg width="22" height="8" aria-hidden="true"><line x1="1" y1="4" x2="21" y2="4" stroke="var(--ink)" strokeWidth="2" strokeDasharray="4 3" /></svg>break-even</li>
       </ul>
       <div className="map-scroll" ref={wrap}>

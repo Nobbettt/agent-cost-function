@@ -315,11 +315,11 @@ describe('Claude Cache Break-even page: the decision map and the savings chart',
     expect(screen.getByRole('list', { name: 'Key' }).textContent).toContain('1 hour cache cheaper')
   })
 
-  it('the map has blue at few short pauses turning red to the right, and a boundary through about 1.3 at row 0 and 3.1 at row 3', () => {
+  it('the map has the 5 min side at few short pauses turning to the 1 hour side to the right, and a boundary through about 1.3 at row 0 and 3.1 at row 3', () => {
     render(<CacheBreakEvenPage />)
     const side = (s: number, l: number) => document.querySelector(`.map-cell[data-short="${s}"][data-long="${l}"]`)!.getAttribute('data-side')
     expect([side(0, 0), side(1, 0), side(2, 0), side(12, 0)]).toEqual(['5m', '5m', '1h', '1h'])
-    // Row 3 crosses at 3.1: blue before it, grey right at it (under 1% apart), red after it.
+    // Row 3 crosses at 3.1: 5 min side before it, grey right at it (under 1% apart), 1 hour side after it.
     expect([side(2, 3), side(3, 3), side(4, 3)]).toEqual(['5m', 'even', '1h'])
     const points = document.querySelector('.map-boundary')!.getAttribute('points')!.split(' ').map((p) => Number(p.split(',')[0]))
     const cellX = (s: number) => Number(document.querySelector(`.map-cell[data-short="${s}"][data-long="0"]`)!.getAttribute('x'))

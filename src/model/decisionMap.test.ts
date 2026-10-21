@@ -6,7 +6,7 @@ import { bucketGrid, cellLines, savingStep, stepColor } from './decisionMap'
 const money = (v: number) => `$${v.toFixed(2)}`
 
 describe('savingStep', () => {
-  it('the sign picks the pole: positive (1 hour cache cheaper) is red, negative is blue', () => {
+  it('the sign picks the pole: positive (1 hour cache cheaper) is the 1 hour side, negative the 5 min side', () => {
     expect(savingStep(5, 20, 10)).toMatchObject({ side: '1h' })
     expect(savingStep(-5, 20, 10)).toMatchObject({ side: '5m' })
   })
@@ -27,9 +27,9 @@ describe('savingStep', () => {
   })
 
   it('stepColor mixes the pole into the grey in quarters, and neutral is the grey', () => {
-    expect(stepColor({ side: '1h', step: 2 })).toBe('color-mix(in oklab, var(--pole-red) 50%, var(--pole-neutral))')
-    expect(stepColor({ side: '5m', step: 4 })).toBe('color-mix(in oklab, var(--pole-blue) 100%, var(--pole-neutral))')
-    expect(stepColor({ side: '5m', step: 1 })).toContain('--pole-blue) 25%')
+    expect(stepColor({ side: '1h', step: 2 })).toBe('color-mix(in oklab, var(--pole-1h) 50%, var(--pole-neutral))')
+    expect(stepColor({ side: '5m', step: 4 })).toBe('color-mix(in oklab, var(--pole-5m) 100%, var(--pole-neutral))')
+    expect(stepColor({ side: '5m', step: 1 })).toContain('--pole-5m) 25%')
     expect(stepColor({ side: 'even', step: 0 })).toBe('var(--pole-neutral)')
   })
 })
@@ -39,7 +39,7 @@ describe('bucketGrid and cellLines', () => {
   const buckets = bucketGrid(grid)
   const at = (short: number, long: number) => grid.find((c) => c.short === short && c.long === long) as GridCell
 
-  it('puts blue at few short pauses and red at many, scaled to the strongest saving on the map', () => {
+  it('puts the 5 min side at few short pauses and the 1 hour side at many, scaled to the strongest saving on the map', () => {
     expect(buckets.get(at(0, 0))).toMatchObject({ side: '5m' })
     expect(buckets.get(at(12, 0))).toMatchObject({ side: '1h', step: 4 })
     expect(buckets.get(at(2, 0))).toMatchObject({ side: '1h' })

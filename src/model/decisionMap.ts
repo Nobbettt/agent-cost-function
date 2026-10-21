@@ -1,6 +1,6 @@
 import type { GridCell } from './breakEven'
 
-/** Which pole a cell sits at: the 5 minute cache cheaper (blue), the 1 hour cache cheaper (red), or about equal (grey). */
+/** Which pole a cell sits at: the 5 minute cache cheaper, the 1 hour cache cheaper, or about equal (grey). */
 export type Side = '5m' | '1h' | 'even'
 
 export interface SavingStep {
@@ -31,7 +31,7 @@ export function bucketGrid(grid: readonly GridCell[]): Map<GridCell, SavingStep>
 
 /** The CSS colour of a bucket: the pole mixed into the neutral grey in that many quarters. */
 export const stepColor = ({ side, step }: SavingStep): string =>
-  side === 'even' ? 'var(--pole-neutral)' : `color-mix(in oklab, var(${side === '1h' ? '--pole-red' : '--pole-blue'}) ${step * 25}%, var(--pole-neutral))`
+  side === 'even' ? 'var(--pole-neutral)' : `color-mix(in oklab, var(${side === '1h' ? '--pole-1h' : '--pole-5m'}) ${step * 25}%, var(--pole-neutral))`
 
 /** The words for a cell, used by the tooltip and the cell's aria-label: who is cheaper and by how much, in the display currency. */
 export function cellLines(cell: GridCell, format: (usd: number) => string): string[] {

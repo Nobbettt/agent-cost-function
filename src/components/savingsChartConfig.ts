@@ -18,16 +18,16 @@ export function hexAlpha(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
-/** Above zero the 1 hour cache is cheaper (very light red), below it the 5 minute cache is (very light blue); each zone is labelled. */
+/** Above zero the 1 hour cache is cheaper (a very light tint of the 1 hour pole), below it the 5 minute cache is (the same of the 5 min pole); each zone is labelled. */
 const savingsZones: Plugin<'line', { above: string; below: string }> = {
   id: 'savingsZones',
   beforeDatasetsDraw(chart, _args, opts) {
     const { ctx, chartArea: { top, bottom, left, right }, scales: { y } } = chart
     const zero = Math.min(bottom, Math.max(top, y.getPixelForValue(0)))
     ctx.save()
-    ctx.fillStyle = hexAlpha(css('--pole-red'), 0.08)
+    ctx.fillStyle = hexAlpha(css('--pole-1h'), 0.08)
     ctx.fillRect(left, top, right - left, zero - top)
-    ctx.fillStyle = hexAlpha(css('--pole-blue'), 0.08)
+    ctx.fillStyle = hexAlpha(css('--pole-5m'), 0.08)
     ctx.fillRect(left, zero, right - left, bottom - zero)
     ctx.font = '600 12px system-ui, -apple-system, sans-serif'
     ctx.fillStyle = css('--ink-2')
@@ -75,9 +75,9 @@ export const lineLabel = (long: number): string => `${long} pause${long === 1 ? 
 /** The 4th and 5th line also differ by dash, so the order is never carried by colour alone. */
 const DASHES: readonly (readonly number[])[] = [[], [], [], [6, 3], [2, 3]]
 
-/** Colour (a step of the red ramp, light to dark with more pauses), width (3px for the viewer's own line) and dash of the i-th line. */
+/** Colour (a step of the 1 hour ramp, light to dark with more pauses), width (3px for the viewer's own line) and dash of the i-th line. */
 export const savingsLineStyle = (i: number, long: number, yourLong: number): { colorVar: string; width: number; dash: number[] } => ({
-  colorVar: `--red-${i + 1}`,
+  colorVar: `--ramp-1h-${i + 1}`,
   width: long === yourLong ? 3 : 2,
   dash: [...(DASHES[i] ?? [])],
 })
