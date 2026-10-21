@@ -59,11 +59,13 @@ footer nav { display: inline; }
 
 /* Top bar, sticky on every page. */
 .navbar { position: sticky; top: 0; z-index: 30; height: 40px; background: var(--surface); border-bottom: 1px solid var(--border); }
-.navbar nav { height: 100%; display: flex; align-items: center; gap: 12px; padding: 0 16px; }
+.navbar nav { height: 100%; display: flex; align-items: center; gap: 20px; padding: 0 16px; }
 .brand { flex: none; font-size: 14px; font-weight: 600; color: var(--ink); text-decoration: none; white-space: nowrap; }
 .brand-short { display: none; }
-.nav-links { display: flex; gap: 14px; margin-left: auto; min-width: 0; overflow-x: auto; scrollbar-width: none; font-size: 13px; white-space: nowrap; }
+.nav-links { display: flex; gap: 16px; min-width: 0; overflow-x: auto; scrollbar-width: none; font-size: 13px; white-space: nowrap; }
 .nav-links::-webkit-scrollbar { display: none; }
+/* Calculator controls (currency, Settings): pushed to the right edge; the page links stay beside the brand. */
+.nav-end { flex: none; display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .nav-links a { color: var(--ink-2); text-decoration: none; }
 .nav-links a:hover { color: var(--ink); text-decoration: underline; }
 .nav-links [aria-current="page"] { color: var(--ink); }
@@ -76,8 +78,8 @@ footer nav { display: inline; }
   .brand-short { display: inline; }
   .currency-wrap .info-tip { display: none; }
   .currency-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .navbar nav { gap: 8px; }
-  .nav-links { gap: 10px; }
+  .navbar nav { gap: 12px; }
+  .nav-links { gap: 12px; }
 }
 @media (max-width: 479px) {
   /* Tight: drop the Settings icon so everything fits at 375px. */

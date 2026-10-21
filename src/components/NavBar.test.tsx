@@ -69,4 +69,25 @@ describe('NavBar', () => {
     render(<NavBar page="sources" />)
     expect(bar().getByRole('link', { name: 'How it is calculated' })).toBeTruthy()
   })
+
+  it('keeps the brand and the page links together on the left, and the controls group last on the right', () => {
+    render(
+      <NavBar
+        page="calculator" settings={{ open: false, onToggle: () => {} }}
+        controls={<select aria-label="Currency"><option>USD</option></select>}
+      />,
+    )
+    const nav = screen.getByRole('navigation', { name: 'Main' })
+    expect([...nav.children].map((c) => c.className)).toEqual(['brand', 'nav-links', 'nav-end'])
+    const end = nav.querySelector('.nav-end')!
+    expect([...end.children].map((c) => c.tagName)).toEqual(['SELECT', 'BUTTON'])
+    expect(nav.lastElementChild).toBe(end)
+  })
+
+  it('has no controls group on a page without controls, so everything sits on the left', () => {
+    render(<NavBar page="sources" />)
+    const nav = screen.getByRole('navigation', { name: 'Main' })
+    expect([...nav.children].map((c) => c.className)).toEqual(['brand', 'nav-links'])
+    expect(nav.querySelector('.nav-end')).toBeNull()
+  })
 })

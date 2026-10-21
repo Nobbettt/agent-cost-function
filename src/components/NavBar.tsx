@@ -49,15 +49,19 @@ export function NavBar({ page, settings, settingsButtonRef, controls }: Props) {
               : <a key={l.page} href={l.href}>{text}</a>
           })}
         </div>
-        {controls}
-        {settings && (
-          <button
-            type="button" className="settings-toggle" ref={settingsButtonRef}
-            aria-expanded={settings.open} aria-controls="settings-panel" onClick={settings.onToggle}
-          >
-            <SlidersIcon />
-            Settings
-          </button>
+        {(controls || settings) && (
+          <div className="nav-end">
+            {controls}
+            {settings && (
+              <button
+                type="button" className="settings-toggle" ref={settingsButtonRef}
+                aria-expanded={settings.open} aria-controls="settings-panel" onClick={settings.onToggle}
+              >
+                <SlidersIcon />
+                Settings
+              </button>
+            )}
+          </div>
         )}
       </nav>
     </header>
