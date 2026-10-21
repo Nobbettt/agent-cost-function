@@ -75,6 +75,12 @@ select, input { font: inherit; color: var(--ink); background: var(--page); borde
 .toggle label { display: block; padding: 6px 14px; cursor: pointer; color: var(--ink-2); }
 .toggle input:checked + label { background: var(--ink); color: var(--surface); }
 .toggle input:focus-visible + label { outline: 2px solid var(--series); outline-offset: -2px; }
+.toggle-option { display: block; position: relative; }
+/* Compact variant (the chart scale switch): 24px tall, 12.5px text. */
+.toggle.compact { margin-bottom: 0; flex: none; }
+.toggle.compact label { padding: 0 10px; font-size: 12.5px; line-height: 22px; }
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.card-head h2 { margin: 0; line-height: 24px; }
 details.card > summary { cursor: pointer; font-weight: 600; }
 details.card[open] > summary { margin-bottom: 12px; }
 .card { margin-top: 16px; }
@@ -248,6 +254,6 @@ footer nav { display: inline; }
   .summary-block { flex: none; }
   .results .summary { margin: 0; }
   .results .card { margin: 0; flex: 1 1 0; min-height: 260px; display: flex; flex-direction: column; }
-  .results .card h2 { flex: none; }
+  .results .card h2, .results .card-head { flex: none; }
   .results .chart-box { flex: 1; min-height: 0; height: auto; }
 }

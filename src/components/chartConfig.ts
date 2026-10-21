@@ -1,12 +1,12 @@
 import {
-  Chart, Interaction, Legend, LinearScale, LineController, LineElement, PointElement, Tooltip,
+  Chart, Interaction, Legend, LinearScale, LogarithmicScale, LineController, LineElement, PointElement, Tooltip,
   type ChartConfiguration, type ChartType, type InteractionItem, type InteractionModeFunction, type Plugin,
 } from 'chart.js'
-import { everyOtherTickLabel, fmtTokens, truncateLabel } from '../format'
+import { everyOtherTickLabel, fmtTokens, logTickLabel, truncateLabel } from '../format'
 import type { Point, Run, SetupId } from '../model/types'
 import { css } from '../theme'
 
-Chart.register(LineController, LineElement, PointElement, LinearScale, Tooltip, Legend)
+Chart.register(LineController, LineElement, PointElement, LinearScale, LogarithmicScale, Tooltip, Legend)
 Chart.defaults.font.family = 'system-ui, -apple-system, "Segoe UI", sans-serif'
 
 declare module 'chart.js' {
@@ -19,7 +19,11 @@ declare module 'chart.js' {
 }
 
 /** A plotted point: the simulation point plus the y value of the chosen metric. */
-export type ChartPoint = Point & { y: number }
+/** `y` is null for a value a log axis cannot show (zero or less), which Chart.js then skips. */
+export type ChartPoint = Point & { y: number | null }
+
+/** The y axis of a chart: linear, or logarithmic (the per-request chart's default). */
+export type YScale = 'linear' | 'log'
 type LineChart = Chart<'line', ChartPoint[]>
 
 const crosshair: Plugin<'line'> = {
@@ -141,7 +145,12 @@ export function lineConfig(showEndLabels: boolean, getFormat: () => (usd: number
       scales: {
         x: { type: 'linear', min: 0, ticks: { callback: (v) => fmtTokens(Number(v)), maxTicksLimit: 11 },
              title: { display: true, text: 'Context size (tokens)' } },
-        y: { beginAtZero: true, ticks: { callback: (v, i) => everyOtherTickLabel(Number(v), i, getFormat()) }, title: { display: true, text: 'USD' } },
+        y: {
+          beginAtZero: true,
+          // The scale type can change after creation, so the rule follows it: `this` is the scale.
+          ticks: { callback(v, i) { return this.type === 'logarithmic' ? logTickLabel(Number(v), getFormat()) : everyOtherTickLabel(Number(v), i, getFormat()) } },
+          title: { display: true, text: 'USD' },
+        },
       },
       plugins: {
         endLabels: { enabled: showEndLabels },

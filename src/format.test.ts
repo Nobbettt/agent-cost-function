@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { everyOtherTickLabel, fmtPrice, fmtTokens, fmtUsd, formatMoney, signedMoney, truncateLabel } from './format'
+import { everyOtherTickLabel, fmtPrice, fmtTokens, fmtUsd, formatMoney, signedMoney, truncateLabel, logTickLabel } from './format'
 
 describe('fmtTokens', () => {
   it('formats raw, K and M', () => {
@@ -110,5 +110,36 @@ describe('truncateLabel', () => {
     expect(truncateLabel('x'.repeat(14), 14)).toBe('x'.repeat(14))
     expect(truncateLabel('x'.repeat(15), 14)).toBe(`${'x'.repeat(13)}\u2026`)
     expect(truncateLabel('\u{1F680}'.repeat(20), 14)).toBe(`${'\u{1F680}'.repeat(13)}\u2026`)
+  })
+})
+
+describe('logTickLabel', () => {
+  const f = (v: number) => `<${v}>`
+
+  it('labels 1, 2 and 5 times a power of ten, in every decade', () => {
+    for (const e of [-4, -3, -2, -1, 0, 1, 2, 3]) {
+      for (const m of [1, 2, 5]) expect(logTickLabel(m * 10 ** e, f)).toBe(`<${m * 10 ** e}>`)
+    }
+  })
+
+  it('leaves 3, 4, 6, 7, 8 and 9 times a power of ten blank', () => {
+    for (const e of [-3, -1, 0, 2]) {
+      for (const m of [3, 4, 6, 7, 8, 9]) expect(logTickLabel(m * 10 ** e, f)).toBe('')
+    }
+  })
+
+  it('survives float noise', () => {
+    expect(logTickLabel(0.30000000000000004, f)).toBe('')
+    expect(logTickLabel(0.1 + 0.2 - 0.1, f)).toBe(`<${0.1 + 0.2 - 0.1}>`)  // 0.20000000000000004 is still the 2 tick
+    expect(logTickLabel(1.9999999, f)).toBe('<1.9999999>')
+    expect(logTickLabel(0.9999999999, f)).toBe('<0.9999999999>')
+    expect(logTickLabel(9.9999999999, f)).toBe('<9.9999999999>')
+    expect(logTickLabel(5.000000001, f)).toBe('<5.000000001>')
+    expect(logTickLabel(4.9, f)).toBe('')
+    expect(logTickLabel(2.1, f)).toBe('')
+  })
+
+  it('is blank for zero, negative and non-finite values', () => {
+    for (const v of [0, -1, -0.5, NaN, Infinity]) expect(logTickLabel(v, f)).toBe('')
   })
 })

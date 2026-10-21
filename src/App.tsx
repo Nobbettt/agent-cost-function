@@ -9,6 +9,7 @@ import { Footer } from './components/Footer'
 import { NavBar } from './components/NavBar'
 import { RateInfo } from './components/RateInfo'
 import { RateStatus } from './components/RateStatus'
+import { ScaleToggle } from './components/ScaleToggle'
 import { ScrollRegion } from './components/ScrollRegion'
 import { SettingsSidebar } from './components/SettingsSidebar'
 import { ShareButton } from './components/ShareButton'
@@ -20,6 +21,7 @@ import { useCurrency } from './currency/context'
 import { NAV_WIDE_QUERY } from './data/breakpoints'
 import { MAX_SETUPS, SERIES } from './data/series'
 import { useMediaQuery } from './hooks/useMediaQuery'
+import { useReqScale } from './hooks/useReqScale'
 import { useSettingsPanel } from './hooks/useSettingsPanel'
 import { buildShareUrl, useShareUrlSync } from './hooks/useShareUrl'
 import { compare } from './model/compare'
@@ -41,6 +43,7 @@ function Calculator() {
   // From the compact-navbar breakpoint up the currency select lives in the navbar; below it, it is the first field of the settings panel.
   const wide = useMediaQuery(NAV_WIDE_QUERY, true)
   const pendingFocus = useRef<SetupId | null>(null)
+  const [reqScale, setReqScale] = useReqScale()
 
   const effective = useMemo(() => effectiveShared(shared), [shared])
   const runs = useMemo(() => setups.map((s) => simulate(s, effective)), [setups, effective])
@@ -109,8 +112,11 @@ function Calculator() {
                 </section>
 
                 <section className="card">
-                  <h2>Cost per request vs context size</h2>
-                  <CostChart series={series} metric="req" xMax={effective.session} label="Cost of each request per setup as context grows" format={format} currency={displayCurrency} rate={rate} />
+                  <div className="card-head">
+                    <h2>Cost per request vs context size</h2>
+                    <ScaleToggle value={reqScale} onChange={setReqScale} />
+                  </div>
+                  <CostChart series={series} metric="req" scale={reqScale} xMax={effective.session} label="Cost of each request per setup as context grows" format={format} currency={displayCurrency} rate={rate} />
                 </section>
               </section>
             </div>

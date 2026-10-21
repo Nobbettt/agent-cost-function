@@ -94,7 +94,7 @@ describe('App', () => {
 
   it('gives each setup its own radiogroup of real radio inputs', () => {
     render(<App />)
-    const groups = screen.getAllByRole('radiogroup', { hidden: true })
+    const groups = screen.getAllByRole('radiogroup', { hidden: true }).filter((g) => g.getAttribute('aria-label')?.startsWith('Provider for'))
     expect(groups).toHaveLength(3)
     const names = groups.map((g) => new Set(within(g).getAllByRole('radio', { hidden: true }).map((r) => (r as HTMLInputElement).name)))
     expect(names.map((n) => [...n])).toEqual([['provider-A'], ['provider-B'], ['provider-C']])

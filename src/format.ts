@@ -62,6 +62,16 @@ export const signedMoney = (v: number, format: (usd: number) => string): string 
 export const everyOtherTickLabel = (value: number, index: number, format: (v: number) => string): string =>
   index % 2 === 0 ? format(value) : ''
 
+/**
+ * Log axis tick label rule: only the 1, 2 and 5 x 10^n ticks get a label, the others '' (so their gridline stays).
+ * Decided by the mantissa with a tolerance, so float noise (0.30000000000000004, 1.9999999) cannot flip the answer.
+ */
+export function logTickLabel(value: number, format: (v: number) => string): string {
+  if (!(value > 0)) return ''
+  const mantissa = value / 10 ** Math.floor(Math.log10(value) + 1e-9)
+  return [1, 2, 5].some((m) => Math.abs(mantissa - m) < m * 1e-6) ? format(value) : ''
+}
+
 export const fmtUsd = (v: number): string => formatMoney(v, 'USD', 1)
 
 export const fmtPrice = (v: number): string => `$${+v.toFixed(4)}`
