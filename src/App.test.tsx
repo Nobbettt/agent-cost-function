@@ -134,6 +134,52 @@ describe('App', () => {
     expect((setupBox('B').getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('1h')
   })
 
+  it('has three providers in each setup: Claude, OpenAI and xAI, with unique radio names per setup', () => {
+    render(<App />)
+    for (const id of ['A', 'B', 'C'] as const) {
+      const group = setupBox(id).getByRole('radiogroup', { name: `Provider for Setup ${id}`, hidden: true })
+      const radios = within(group).getAllByRole('radio', { hidden: true }) as HTMLInputElement[]
+      expect(radios.map((r) => r.value)).toEqual(['claude', 'openai', 'xai'])
+      expect([...group.querySelectorAll('label')].map((l) => l.textContent)).toEqual(['Claude', 'OpenAI', 'xAI'])
+      expect(new Set(radios.map((r) => r.name))).toEqual(new Set([`provider-${id}`]))
+    }
+    expect(new Set([...document.querySelectorAll<HTMLInputElement>('input[type=radio][name^="provider-"]')].map((r) => r.id)).size).toBe(9)
+  })
+
+  it('switching a setup to xAI selects Grok 4.7 with the best-effort cache, high effort and kept reasoning, and the card says so', () => {
+    render(<App />)
+    const c = setupBox('C')
+    fireEvent.click(c.getByLabelText('xAI'))
+    expect((c.getByLabelText('Model') as HTMLSelectElement).value).toBe('grok-4.7')
+    expect((c.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('auto')
+    expect([...(c.getByLabelText('Prompt cache') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['best-effort · no write fee'])
+    expect((c.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('high')
+    expect([...(c.getByLabelText('Reasoning effort') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['low', 'medium', 'high (default)', 'xhigh'])
+    expect((c.getByLabelText('Earlier reasoning in context') as HTMLSelectElement).value).toBe('kept')
+    expect(stat('Setup C').sub).toBe('Grok 4.7 · best-effort cache · no cache breaks')
+    expect(stat('Compared at').sub).toBe('One model stops earlier at its max input')
+    expect(stat('Compared at').value).toBe('500K tokens')
+    // Back to Claude: the Opus 5.5 defaults return.
+    fireEvent.click(c.getByLabelText('Claude'))
+    expect((c.getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
+    expect((c.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('5m')
+    expect(stat('Setup C').sub).toBe('Claude Opus 5.5 · 5 min cache · no cache breaks')
+  })
+
+  it('the xAI models: grok-4.5 has no xhigh, grok-4.20 only none, and earlier reasoning is dropped except on 4.7', () => {
+    render(<App />)
+    const c = setupBox('C')
+    fireEvent.click(c.getByLabelText('xAI'))
+    fireEvent.change(c.getByLabelText('Reasoning effort'), { target: { value: 'xhigh' } })
+    fireEvent.change(c.getByLabelText('Model'), { target: { value: 'grok-4.5' } })
+    expect([...(c.getByLabelText('Reasoning effort') as HTMLSelectElement).options].map((o) => o.value)).toEqual(['low', 'medium', 'high'])
+    expect((c.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('high')
+    expect([...(c.getByLabelText('Earlier reasoning in context') as HTMLSelectElement).options].map((o) => o.value)).toEqual(['dropped'])
+    fireEvent.change(c.getByLabelText('Model'), { target: { value: 'grok-4.20-0309-non-reasoning' } })
+    expect([...(c.getByLabelText('Reasoning effort') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['none'])
+    expect(stat('Setup C').sub).toBe('Grok 4.20 (non-reasoning) · best-effort cache · no cache breaks')
+  })
+
   it('lists only the provider\'s models, with "(default)" on documented defaults', () => {
     render(<App />)
     const a = setupBox('A')

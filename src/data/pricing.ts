@@ -11,6 +11,9 @@ export const DOCS = {
   openaiPricing: { url: 'https://developers.openai.com/api/docs/pricing', proves: 'OpenAI input, cached input, cache write, output and over-272K prices' },
   openaiCaching: { url: 'https://developers.openai.com/api/docs/guides/prompt-caching', proves: 'OpenAI cache lifetimes (30m; in_memory; 24h), write 1.25× on GPT-5.6 and later, no write fee before' },
   openaiReasoning: { url: 'https://developers.openai.com/api/docs/guides/reasoning', proves: 'Reasoning billed as output; reasoning.context default per model family' },
+  xaiPricing: { url: 'https://docs.x.ai/docs/models', proves: 'xAI input, cached input and output prices, context windows, and 2× prices for prompts that reach 200K tokens (checked 2026-10-21)' },
+  xaiCaching: { url: 'https://docs.x.ai/developers/advanced-api-usage/prompt-caching/how-it-works', proves: 'xAI caches prefixes automatically: no lifetime is stated or settable, entries can be evicted at any time, and no cache write fee is documented' },
+  xaiReasoning: { url: 'https://docs.x.ai/docs/guides/reasoning', proves: 'Which xAI models support which reasoning_effort levels; reasoning tokens billed as part of total consumption (no rate is stated, so the output rate is assumed); carrying reasoning across turns on grok-4.7' },
   frankfurter: { url: 'https://frankfurter.dev', proves: 'Exchange rates for the display currency (ECB reference rates, daily)' },
 } as const
 
@@ -20,6 +23,8 @@ const CLAUDE_CACHE: readonly CacheOption[] = [
   { id: '5m', label: '5 min · write 1.25×', minutes: 5, write: 1.25 },
   { id: '1h', label: '1 hour · write 2×', minutes: 60, write: 2 },
 ]
+// xAI: automatic prefix caching, no stated lifetime and no documented write fee. A cache break re-reads the context at the full input price.
+const XAI_CACHE: readonly CacheOption[] = [{ id: 'auto', label: 'best-effort · no write fee', minutes: 0, write: 1 }]
 const OPENAI_30M: CacheOption = { id: '30m', label: '30 min · write 1.25×', minutes: 30, write: 1.25 }
 const OPENAI_24H: CacheOption = { id: '24h', label: '24h · ~30 min typical · no write fee', minutes: 30, write: 1 }
 const OPENAI_IN_MEMORY: CacheOption = { id: 'in_memory', label: 'in_memory · ~5–10 min · no write fee', minutes: 5, write: 1 }
@@ -28,7 +33,11 @@ export const ALL_EFFORTS: readonly Effort[] = ['none', 'low', 'medium', 'high', 
 const LOW_TO_MAX: readonly Effort[] = ['low', 'medium', 'high', 'xhigh', 'max']
 const NONE_TO_MAX: readonly Effort[] = ['none', ...LOW_TO_MAX]
 const NONE_TO_XHIGH: readonly Effort[] = ['none', 'low', 'medium', 'high', 'xhigh']
+const LOW_TO_XHIGH: readonly Effort[] = ['low', 'medium', 'high', 'xhigh']
+const LOW_TO_HIGH: readonly Effort[] = ['low', 'medium', 'high']
 const OPENAI_LONG = { above: 272000, inMult: 2, outMult: 1.5 }
+// xAI bills the whole request at 2× once its prompt reaches 200K tokens (inclusive, unlike OpenAI's "above 272K").
+const XAI_LONG = { above: 200000, inclusive: true, inMult: 2, outMult: 2 }
 
 const KD: readonly ReasoningMode[] = ['kept', 'dropped']
 const DROPPED: readonly ReasoningMode[] = ['dropped']
@@ -53,11 +62,16 @@ export const MODELS: Readonly<Record<ModelId, ModelSpec>> = {
   'gpt-5.5':           { provider: 'openai', name: 'GPT-5.5',           in: 5,    out: 30,  read: 0.1,   maxInput: 1050000, efforts: NONE_TO_XHIGH, defaultEffort: 'medium', cache: [OPENAI_24H], reasoning: DROPPED, longPrompt: OPENAI_LONG },
   'gpt-5.4':           { provider: 'openai', name: 'GPT-5.4',           in: 2.5,  out: 15,  read: 0.1,   maxInput: 1050000, efforts: NONE_TO_XHIGH, defaultEffort: 'none',   cache: [OPENAI_24H, OPENAI_IN_MEMORY], reasoning: DROPPED, longPrompt: OPENAI_LONG },
   'gpt-5.4-mini':      { provider: 'openai', name: 'GPT-5.4 mini',      in: 0.75, out: 4.5, read: 0.1,   maxInput: 272000,  efforts: NONE_TO_XHIGH, defaultEffort: 'none',   cache: [OPENAI_IN_MEMORY], reasoning: DROPPED },
+  'grok-4.7':          { provider: 'xai', name: 'Grok 4.7',  in: 2, out: 6, read: 0.25, maxInput: 500000, efforts: LOW_TO_XHIGH, defaultEffort: 'high', cache: XAI_CACHE, reasoning: [null, 'kept', 'dropped'], longPrompt: XAI_LONG },
+  'grok-4.6':          { provider: 'xai', name: 'Grok 4.6',  in: 2, out: 6, read: 0.25, maxInput: 500000, efforts: LOW_TO_XHIGH, defaultEffort: 'high', cache: XAI_CACHE, reasoning: DROPPED, longPrompt: XAI_LONG },
+  'grok-4.5':          { provider: 'xai', name: 'Grok 4.5',  in: 2, out: 6, read: 0.15, maxInput: 500000, efforts: LOW_TO_HIGH, defaultEffort: 'high', cache: XAI_CACHE, reasoning: DROPPED, longPrompt: XAI_LONG },
+  'grok-4.20-0309-non-reasoning': { provider: 'xai', name: 'Grok 4.20 (non-reasoning)', in: 1.25, out: 2.5, read: 0.16, maxInput: 1e6, efforts: ['none'], defaultEffort: null, cache: XAI_CACHE, reasoning: DROPPED, longPrompt: XAI_LONG },
 }
 
 export const PROVIDERS: Readonly<Record<Provider, { name: string; defaultModel: ModelId; sources: readonly (keyof typeof DOCS)[] }>> = {
   claude: { name: 'Claude', defaultModel: 'claude-opus-5-5', sources: ['claudePricing', 'claudeModels', 'claudeEffort', 'claudeThinking'] },
   openai: { name: 'OpenAI', defaultModel: 'gpt-5.6-sol', sources: ['openaiPricing', 'openaiCaching', 'openaiReasoning'] },
+  xai: { name: 'xAI', defaultModel: 'grok-4.7', sources: ['xaiPricing', 'xaiCaching', 'xaiReasoning'] },
 }
 
 /** Models of one provider, in table order. */

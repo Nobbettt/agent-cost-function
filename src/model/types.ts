@@ -1,8 +1,8 @@
-export type Provider = 'claude' | 'openai'
+export type Provider = 'claude' | 'openai' | 'xai'
 export type ModelId = string
 export type Effort = 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 export type ReasoningMode = 'kept' | 'dropped'
-export type CacheId = '5m' | '1h' | '30m' | '24h' | 'in_memory'
+export type CacheId = '5m' | '1h' | '30m' | '24h' | 'in_memory' | 'auto'
 
 export interface CacheOption {
   id: CacheId
@@ -14,7 +14,10 @@ export interface CacheOption {
 }
 
 export interface LongPrompt {
+  /** The prompt size where the higher rate starts: above it, or from it on when `inclusive`. */
   above: number
+  /** True when a prompt that reaches `above` is already long (xAI: 200K); otherwise it must exceed it (OpenAI, Haiku). */
+  inclusive?: boolean
   inMult: number
   outMult: number
 }

@@ -96,7 +96,7 @@ function Calculator() {
             <div className="screen">
               <header className="page-header">
                 <h1>Agent cost function</h1>
-                <p className="lede">What one agent session costs on Claude or OpenAI as its context grows, for up to four setups side by side. Change a setting and the charts update.</p>
+                <p className="lede">What one agent session costs on Claude, OpenAI or xAI as its context grows, for up to four setups side by side. Change a setting and the charts update.</p>
                               {fromLink.versionMismatch && (
                   <p className="share-notice" role="status">This link was made with a newer version of the calculator; showing the defaults.</p>
                 )}

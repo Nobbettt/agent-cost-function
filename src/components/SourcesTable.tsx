@@ -5,7 +5,7 @@ import type { ModelId, ModelSpec } from '../model/types'
 const COLS = ['Model', 'Input', 'Cache read', 'Output', 'Prompt cache', 'Long prompt', 'Max input', 'Effort (default)', 'Earlier reasoning', 'Source']
 
 const longRule = (m: ModelSpec) =>
-  m.longPrompt ? `>${fmtTokens(m.longPrompt.above)}: in ${m.longPrompt.inMult}×, out ${m.longPrompt.outMult}×` : '—'
+  m.longPrompt ? `${m.longPrompt.inclusive ? '≥' : '>'}${fmtTokens(m.longPrompt.above)}: in ${m.longPrompt.inMult}×, out ${m.longPrompt.outMult}×` : '—'
 
 function ExternalLink({ href, children }: { href: string; children: string }) {
   return <a href={href} target="_blank" rel="noopener">{children}</a>
@@ -14,7 +14,7 @@ function ExternalLink({ href, children }: { href: string; children: string }) {
 function Row({ id, m }: { id: ModelId; m: ModelSpec }) {
   const source = m.provider === 'openai'
     ? <ExternalLink href={openaiPage(id)}>model page</ExternalLink>
-    : <ExternalLink href={DOCS.claudePricing.url}>pricing</ExternalLink>
+    : <ExternalLink href={(m.provider === 'xai' ? DOCS.xaiPricing : DOCS.claudePricing).url}>pricing</ExternalLink>
   const cells = [
     `${m.name} (${id})`, fmtPrice(m.in), `${fmtPrice(m.in * m.read)} (${m.read}×)`, fmtPrice(m.out),
     m.cache.map((c) => `${c.id} ${c.write}×`).join(', '), longRule(m), fmtTokens(m.maxInput),
@@ -36,6 +36,8 @@ export function SourcesTable() {
       <ul className="notes" style={{ marginTop: 12 }}>
         <li>Prices are USD per million tokens, standard tier. Cache column "write" is the multiplier on input for writing to the cache. * marks a documented default; where none is marked the docs do not state one.</li>
         <li>Model prices are in USD, as the providers publish them. The display currency only converts the calculated costs, using the Frankfurter rates listed below.</li>
+        <li>xAI lists one context size per model; it is used as the max input, because the docs do not separate input and output limits. xAI reasoning tokens are assumed to cost the output rate (the docs only say they are billed as part of total consumption).</li>
+        <li>Not included: grok-4.3, grok-4.20 reasoning and multi-agent, grok-build-0.1 (reasoning behaviour not documented).</li>
         {Object.values(DOCS).map((d) => (
           <li key={d.url}><ExternalLink href={d.url}>{d.url}</ExternalLink>{`: ${d.proves}`}</li>
         ))}

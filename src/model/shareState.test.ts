@@ -311,3 +311,33 @@ describe('setup names', () => {
     expect(d.setups.map((s) => [s.id, s.name])).toEqual([['A', undefined], ['B', 'Beta']])
   })
 })
+
+describe('xAI models in links', () => {
+  const grok = (model: string, extra: Partial<Setup> = {}): Setup => ({ id: 'A', provider: 'xai', model, cache: 'auto', effort: 'high', reasoning: 'dropped', interruptions: 3, ...extra })
+
+  it('round-trips every Grok model id, dots and dashes included, with the provider derived from the model', () => {
+    for (const [model, effort, reasoning] of [['grok-4.7', 'xhigh', 'kept'], ['grok-4.6', 'low', 'dropped'], ['grok-4.5', 'medium', 'dropped'], ['grok-4.20-0309-non-reasoning', 'none', 'dropped']] as const) {
+      const s = grok(model, { effort, reasoning })
+      const q = encodeState(state([s, B]))
+      expect(new URLSearchParams(q).get('a')).toBe(`${model},auto,${effort},${reasoning},3`)
+      expect(decodeState(`?${q}`).setups[0]).toEqual(s)
+    }
+  })
+
+  it('a Grok model in a link gets provider xai and valid values: a Claude cache or a missing effort falls back', () => {
+    const d = decodeState('?v=1&a=grok-4.5,5m,xhigh,kept,2&b=grok-4.20-0309-non-reasoning,auto,high,kept,0')
+    expect(d.setups[0]).toMatchObject({ provider: 'xai', model: 'grok-4.5', cache: 'auto', effort: 'high', reasoning: 'dropped', interruptions: 2 })
+    expect(d.setups[1]).toMatchObject({ provider: 'xai', model: 'grok-4.20-0309-non-reasoning', cache: 'auto', effort: 'none', reasoning: 'dropped' })
+  })
+
+  it('a Claude or OpenAI cache id is replaced for Grok, and the auto cache is replaced for Claude, as a model switch would', () => {
+    expect(decodeState('?v=1&a=grok-4.7,24h,high,kept,1&b=claude-opus-5-5,auto,high,kept,1').setups.map((s) => s.cache)).toEqual(['auto', '5m'])
+  })
+
+  it('old links with Claude and OpenAI models are unaffected, and unknown Grok ids are still dropped', () => {
+    expect(decodeState('?v=1&a=claude-opus-5-5,5m,high,kept,6&b=gpt-5.6-sol,30m,medium,kept,1').setups.map((s) => s.model)).toEqual(['claude-opus-5-5', 'gpt-5.6-sol'])
+    const d = decodeState('?v=1&a=grok-4.3,auto,high,kept,1&b=grok-9,auto,high,kept,1')
+    expect(d.setups.map((s) => s.id)).toEqual(['A', 'B'])
+    expect(d.setups.every((s) => !s.model.startsWith('grok'))).toBe(true)
+  })
+})

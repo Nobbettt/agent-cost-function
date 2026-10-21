@@ -108,6 +108,25 @@ describe('rates: long prompt multipliers', () => {
     expect(long.out).toBeCloseTo(2.5 / 1e6, 15)
   })
 
+  it('xAI bills 2x input and output from 200K on: 199,999 is short, 200,000 is long (inclusive)', () => {
+    const grok = MODELS['grok-4.7']
+    expect(rates(grok, 199999)).toEqual({ in: 2 / 1e6, out: 6 / 1e6 })
+    expect(rates(grok, 200000)).toEqual({ in: 4 / 1e6, out: 12 / 1e6 })
+    expect(rates(grok, 400000)).toEqual({ in: 4 / 1e6, out: 12 / 1e6 })
+    const c = MODELS['grok-4.20-0309-non-reasoning']
+    expect(rates(c, 199999)).toEqual({ in: 1.25 / 1e6, out: 2.5 / 1e6 })
+    expect(rates(c, 200000)).toEqual({ in: 2.5 / 1e6, out: 5 / 1e6 })
+  })
+
+  it('OpenAI and Haiku stay exclusive: 272,000 and 100,000 are still short, one more is long', () => {
+    expect(MODELS['gpt-5.6-sol'].longPrompt!.inclusive).toBeUndefined()
+    expect(MODELS['claude-haiku-5-5'].longPrompt!.inclusive).toBeUndefined()
+    expect(rates(MODELS['gpt-5.6-sol'], 272000).in).toBe(4 / 1e6)
+    expect(rates(MODELS['gpt-5.6-sol'], 272001).in).toBeCloseTo(8 / 1e6, 15)
+    expect(rates(MODELS['claude-haiku-5-5'], 100000).in).toBe(0.1 / 1e6)
+    expect(rates(MODELS['claude-haiku-5-5'], 100001).in).toBeCloseTo(0.5 / 1e6, 15)
+  })
+
   it('models without a long-prompt rule never change rate', () => {
     expect(rates(MODELS['gpt-5.4-mini'], 1e6)).toEqual({ in: 0.75 / 1e6, out: 4.5 / 1e6 })
   })
@@ -158,5 +177,49 @@ describe('simulate: purity', () => {
 
   it('throws on an unknown model', () => {
     expect(() => simulate(setupOf({ model: 'nope' }), DEFAULT_SHARED)).toThrow('Unknown model')
+  })
+})
+
+describe('simulate: xAI known answer', () => {
+  // Grok 4.7, base 100K, +50K per request, 1K output, no reasoning tokens, 300K session, one cache break.
+  // Requests at 100K, 150K, 200K, 250K, 300K; the break lands on the 150K request; 200K and up are long prompts.
+  const shared: Shared = { ...DEFAULT_SHARED, session: 300000, base: 100000, growth: 50000, visibleOut: 1000, thinking: { none: 0, low: 0, medium: 0, high: 0, xhigh: 0, max: 0 } }
+  const grok: Setup = { id: 'A', provider: 'xai', model: 'grok-4.7', cache: 'auto', effort: 'high', reasoning: 'kept', interruptions: 1 }
+  const run = simulate(grok, shared)
+  const close = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThan(1e-9)
+
+  it('prices every request by hand: $0.206, $0.306, $0.362, $0.412, $0.462', () => {
+    expect(run.points.map((p) => p.x)).toEqual([100000, 150000, 200000, 250000, 300000])
+    expect(run.points.map((p) => p.miss)).toEqual([false, true, false, false, false])
+    const req = [0.206, 0.306, 0.362, 0.412, 0.462]
+    run.points.forEach((p, i) => close(p.req, req[i]))
+  })
+
+  it('totals: reads $0.60, writes $0.90, the break re-writes $0.20 at 1x input, output $0.048, total $1.748', () => {
+    close(run.totals.read, 0.6)
+    close(run.totals.write, 0.9)
+    close(run.totals.rewrite, 0.2)
+    close(run.totals.output, 0.048)
+    close(run.totals.total, 1.748)
+    expect(run.totals.requests).toBe(5)
+  })
+
+  it('the 200K request is already priced at the long rate (inclusive): reads 150K at 4 x 0.25 per M', () => {
+    close(run.points[2].req - run.points[1].req, 0.056)
+    close(run.points[2].req, 150000 * 4e-6 * 0.25 + 50000 * 4e-6 + 1000 * 12e-6)
+  })
+
+  it('stops at the listed context (500K), and a no-break session never re-writes', () => {
+    const capped = simulate({ ...grok, interruptions: 0 }, { ...DEFAULT_SHARED })
+    expect(capped.end).toBe(500000)
+    expect(capped.totals.rewrite).toBe(0)
+    expect(capped.points.at(-1)!.x).toBeLessThanOrEqual(500000)
+  })
+
+  it('reasoning is assumed to cost the output rate: high effort adds reasoning tokens at 6 per M', () => {
+    const none = simulate({ ...grok, interruptions: 0 }, { ...shared, thinking: { ...shared.thinking, high: 0 } })
+    const high = simulate({ ...grok, interruptions: 0, reasoning: 'dropped' }, { ...shared, thinking: { ...shared.thinking, high: 2000 } })
+    // 2000 extra output tokens on each of the 5 requests: 2 short ones at 6 per M, 3 long ones at 12 per M.
+    close(high.totals.total - none.totals.total, 2000 * 6e-6 * 2 + 2000 * 12e-6 * 3)
   })
 })

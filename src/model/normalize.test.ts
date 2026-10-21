@@ -78,6 +78,10 @@ describe('switchProvider', () => {
     })
   })
 
+  it('xAI: the default model with its automatic cache, high effort and kept reasoning', () => {
+    expect(switchProvider(A, 'xai')).toMatchObject({ provider: 'xai', model: 'grok-4.7', cache: 'auto', effort: 'high', reasoning: 'kept' })
+  })
+
   it('every provider default model belongs to that provider', () => {
     for (const [p, v] of Object.entries(PROVIDERS)) expect(MODELS[v.defaultModel].provider).toBe(p)
     expect(modelsOf('claude').every(([, m]) => m.provider === 'claude')).toBe(true)

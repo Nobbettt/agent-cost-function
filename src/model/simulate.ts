@@ -3,7 +3,8 @@ import type { ModelSpec, Point, Run, Setup, Shared, Totals } from './types'
 
 /** Per-token input and output USD rates for a request whose prompt is `promptTokens` long. */
 export function rates(model: ModelSpec, promptTokens: number) {
-  const lp = model.longPrompt && promptTokens > model.longPrompt.above ? model.longPrompt : null
+  const long = model.longPrompt && (model.longPrompt.inclusive ? promptTokens >= model.longPrompt.above : promptTokens > model.longPrompt.above)
+  const lp = long ? model.longPrompt! : null
   return { in: (model.in / 1e6) * (lp ? lp.inMult : 1), out: (model.out / 1e6) * (lp ? lp.outMult : 1) }
 }
 
