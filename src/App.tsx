@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { AdvancedSettings } from './components/AdvancedSettings'
 import { BreakdownTable } from './components/BreakdownTable'
 import { CostChart } from './components/CostChart'
 import { CurrencySelect } from './components/CurrencySelect'
@@ -8,7 +9,6 @@ import { RateInfo } from './components/RateInfo'
 import { RateStatus } from './components/RateStatus'
 import { SettingsSidebar } from './components/SettingsSidebar'
 import { SetupPanel } from './components/SetupPanel'
-import { SharedAssumptions } from './components/SharedAssumptions'
 import { StepsTable } from './components/StepsTable'
 import { SummaryCards } from './components/SummaryCards'
 import { CurrencyProvider } from './currency/CurrencyProvider'
@@ -84,11 +84,11 @@ function Calculator() {
         </div>
 
         <SettingsSidebar open={panel.open} mode={panel.mode} onClose={panel.close} returnFocusRef={toggleRef}>
+          <AdvancedSettings shared={shared} onChange={setShared} />
           <div className="setups">
             <SetupPanel id="A" setup={setupA} onChange={setSetupA} />
             <SetupPanel id="B" setup={setupB} onChange={setSetupB} />
           </div>
-          <SharedAssumptions shared={shared} onChange={setShared} />
         </SettingsSidebar>
       </div>
     </>

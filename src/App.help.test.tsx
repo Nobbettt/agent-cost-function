@@ -17,7 +17,7 @@ const SETUP_HELP: [string, string][] = [
   ['Interruptions', FIELD_HELP.interruptions],
   ['Pause per interruption (min)', FIELD_HELP.pause],
 ]
-const SHARED_HELP: [string, string][] = [
+const ADVANCED_HELP: [string, string][] = [
   ['Session length (tokens)', FIELD_HELP.session],
   ['System prompt + tools (tokens)', FIELD_HELP.base],
   ['Added per request (tokens)', FIELD_HELP.growth],
@@ -36,11 +36,11 @@ describe('field help tips', () => {
     }
   })
 
-  it('every Shared assumptions field has a tip with the exact text', () => {
+  it('every Advanced settings field has a tip with the exact text', () => {
     render(<App />)
-    const shared = document.getElementById('shared')!
-    for (const [label, text] of SHARED_HELP) expect(tipText(within(shared).getByRole('button', { name: `About ${label}` }))).toBe(text)
-    expect(SHARED_HELP).toHaveLength(10)
+    const advanced = document.getElementById('advanced')!
+    for (const [label, text] of ADVANCED_HELP) expect(tipText(within(advanced).getByRole('button', { name: `About ${label}` }))).toBe(text)
+    expect(ADVANCED_HELP).toHaveLength(10)
   })
 
   it('the currency select has its tip in the navbar', () => {
@@ -51,7 +51,7 @@ describe('field help tips', () => {
 
   it('has no tips beyond those fields', () => {
     render(<App />)
-    expect(document.querySelectorAll('.info-btn')).toHaveLength(2 * SETUP_HELP.length + SHARED_HELP.length + 1)
+    expect(document.querySelectorAll('.info-btn')).toHaveLength(2 * SETUP_HELP.length + ADVANCED_HELP.length + 1)
   })
 
   it('labels still focus their inputs, and the tips are outside the labels', () => {

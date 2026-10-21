@@ -10,7 +10,7 @@ interface Props {
   children: ReactNode
 }
 
-const FOCUSABLE = 'input:not([disabled]), select:not([disabled]), button:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+const FOCUSABLE = 'summary, input:not([disabled]), select:not([disabled]), button:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
 
 /**
  * The settings panel: a docked sidebar on large screens, an off-canvas drawer below.

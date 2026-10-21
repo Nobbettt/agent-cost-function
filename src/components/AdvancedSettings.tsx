@@ -20,10 +20,10 @@ const SCALARS: { key: ScalarKey; label: string; min: number; max: number; step: 
 
 const thinkingLabel = (e: Effort) => `Reasoning tokens: ${e}`
 
-export function SharedAssumptions({ shared, onChange }: Props) {
+export function AdvancedSettings({ shared, onChange }: Props) {
   return (
-    <details className="card" id="shared">
-      <summary>Shared assumptions</summary>
+    <details className="card" id="advanced">
+      <summary>Advanced settings</summary>
       <div className="fields">
         {SCALARS.map(({ key, label, ...range }) => (
           <NumberField

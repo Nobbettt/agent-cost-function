@@ -32,6 +32,17 @@ describe('settings panel: drawer mode (below 1024px)', () => {
     expect(backdrop()).toBeTruthy()
   })
 
+  it('opening focuses the Advanced settings summary without popping a help tip, and Esc still closes the drawer', () => {
+    mockMatchMedia(false)
+    render(<App />)
+    fireEvent.click(toggle())
+    expect(document.activeElement).toBe(panel().querySelector('details#advanced > summary'))
+    expect(document.querySelectorAll('.info-bubble.is-open')).toHaveLength(0)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(toggle().getAttribute('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(toggle())
+  })
+
   it('Esc closes it and returns focus to the Settings button', () => {
     mockMatchMedia(false)
     render(<App />)

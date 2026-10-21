@@ -51,10 +51,30 @@ describe('App', () => {
     expect(results.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(within(settings).getByRole('group', { name: 'Setup A' })).toBeTruthy()
     expect(within(settings).getByRole('group', { name: 'Setup B' })).toBeTruthy()
-    expect(within(settings).getByText('Shared assumptions')).toBeTruthy()
+    expect(within(settings).getByText('Advanced settings')).toBeTruthy()
     expect(within(results).getByTestId('chart-cum')).toBeTruthy()
     expect(within(results).getByTestId('chart-req')).toBeTruthy()
     expect(results.querySelector('.summary')).toBeTruthy()
+  })
+
+  it('puts Advanced settings first in the panel, collapsed, then Setup A, then Setup B', () => {
+    render(<App />)
+    const settings = screen.getByRole('complementary', { name: 'Settings' })
+    const advanced = settings.querySelector<HTMLDetailsElement>('details#advanced')!
+    expect(advanced.querySelector('summary')!.textContent).toBe('Advanced settings')
+    expect(advanced.open).toBe(false)
+    const a = within(settings).getByRole('group', { name: 'Setup A' })
+    const b = within(settings).getByRole('group', { name: 'Setup B' })
+    expect(advanced.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(settings.firstElementChild).toBe(advanced)
+  })
+
+  it('no longer says "Shared assumptions" anywhere', () => {
+    render(<App />)
+    expect(document.body.textContent).not.toMatch(/shared assumptions/i)
+    const tips = [...document.querySelectorAll('[role="tooltip"]')].map((t) => t.textContent)
+    expect(tips.some((t) => t!.includes('is set in Advanced settings.'))).toBe(true)
   })
 
   it('keeps the breakdown and steps tables outside the results', () => {
