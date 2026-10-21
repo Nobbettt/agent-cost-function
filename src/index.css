@@ -86,8 +86,7 @@ footer nav { display: inline; }
 .navbar nav { height: 100%; display: flex; align-items: center; gap: 20px; padding: 0 16px; }
 .brand { flex: none; font-size: 14px; font-weight: 600; color: var(--ink); text-decoration: none; white-space: nowrap; }
 .brand-short { display: none; }
-.nav-links { display: flex; gap: 16px; min-width: 0; overflow-x: auto; scrollbar-width: none; font-size: 13px; white-space: nowrap; }
-.nav-links::-webkit-scrollbar { display: none; }
+.nav-links { flex: none; font-size: 13px; white-space: nowrap; }
 /* Calculator controls (currency, Settings): pushed to the right edge; the page links stay beside the brand. */
 .nav-end { flex: none; display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .nav-links a { color: var(--ink-2); text-decoration: none; }
@@ -101,16 +100,11 @@ footer nav { display: inline; }
   .brand-full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .brand-short { display: inline; }
   .navbar nav { gap: 12px; }
-  .nav-links { gap: 12px; }
 }
 @media (max-width: 479px) {
   /* Tight: drop the Settings icon so everything fits at 375px. */
   .settings-toggle { padding: 0 8px; }
   .settings-toggle svg { display: none; }
-}
-@media (max-width: 359px) {
-  /* Below that the link group scrolls; fade its right edge to show it. */
-  .nav-links { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); }
 }
 @media (min-width: 1024px) { .navbar nav { padding: 0 24px; } }
 

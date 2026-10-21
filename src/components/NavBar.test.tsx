@@ -1,38 +1,41 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { mockMatchMedia } from '../test-matchmedia'
 import { NavBar } from './NavBar'
 
 const bar = () => within(screen.getByRole('navigation', { name: 'Main' }))
 
 describe('NavBar', () => {
-  it('on the calculator: brand is the current link, other pages link out, Settings button present', () => {
+  it('on the calculator: Explore is the current page (plain text), the brand is a plain link, Settings is present', () => {
     render(<NavBar page="calculator" settings={{ open: true, onToggle: () => {} }} />)
-    const brand = bar().getByRole('link', { name: 'Agent Cost Function' })
-    expect(brand.getAttribute('href')).toBe('/')
-    expect(brand.getAttribute('aria-current')).toBe('page')
-    expect(bar().getAllByRole('link').map((l) => [l.textContent, l.getAttribute('href')])).toEqual([
-      ['Agent Cost FunctionACF', '/'],
-      ['How it is calculated', '/how-it-works/'],
-      ['Sources', '/sources/'],
-    ])
-    expect(bar().getByRole('button', { name: 'Settings' })).toBeTruthy()
-  })
-
-  it.each([
-    ['how-it-works', 'How it is calculated', 'Sources', '/sources/'],
-    ['sources', 'Sources', 'How it is calculated', '/how-it-works/'],
-  ] as const)('on %s: that entry is aria-current text, no Settings button', (page, current, other, href) => {
-    render(<NavBar page={page} />)
-    const here = bar().getByText(current)
-    expect(here.getAttribute('aria-current')).toBe('page')
-    expect(here.tagName).not.toBe('A')
-    expect(bar().queryByRole('link', { name: current })).toBeNull()
-    expect(bar().getByRole('link', { name: other }).getAttribute('href')).toBe(href)
+    const explore = bar().getByText('Explore')
+    expect(explore.getAttribute('aria-current')).toBe('page')
+    expect(explore.tagName).not.toBe('A')
     const brand = bar().getByRole('link', { name: 'Agent Cost Function' })
     expect(brand.getAttribute('href')).toBe('/')
     expect(brand.getAttribute('aria-current')).toBeNull()
+    expect(bar().getAllByRole('link').map((l) => [l.textContent, l.getAttribute('href')])).toEqual([['Agent Cost FunctionACF', '/']])
+    expect(bar().getByRole('button', { name: 'Settings' })).toBeTruthy()
+  })
+
+  it.each(['how-it-works', 'sources'] as const)('on %s: Explore is a same-tab link to the calculator and nothing is marked current', (page) => {
+    render(<NavBar page={page} />)
+    const explore = bar().getByRole('link', { name: 'Explore' })
+    expect(explore.getAttribute('href')).toBe('/')
+    expect(explore.getAttribute('target')).toBeNull()
+    expect(explore.getAttribute('aria-current')).toBeNull()
+    expect(bar().getByRole('link', { name: 'Agent Cost Function' }).getAttribute('aria-current')).toBeNull()
+    expect(document.querySelector('.navbar [aria-current]')).toBeNull()
     expect(bar().queryByRole('button')).toBeNull()
+  })
+
+  it('has exactly one current marker, and no How it is calculated or Sources links', () => {
+    for (const page of ['calculator', 'how-it-works', 'sources'] as const) {
+      const { unmount } = render(<NavBar page={page} />)
+      expect(document.querySelectorAll('.navbar [aria-current]')).toHaveLength(page === 'calculator' ? 1 : 0)
+      expect(bar().queryByText(/how it is calculated|how it works|sources/i)).toBeNull()
+      expect([...document.querySelectorAll('.navbar a')].map((a) => a.getAttribute('href')).every((h) => h === '/')).toBe(true)
+      unmount()
+    }
   })
 
   it('keeps same-site links in the same tab', () => {
@@ -53,24 +56,7 @@ describe('NavBar', () => {
     expect(bar().getByRole('button', { name: 'Settings' }).getAttribute('aria-expanded')).toBe('true')
   })
 
-  it('below 640px the visible link text is shorter, and the accessible name matches it', () => {
-    mockMatchMedia(true)
-    const { unmount } = render(<NavBar page="calculator" />)
-    expect(bar().getByRole('link', { name: 'How it works' }).getAttribute('href')).toBe('/how-it-works/')
-    expect(bar().queryByText('How it is calculated')).toBeNull()
-    expect(bar().getByRole('link', { name: 'Sources' })).toBeTruthy()
-    unmount()
-    render(<NavBar page="how-it-works" />)
-    expect(bar().getByText('How it works').getAttribute('aria-current')).toBe('page')
-  })
-
-  it('at 640px and up it keeps the full text', () => {
-    mockMatchMedia(false)
-    render(<NavBar page="sources" />)
-    expect(bar().getByRole('link', { name: 'How it is calculated' })).toBeTruthy()
-  })
-
-  it('keeps the brand and the page links together on the left, and the controls group last on the right', () => {
+  it('keeps the brand and Explore together on the left, and the controls group last on the right', () => {
     render(
       <NavBar
         page="calculator" settings={{ open: false, onToggle: () => {} }}

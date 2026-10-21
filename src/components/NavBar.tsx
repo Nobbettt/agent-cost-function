@@ -1,6 +1,5 @@
 import type { ReactNode, RefObject } from 'react'
-import { useMediaQuery } from '../hooks/useMediaQuery'
-import { SITE_LINKS, type Page } from './siteLinks'
+import type { Page } from './siteLinks'
 
 interface SettingsToggle {
   open: boolean
@@ -17,8 +16,6 @@ interface Props {
   controls?: ReactNode
 }
 
-const NARROW_QUERY = '(max-width: 639px)'
-const NARROW_LABELS: Partial<Record<Page, string>> = { 'how-it-works': 'How it works' }
 
 function SlidersIcon() {
   return (
@@ -32,22 +29,16 @@ function SlidersIcon() {
 }
 
 export function NavBar({ page, settings, settingsButtonRef, controls }: Props) {
-  // Below 640px the visible text itself is shorter, so the accessible name matches what is shown.
-  const narrow = useMediaQuery(NARROW_QUERY, false)
   return (
     <header className="navbar">
       <nav aria-label="Main">
-        <a href="/" className="brand" aria-current={page === 'calculator' ? 'page' : undefined}>
+        <a href="/" className="brand">
           <span className="brand-full">Agent Cost Function</span>
           <span className="brand-short" aria-hidden="true">ACF</span>
         </a>
         <div className="nav-links">
-          {SITE_LINKS.filter((l) => l.page !== 'calculator').map((l) => {
-            const text = narrow ? (NARROW_LABELS[l.page] ?? l.label) : l.label
-            return l.page === page
-              ? <span key={l.page} aria-current="page">{text}</span>
-              : <a key={l.page} href={l.href}>{text}</a>
-          })}
+          {/* The one page link: the calculator itself. The footer links the other pages. */}
+          {page === 'calculator' ? <span aria-current="page">Explore</span> : <a href="/">Explore</a>}
         </div>
         {(controls || settings) && (
           <div className="nav-end">
