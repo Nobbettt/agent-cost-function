@@ -27,14 +27,35 @@ describe('loading from a link', () => {
     expect((box('A').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('2')
     expect((box('C').getByLabelText('Model') as HTMLSelectElement).value).toBe('gpt-5.6-sol')
     expect((box('C').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('4')
-    expect((screen.getByLabelText('Added per request (tokens)') as HTMLInputElement).value).toBe('7000')
-    expect((screen.getByLabelText('Reasoning tokens: max') as HTMLInputElement).value).toBe('4000')
+    expect((screen.getByLabelText('Added per request (K tokens)') as HTMLInputElement).value).toBe('7')
+    expect((screen.getByLabelText('Reasoning: max (K tokens)') as HTMLInputElement).value).toBe('4')
     expect((screen.getByLabelText('Currency') as HTMLSelectElement).value).toBe('SEK')
     expect(stat('Setup A').sub).toBe('Claude Opus 5.5 · 1 hour cache')
     expect(stat('Setup C').sub).toBe('GPT-5.6 Sol · 30 min cache')
     expect(screen.getByTestId('chart-cum').getAttribute('data-ids')).toBe('A,C')
     expect(screen.getByTestId('chart-cum').getAttribute('data-xmax')).toBe('500000')
     await screen.findByText(/Shown in SEK/)
+  })
+
+  it('an adv link in raw tokens still decodes to the same values, which the UI shows in thousands', () => {
+    at('/?v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,1&c=claude-opus-5-5,5m,high,kept,0&adv=1000000,20000,5000,500,0,300,1000,2500,5000,10000')
+    render(<App />)
+    fireEvent.click(document.getElementById('advanced-toggle')!)
+    const shown = ['Session length (K tokens)', 'Prompt + tools (K tokens)', 'Added per request (K tokens)', 'Output per request (K tokens)',
+      'Reasoning: none (K tokens)', 'Reasoning: low (K tokens)', 'Reasoning: medium (K tokens)', 'Reasoning: high (K tokens)', 'Reasoning: xhigh (K tokens)', 'Reasoning: max (K tokens)']
+    expect(shown.map((l) => (screen.getByLabelText(l) as HTMLInputElement).value)).toEqual(['1000', '20', '5', '0.5', '0', '0.3', '1', '2.5', '5', '10'])
+    expect(stat('Setup A').value).toBe('$40.22')
+  })
+
+  it('a non-default adv link keeps its raw token values and shows them in thousands', () => {
+    at('/?v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,1&adv=500000,12500,7500,300,0,300,1000,2500,5000,10000')
+    render(<App />)
+    fireEvent.click(document.getElementById('advanced-toggle')!)
+    expect((screen.getByLabelText('Session length (K tokens)') as HTMLInputElement).value).toBe('500')
+    expect((screen.getByLabelText('Prompt + tools (K tokens)') as HTMLInputElement).value).toBe('12.5')
+    expect((screen.getByLabelText('Added per request (K tokens)') as HTMLInputElement).value).toBe('7.5')
+    expect((screen.getByLabelText('Output per request (K tokens)') as HTMLInputElement).value).toBe('0.3')
+    expect(screen.getByTestId('chart-cum').getAttribute('data-xmax')).toBe('500000')
   })
 
   it('persists a link currency as the stored choice', () => {
@@ -71,7 +92,7 @@ describe('loading from a link', () => {
     expect(groups()).toEqual(['A', 'B'])
     expect((box('B').getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('5m')
     expect((box('B').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('50')
-    expect((screen.getByLabelText('Session length (tokens)') as HTMLInputElement).value).toBe('1000000')
+    expect((screen.getByLabelText('Session length (K tokens)') as HTMLInputElement).value).toBe('1000')
     expect(screen.queryByText(/newer version/)).toBeNull()
   })
 
@@ -122,15 +143,16 @@ describe('the address bar follows the state', () => {
   it('adding a setup, changing shared numbers and the currency all show up, and undoing it all is clean again', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: '+ Add setup' }))
-    fireEvent.change(screen.getByLabelText('Added per request (tokens)'), { target: { value: '7000' } })
+    fireEvent.change(screen.getByLabelText('Added per request (K tokens)'), { target: { value: '7' } })
     act(() => { vi.advanceTimersByTime(300) })
     const query = new URLSearchParams(window.location.search)
     expect(query.get('v')).toBe('1')
     expect(query.get('c')).toBe('claude-opus-5-5,5m,high,kept,0')
     expect(query.get('d')).toBe('claude-opus-5-5,5m,high,kept,0')
+    // The link stays in raw tokens: 7 (K) typed is 7000 tokens.
     expect(query.get('adv')).toBe('1000000,20000,7000,500,0,300,1000,2500,5000,10000')
     fireEvent.click(screen.getByRole('button', { name: 'Remove Setup D' }))
-    fireEvent.change(screen.getByLabelText('Added per request (tokens)'), { target: { value: '5000' } })
+    fireEvent.change(screen.getByLabelText('Added per request (K tokens)'), { target: { value: '5' } })
     act(() => { vi.advanceTimersByTime(300) })
     expect(window.location.search).toBe('')
   })

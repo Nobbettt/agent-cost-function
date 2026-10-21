@@ -84,7 +84,7 @@ describe('Claude Cache Break-even page: settings', () => {
     expect(options).toContain('claude-fable-5-1')
     expect((field('Reasoning effort') as HTMLSelectElement).value).toBe('high')
     expect((field('Earlier reasoning in context') as HTMLSelectElement).value).toBe('kept')
-    expect((field('Session length (tokens)') as HTMLInputElement).value).toBe('1000000')
+    expect((field('Session length (K tokens)') as HTMLInputElement).value).toBe('1000')
     expect((field('Interruptions shown') as HTMLInputElement).value).toBe('12')
   })
 
@@ -135,7 +135,7 @@ describe('Claude Cache Break-even page: settings', () => {
 
   it('says there is no break-even when there is none within the interruptions shown (a session too short to run)', () => {
     render(<CacheBreakEvenPage />)
-    fireEvent.change(field('Session length (tokens)'), { target: { value: '10000' } })
+    fireEvent.change(field('Session length (K tokens)'), { target: { value: '10' } })
     expect(stat('Break-even')).toEqual({ value: 'None up to 12', sub: '5 min cache stays cheaper' })
     expect(attr('exact')).toBe('none')
     expect(attr('marker')).toBe('')
@@ -146,10 +146,10 @@ describe('Claude Cache Break-even page: settings', () => {
     const toggle = document.getElementById('advanced-toggle')!
     expect(toggle.getAttribute('aria-expanded')).toBe('false')
     expect(document.getElementById('advanced-body')!.hasAttribute('hidden')).toBe(true)
-    expect(screen.getAllByLabelText('Session length (tokens)')).toHaveLength(1)
+    expect(screen.getAllByLabelText('Session length (K tokens)')).toHaveLength(1)
     fireEvent.click(toggle)
     expect(document.getElementById('advanced-body')!.hasAttribute('hidden')).toBe(false)
-    for (const label of ['System prompt + tools (tokens)', 'Added per request (tokens)', 'Output per request (tokens)', 'Reasoning tokens: high']) {
+    for (const label of ['Prompt + tools (K tokens)', 'Added per request (K tokens)', 'Output per request (K tokens)', 'Reasoning: high (K tokens)']) {
       expect(within(document.getElementById('advanced-body')!).getByLabelText(label)).toBeTruthy()
     }
   })
@@ -157,7 +157,7 @@ describe('Claude Cache Break-even page: settings', () => {
   it('an Advanced setting reaches the chart: more added tokens per request changes the cost', () => {
     render(<CacheBreakEvenPage />)
     fireEvent.click(document.getElementById('advanced-toggle')!)
-    fireEvent.change(screen.getByLabelText('Added per request (tokens)'), { target: { value: '10000' } })
+    fireEvent.change(screen.getByLabelText('Added per request (K tokens)'), { target: { value: '10' } })
     const expected = costCurve(DEFAULT_SETUPS.A, { ...DEFAULT_SHARED, growth: 10000 }, 12)
     expect(attr('cost5').split(',')[0]).toBe(expected[0].cost5.toFixed(4))
     expect(attr('cost5').split(',')[0]).not.toBe('25.9325')

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { everyOtherTickLabel, fmtPrice, fmtTokens, fmtUsd, formatMoney, signedMoney, truncateLabel, logTickLabel } from './format'
+import { everyOtherTickLabel, fmtPrice, fmtTokens, fmtUsd, formatMoney, signedMoney, truncateLabel, logTickLabel, displayValue } from './format'
 
 describe('fmtTokens', () => {
   it('formats raw, K and M', () => {
@@ -141,5 +141,16 @@ describe('logTickLabel', () => {
 
   it('is blank for zero, negative and non-finite values', () => {
     for (const v of [0, -1, -0.5, NaN, Infinity]) expect(logTickLabel(v, f)).toBe('')
+  })
+})
+
+describe('displayValue', () => {
+  it('divides by the scale and keeps at most 3 decimals without trailing zeros or float noise', () => {
+    expect(displayValue(5000)).toBe('5000')
+    expect(displayValue(300, 1000)).toBe('0.3')
+    expect(displayValue(0.1 + 0.2, 1)).toBe('0.3')
+    expect(displayValue(1000000, 1000)).toBe('1000')
+    expect(displayValue(1234.5678, 1000)).toBe('1.235')
+    expect(displayValue(0, 1000)).toBe('0')
   })
 })

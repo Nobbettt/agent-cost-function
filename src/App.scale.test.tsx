@@ -60,7 +60,7 @@ describe('the per-request chart scale switch', () => {
     window.history.replaceState(null, '', '/')
     render(<App />)
     fireEvent.click(option('Linear'))
-    fireEvent.change(screen.getByLabelText('Added per request (tokens)'), { target: { value: '7000' } })
+    fireEvent.change(screen.getByLabelText('Added per request (K tokens)'), { target: { value: '7' } })
     vi.advanceTimersByTime(300)
     expect(window.location.search).not.toBe('')
     expect(window.location.search).not.toMatch(/scale|linear|log/i)

@@ -1,6 +1,6 @@
 import { DEFAULT_SHARED } from '../data/defaults'
 import { FIELD_HELP, thinkingHelp } from '../data/fieldHelp'
-import { SHARED_LIMITS } from '../data/limits'
+import { SHARED_LIMITS, TOKENS_PER_K } from '../data/limits'
 import { ALL_EFFORTS } from '../data/pricing'
 import type { Effort, Shared } from '../model/types'
 import { Chevron } from './Chevron'
@@ -18,13 +18,13 @@ interface Props {
 export type ScalarKey = 'session' | 'base' | 'growth' | 'visibleOut'
 
 const SCALARS: { key: ScalarKey; label: string; min: number; max: number; step: number }[] = [
-  { key: 'session', label: 'Session length (tokens)', ...SHARED_LIMITS.session },
-  { key: 'base', label: 'System prompt + tools (tokens)', ...SHARED_LIMITS.base },
-  { key: 'growth', label: 'Added per request (tokens)', ...SHARED_LIMITS.growth },
-  { key: 'visibleOut', label: 'Output per request (tokens)', ...SHARED_LIMITS.visibleOut },
+  { key: 'session', label: 'Session length (K tokens)', ...SHARED_LIMITS.session },
+  { key: 'base', label: 'Prompt + tools (K tokens)', ...SHARED_LIMITS.base },
+  { key: 'growth', label: 'Added per request (K tokens)', ...SHARED_LIMITS.growth },
+  { key: 'visibleOut', label: 'Output per request (K tokens)', ...SHARED_LIMITS.visibleOut },
 ]
 
-const thinkingLabel = (e: Effort) => `Reasoning tokens: ${e}`
+const thinkingLabel = (e: Effort) => `Reasoning: ${e} (K tokens)`
 
 export function AdvancedSettings({ shared, onChange, expanded, onToggle, omit = [] }: Props) {
   return (
@@ -42,14 +42,14 @@ export function AdvancedSettings({ shared, onChange, expanded, onToggle, omit = 
         <div className="fields">
           {SCALARS.filter(({ key }) => !omit.includes(key)).map(({ key, label, ...range }) => (
             <NumberField
-              key={key} label={label} help={FIELD_HELP[key]} name={key} {...range}
+              key={key} label={label} help={FIELD_HELP[key]} name={key} {...range} scale={TOKENS_PER_K}
               fallback={DEFAULT_SHARED[key]} value={shared[key]}
               onChange={(v) => onChange({ ...shared, [key]: v })}
             />
           ))}
           {ALL_EFFORTS.map((e) => (
             <NumberField
-              key={e} label={thinkingLabel(e)} help={thinkingHelp(e)} name={`think-${e}`} {...SHARED_LIMITS.thinking}
+              key={e} label={thinkingLabel(e)} help={thinkingHelp(e)} name={`think-${e}`} {...SHARED_LIMITS.thinking} scale={TOKENS_PER_K}
               fallback={DEFAULT_SHARED.thinking[e]} value={shared.thinking[e]}
               onChange={(v) => onChange({ ...shared, thinking: { ...shared.thinking, [e]: v } })}
             />

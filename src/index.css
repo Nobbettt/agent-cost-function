@@ -222,8 +222,8 @@ footer nav { display: inline; }
 .controls .setups { grid-template-columns: 1fr; }
 /* One column by default; two only when the body is wide enough for each column to hold the longest label. */
 .controls .fields, .controls .setup .fields { grid-template-columns: minmax(0, 1fr); }
-/* Longest label ("System prompt + tools (tokens)" + its tip) is about 209px: two columns need ~430px inside the card
-   (+34px card padding) = 464px of body content. The drawer (max 480px, 447px of body content) therefore stays at one column,
+/* Longest label ("Output per request (K tokens)" + its tip) is about 199px: two columns need ~410px inside the card
+   (+34px card padding) = 444px of body content. The drawer (max 480px, 447px of body content) therefore stays at one column,
    the docked sidebar (510px or more, 477px of body content) gets two. */
 @container controls (min-width: 470px) {
   .controls .fields, .controls .setup .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }

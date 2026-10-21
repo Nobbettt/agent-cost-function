@@ -81,3 +81,6 @@ export function truncateLabel(text: string, max: number): string {
   const chars = Array.from(text)
   return chars.length <= max ? text : `${chars.slice(0, max - 1).join('')}…`
 }
+
+/** `n / scale` as input text: at most 3 decimals, trailing zeros trimmed, no float noise (0.3, not 0.30000000000000004). */
+export const displayValue = (n: number, scale = 1): string => String(+(n / scale).toFixed(3))

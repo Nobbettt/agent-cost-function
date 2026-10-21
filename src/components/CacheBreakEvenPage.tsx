@@ -4,7 +4,7 @@ import { useCurrency } from '../currency/context'
 import { NAV_WIDE_QUERY } from '../data/breakpoints'
 import { DEFAULT_SETUPS, DEFAULT_SHARED } from '../data/defaults'
 import { FIELD_HELP } from '../data/fieldHelp'
-import { DEFAULT_SHOWN, SHARED_LIMITS, SHOWN_LIMITS } from '../data/limits'
+import { DEFAULT_SHOWN, SHARED_LIMITS, SHOWN_LIMITS, TOKENS_PER_K } from '../data/limits'
 import { MODELS, modelsOf, reasoningDefault, reasoningOptions } from '../data/pricing'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { avgBreakCost, breakEven, costCurve } from '../model/breakEven'
@@ -83,7 +83,7 @@ function Content() {
                 </select>
               </Field>
               <NumberField
-                label="Session length (tokens)" help={FIELD_HELP.session} name="session" {...SHARED_LIMITS.session}
+                label="Session length (K tokens)" help={FIELD_HELP.session} name="session" {...SHARED_LIMITS.session} scale={TOKENS_PER_K}
                 fallback={DEFAULT_SHARED.session} value={shared.session} onChange={(session) => setShared({ ...shared, session })}
               />
               <NumberField

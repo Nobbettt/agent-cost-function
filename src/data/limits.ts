@@ -12,3 +12,6 @@ export const SHARED_LIMITS = {
 /** Cache break-even page: how many interruptions its chart covers. */
 export const SHOWN_LIMITS = { min: 4, max: 40, step: 1 } as const
 export const DEFAULT_SHOWN = 12
+
+/** Token inputs are shown and typed in thousands (K); everything stored and calculated stays in tokens. */
+export const TOKENS_PER_K = 1000

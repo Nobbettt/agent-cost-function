@@ -8,13 +8,13 @@ export const FIELD_HELP = {
   effort: 'How hard the model thinks on each request. Higher effort means more reasoning tokens, billed as output. The token amount per level is set in Advanced settings.',
   reasoning: 'Kept: reasoning from earlier requests stays in the context and is read back as input on later requests. Dropped: only the visible conversation carries forward.',
   interruptions: 'How many times the session pauses for longer than the cache lifetime. The pauses are spread evenly over the session, and each one makes the next request write the whole context to the cache again.',
-  session: 'How large the context grows before the session ends. This is the x axis of the charts.',
-  base: 'Tokens sent at the start of every request: system prompt, tool definitions and project instructions.',
-  growth: 'Tokens added to the context by each request: tool results, user messages and the previous reply. Reasoning is not included.',
-  visibleOut: 'Normal output per request (text and tool calls), billed as output tokens.',
+  session: 'How large the context grows before the session ends. This is the x axis of the charts. Entered in thousands of tokens.',
+  base: 'Tokens sent at the start of every request: system prompt, tool definitions and project instructions. Entered in thousands of tokens.',
+  growth: 'Tokens added to the context by each request: tool results, user messages and the previous reply. Reasoning is not included. Entered in thousands of tokens.',
+  visibleOut: 'Normal output per request (text and tool calls), billed as output tokens. Entered in thousands of tokens.',
   interruptionsShown: 'How many interruptions the chart covers. Each one is a pause longer than 5 minutes but shorter than an hour.',
   currency: 'Display currency. Costs are calculated in USD and converted at the daily ECB reference rate.',
 } as const
 
 export const thinkingHelp = (level: Effort): string =>
-  `Assumed reasoning tokens per request at ${level} effort, billed as output. Providers don't publish these numbers, so this is a guess you can tune.`
+  `Assumed reasoning tokens per request at ${level} effort, billed as output. Providers don't publish these numbers, so this is a guess you can tune. Entered in thousands of tokens.`

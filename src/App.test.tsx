@@ -1,7 +1,10 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { MODELS, PRICES_CHECKED } from './data/pricing'
+import { DEFAULT_SETUP_LIST, DEFAULT_SETUPS, DEFAULT_SHARED } from './data/defaults'
+import { ALL_EFFORTS, MODELS, PRICES_CHECKED } from './data/pricing'
+import { fmtUsd } from './format'
+import { simulate } from './model/simulate'
 import { stat, summaryText } from './test-summary'
 import type { SetupId } from './model/types'
 
@@ -157,11 +160,51 @@ describe('App', () => {
 
   it('clamps numbers to their range but keeps showing what was typed', () => {
     render(<App />)
-    const session = screen.getByLabelText('Session length (tokens)') as HTMLInputElement
+    const session = screen.getByLabelText('Session length (K tokens)') as HTMLInputElement
     fireEvent.change(session, { target: { value: '5' } })
     expect(session.value).toBe('5')
     expect(stat('Compared at').value).toBe('10K tokens')
     expect(screen.getByTestId('chart-cum').getAttribute('data-xmax')).toBe('10000')
+  })
+
+  it('shows every token field in thousands, the defaults as 1000, 20, 5, 0.5, 0, 0.3, 1, 2.5, 5, 10', () => {
+    render(<App />)
+    fireEvent.click(document.getElementById('advanced-toggle')!)
+    const labels = ['Session length (K tokens)', 'Prompt + tools (K tokens)', 'Added per request (K tokens)', 'Output per request (K tokens)',
+      ...ALL_EFFORTS.map((e) => `Reasoning: ${e} (K tokens)`)]
+    expect(labels.map((l) => (screen.getByLabelText(l) as HTMLInputElement).value)).toEqual(['1000', '20', '5', '0.5', '0', '0.3', '1', '2.5', '5', '10'])
+    expect(screen.queryByLabelText(/\(tokens\)/)).toBeNull()
+    const limits = ['Session length (K tokens)', 'Prompt + tools (K tokens)', 'Output per request (K tokens)', 'Reasoning: high (K tokens)']
+      .map((l) => { const i = screen.getByLabelText(l); return [i.getAttribute('min'), i.getAttribute('max'), i.getAttribute('step')] })
+    expect(limits).toEqual([['10', '1000', '10'], ['0', '200', '1'], ['0', '64', '0.1'], ['0', '128', '0.1']])
+    // The interruption count is not a token field.
+    expect((setupBox('A').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('6')
+  })
+
+  it('typing thousands changes the cards as the same number of tokens would: 1 in Output per request is 1000 tokens', () => {
+    render(<App />)
+    fireEvent.click(document.getElementById('advanced-toggle')!)
+    const shared = { ...DEFAULT_SHARED, visibleOut: 1000 }
+    const expectedA = DEFAULT_SETUP_LIST.map((s) => simulate(s, shared).totals.total)
+    fireEvent.change(screen.getByLabelText('Output per request (K tokens)'), { target: { value: '1' } })
+    expect([stat('Setup A').value, stat('Setup B').value, stat('Setup C').value]).toEqual(expectedA.map((v) => `$${v.toFixed(2)}`))
+    // 0.5 is the default again.
+    fireEvent.change(screen.getByLabelText('Output per request (K tokens)'), { target: { value: '0.5' } })
+    expect(stat('Setup A').value).toBe('$40.22')
+    expect(stat('Setup C').value).toBe('$25.93')
+  })
+
+  it('accepts decimals, rounds to whole tokens and clamps in tokens', () => {
+    render(<App />)
+    fireEvent.click(document.getElementById('advanced-toggle')!)
+    const out = screen.getByLabelText('Output per request (K tokens)') as HTMLInputElement
+    fireEvent.change(out, { target: { value: '0.3' } })
+    expect(stat('Setup C').value).toBe(fmtUsd(simulate(DEFAULT_SETUPS.C, { ...DEFAULT_SHARED, visibleOut: 300 }).totals.total))
+    fireEvent.change(out, { target: { value: '9999' } })
+    expect(stat('Setup C').value).toBe(fmtUsd(simulate(DEFAULT_SETUPS.C, { ...DEFAULT_SHARED, visibleOut: 64000 }).totals.total))
+    expect(out.value).toBe('9999')
+    fireEvent.change(out, { target: { value: '' } })
+    expect(stat('Setup C').value).toBe('$25.93')
   })
 
   it('falls back to the default when a number field is emptied', () => {
@@ -178,8 +221,8 @@ describe('App', () => {
     render(<App />)
     const breaks = setupBox('B').getByLabelText('Cache breaking interruptions')
     expect([breaks.getAttribute('min'), breaks.getAttribute('max'), breaks.getAttribute('step')]).toEqual(['0', '50', '1'])
-    const growth = screen.getByLabelText('Added per request (tokens)')
-    expect([growth.getAttribute('min'), growth.getAttribute('max'), growth.getAttribute('step')]).toEqual(['500', '200000', '500'])
+    const growth = screen.getByLabelText('Added per request (K tokens)')
+    expect([growth.getAttribute('min'), growth.getAttribute('max'), growth.getAttribute('step')]).toEqual(['0.5', '200', '0.5'])
   })
 
   it('shows the breakdown and steps tables', () => {
