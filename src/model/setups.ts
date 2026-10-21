@@ -10,10 +10,16 @@ export const CACHE_LABEL: Readonly<Record<CacheId, string>> = {
 /** "Claude Opus 5.5 · 5 min cache": the model and its cache. */
 export const modelAndCache = (s: Setup): string => `${MODELS[s.model].name} · ${CACHE_LABEL[s.cache]} cache`
 
+/** "6 cache breaks", "1 cache break", "no cache breaks": the one wording of the interruption count. */
+export const cacheBreaks = (s: Setup): string =>
+  s.interruptions === 0 ? 'no cache breaks' : `${s.interruptions} cache break${s.interruptions === 1 ? '' : 's'}`
+
+/** The setup card's sub-line: "Claude Opus 5.5 · 5 min cache · 6 cache breaks". */
+export const cardSubline = (s: Setup): string => `${modelAndCache(s)} · ${cacheBreaks(s)}`
+
 /** One compact line with every selected value, for a collapsed setup. */
 export function summarizeSetup(s: Setup): string {
-  const breaks = s.interruptions === 0 ? 'no cache breaks' : `${s.interruptions} cache break${s.interruptions === 1 ? '' : 's'}`
-  return `${modelAndCache(s)} · ${s.effort} · reasoning ${s.reasoning} · ${breaks}`
+  return `${modelAndCache(s)} · ${s.effort} · reasoning ${s.reasoning} · ${cacheBreaks(s)}`
 }
 
 export const MAX_NAME_LENGTH = 40

@@ -267,7 +267,7 @@ describe('everything follows the number of setups', () => {
     renderTwo()
     add()
     expect(document.querySelector('.summary')!.getAttribute('data-count')).toBe('5')
-    expect(stat('Setup C')).toEqual({ value: '$32.76', sub: 'Claude Opus 5.5 · 1 hour cache' })
+    expect(stat('Setup C')).toEqual({ value: '$32.76', sub: 'Claude Opus 5.5 · 1 hour cache · 1 cache break' })
     // C is a copy of B, so B and C tie for cheapest; the first of them is named.
     expect(stat('Cheapest')).toEqual({ value: 'Setup B', sub: 'saves $7.47 (19%) vs Setup A' })
     expect(stat('Compared at').value).toBe('995K tokens')

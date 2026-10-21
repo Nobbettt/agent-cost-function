@@ -12,14 +12,14 @@ import type { SetupId } from './model/types'
 vi.mock('./components/CostChart', async () => ({ CostChart: (await import('./test-chart-mock')).CostChartMock }))
 
 const setupBox = (id: SetupId) => within(screen.getByRole('group', { name: `Setup ${id}` }))
-const DEFAULT_SUMMARY = 'Setup A$40.22Claude Opus 5.5 · 5 min cacheSetup B$32.76Claude Opus 5.5 · 1 hour cacheSetup C$25.93Claude Opus 5.5 · 5 min cacheCheapestSetup Csaves $14.29 (36%) vs Setup ACompared at995K tokenscontext size'
+const DEFAULT_SUMMARY = 'Setup A$40.22Claude Opus 5.5 · 5 min cache · 6 cache breaksSetup B$32.76Claude Opus 5.5 · 1 hour cache · 1 cache breakSetup C$25.93Claude Opus 5.5 · 5 min cache · no cache breaksCheapestSetup Csaves $14.29 (36%) vs Setup ACompared at995K tokenscontext size'
 
 describe('App', () => {
   it('renders the default summary cards', () => {
     render(<App />)
-    expect(stat('Setup A')).toEqual({ value: '$40.22', sub: 'Claude Opus 5.5 · 5 min cache' })
-    expect(stat('Setup B')).toEqual({ value: '$32.76', sub: 'Claude Opus 5.5 · 1 hour cache' })
-    expect(stat('Setup C')).toEqual({ value: '$25.93', sub: 'Claude Opus 5.5 · 5 min cache' })
+    expect(stat('Setup A')).toEqual({ value: '$40.22', sub: 'Claude Opus 5.5 · 5 min cache · 6 cache breaks' })
+    expect(stat('Setup B')).toEqual({ value: '$32.76', sub: 'Claude Opus 5.5 · 1 hour cache · 1 cache break' })
+    expect(stat('Setup C')).toEqual({ value: '$25.93', sub: 'Claude Opus 5.5 · 5 min cache · no cache breaks' })
     expect(stat('Cheapest')).toEqual({ value: 'Setup C', sub: 'saves $14.29 (36%) vs Setup A' })
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
     expect(summaryText().replace(/ /g, '')).toBe(DEFAULT_SUMMARY.replace(/ /g, ''))
@@ -39,7 +39,7 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(setupBox('A').getByLabelText('OpenAI'))
     expect(stat('Compared at')).toEqual({ value: '920K tokens', sub: 'One model stops earlier at its max input' })
-    expect(stat('Setup A').sub).toBe('GPT-5.6 Sol · 30 min cache')
+    expect(stat('Setup A').sub).toBe('GPT-5.6 Sol · 30 min cache · 6 cache breaks')
   })
 
   it('has a Settings aside and a Results section, with the results first in DOM order', () => {

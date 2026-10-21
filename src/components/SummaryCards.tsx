@@ -1,6 +1,6 @@
 import { fmtTokens } from '../format'
 import type { Comparison } from '../model/compare'
-import { displayName, modelAndCache } from '../model/setups'
+import { cardSubline, displayName } from '../model/setups'
 import type { Setup, SetupId } from '../model/types'
 import { SeriesKey } from './SeriesKey'
 
@@ -51,7 +51,7 @@ export function SummaryCards({ comparison: c, setups, format }: Props) {
     <section className="summary" aria-label="Summary" data-count={setups.length + 2}>
       <dl>
         {setups.map((s) => (
-          <Stat key={s.id} label={displayName(s)} series={s.id} value={format(valueOf(s.id))} sub={modelAndCache(s)} />
+          <Stat key={s.id} label={displayName(s)} series={s.id} value={format(valueOf(s.id))} sub={cardSubline(s)} />
         ))}
         <Stat label="Cheapest" value={cheapest.value} sub={cheapest.sub} />
         <Stat

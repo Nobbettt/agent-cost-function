@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETUP_LIST, DEFAULT_SETUPS } from '../data/defaults'
 import {
-  addSetup, canAddSetup, canRemoveSetup, cleanName, displayName, firstFreeId, focusAfterRemove, modelAndCache, removeSetup, summarizeSetup,
+  addSetup, canAddSetup, canRemoveSetup, cleanName, displayName, firstFreeId, cacheBreaks, cardSubline, focusAfterRemove, modelAndCache, removeSetup, summarizeSetup,
 } from './setups'
 import type { Setup, SetupId } from './types'
 
@@ -151,5 +151,21 @@ describe('cleanName', () => {
   it('gives undefined for nothing, only whitespace or control characters, and for the default name of that setup', () => {
     for (const raw of [undefined, null, '', '   ', '\u0000\u0007', ' Setup  B '] as const) expect(cleanName(raw, 'B')).toBeUndefined()
     expect(cleanName('Setup B', 'A')).toBe('Setup B')
+  })
+})
+
+describe('cacheBreaks and cardSubline', () => {
+  it('say "no cache breaks", "1 cache break" and "N cache breaks"', () => {
+    expect(cacheBreaks({ ...A, interruptions: 0 })).toBe('no cache breaks')
+    expect(cacheBreaks({ ...A, interruptions: 1 })).toBe('1 cache break')
+    expect(cacheBreaks({ ...A, interruptions: 2 })).toBe('2 cache breaks')
+    expect(cacheBreaks({ ...A, interruptions: 50 })).toBe('50 cache breaks')
+  })
+
+  it('build the card sub-line from the model, the cache and the breaks, and the summary uses the same wording', () => {
+    expect(cardSubline(A)).toBe('Claude Opus 5.5 · 5 min cache · 6 cache breaks')
+    expect(cardSubline(B)).toBe('Claude Opus 5.5 · 1 hour cache · 1 cache break')
+    expect(cardSubline({ ...A, interruptions: 0 })).toBe('Claude Opus 5.5 · 5 min cache · no cache breaks')
+    expect(summarizeSetup(B).endsWith(cacheBreaks(B))).toBe(true)
   })
 })
