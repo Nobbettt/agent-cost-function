@@ -1,6 +1,6 @@
 import {
   Chart, Interaction, Legend, LinearScale, LogarithmicScale, LineController, LineElement, PointElement, Tooltip,
-  type ChartConfiguration, type ChartType, type InteractionItem, type InteractionModeFunction, type Plugin,
+  type ChartConfiguration, type ChartOptions, type ChartType, type InteractionItem, type InteractionModeFunction, type Plugin,
 } from 'chart.js'
 import { everyOtherTickLabel, fmtTokens, logTickLabel, truncateLabel } from '../format'
 import type { Point, Run, SetupId } from '../model/types'
@@ -14,7 +14,7 @@ declare module 'chart.js' {
     nearestPerDataset: InteractionModeFunction
   }
   interface PluginOptionsByType<TType extends ChartType> {
-    endLabels?: { enabled: boolean }
+    endLabels?: { enabled: boolean; minWidth?: number }
   }
 }
 
@@ -26,7 +26,7 @@ export type ChartPoint = Point & { y: number | null }
 export type YScale = 'linear' | 'log'
 type LineChart = Chart<'line', ChartPoint[]>
 
-const crosshair: Plugin<'line'> = {
+export const crosshair: Plugin<'line'> = {
   id: 'crosshair',
   afterDatasetsDraw(chart) {
     const active = chart.tooltip?.getActiveElements()
@@ -48,27 +48,38 @@ const crosshair: Plugin<'line'> = {
 // scriptable and call it with its own context.
 const END_LABEL_NAME_MAX = 14
 const END_LABEL_FONT = '600 12px system-ui, -apple-system, sans-serif'
-const endLabelText = (ds: { label?: string; data: ChartPoint[] }, format: (usd: number) => string) =>
+/** The part of a dataset an end label needs, so other line charts (the break-even chart) can share the plugin. */
+interface LabelledDataset { label?: string; data: { y: number | null }[] }
+const endLabelText = (ds: LabelledDataset, format: (usd: number) => string) =>
   `${truncateLabel(ds.label ?? '', END_LABEL_NAME_MAX)} ${format(ds.data.at(-1)?.y ?? 0)}`
 
-const makeEndLabels = (getFormat: () => (usd: number) => string): Plugin<'line', { enabled: boolean }> => ({
+/** Charts whose end labels are drawn at their current width (`minWidth` hides them on a narrow chart). */
+const labelsShown = new WeakSet<object>()
+
+export const makeEndLabels = (getFormat: () => (usd: number) => string): Plugin<'line', { enabled: boolean; minWidth?: number }> => ({
   id: 'endLabels',
   // The names are user text of any width: reserve exactly the room the widest label needs (8px gap, 4px slack).
   beforeLayout(chart, _args, opts) {
+    labelsShown.delete(chart)
     if (!opts.enabled) return
+    if (chart.width < (opts.minWidth ?? 0)) {
+      chart.options.layout = { ...chart.options.layout, padding: { right: 8 } }
+      return
+    }
+    labelsShown.add(chart)
     const { ctx } = chart
     const format = getFormat()
     ctx.save()
     ctx.font = END_LABEL_FONT
-    const widest = Math.max(0, ...(chart as LineChart).data.datasets.map((ds) => ctx.measureText(endLabelText(ds, format)).width))
+    const widest = Math.max(0, ...(chart.data.datasets as unknown as LabelledDataset[]).map((ds) => ctx.measureText(endLabelText(ds, format)).width))
     ctx.restore()
     chart.options.layout = { ...chart.options.layout, padding: { right: Math.ceil(widest) + 12 } }
   },
   afterDatasetsDraw(chart, _args, opts) {
-    if (!opts.enabled) return
+    if (!opts.enabled || !labelsShown.has(chart)) return
     const format = getFormat()
     const { ctx, chartArea } = chart
-    const labels = (chart as LineChart).data.datasets.map((ds, i) => {
+    const labels = (chart.data.datasets as unknown as LabelledDataset[]).map((ds, i) => {
       const last = chart.getDatasetMeta(i).data.at(-1)
       return last && { x: last.x, y: Math.max(last.y, chartArea.top + 6), text: endLabelText(ds, format) }
     }).filter((l) => !!l).sort((a, b) => a.y - b.y)
@@ -171,7 +182,7 @@ export function lineConfig(showEndLabels: boolean, getFormat: () => (usd: number
 }
 
 /** Applies the current CSS theme colours to the chart; call chart.update() afterwards. */
-export function applyTheme(chart: LineChart): void {
+export function applyTheme(chart: { options: ChartOptions<'line'> }): void {
   const ink2 = css('--ink-2')
   for (const axis of Object.values(chart.options.scales ?? {})) {
     if (!axis) continue

@@ -101,7 +101,7 @@ footer nav { display: inline; }
 .navbar nav { height: 100%; display: flex; align-items: center; gap: 20px; padding: 0 16px; }
 .brand { flex: none; font-size: 14px; font-weight: 600; color: var(--ink); text-decoration: none; white-space: nowrap; }
 .brand-short { display: none; }
-.nav-links { flex: none; font-size: 13px; white-space: nowrap; }
+.nav-links { flex: none; display: flex; gap: 16px; font-size: 13px; white-space: nowrap; }
 /* Calculator controls (Share, currency): pushed to the right edge; the page links stay beside the brand. */
 .nav-end { flex: none; display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .nav-links a { color: var(--ink-2); text-decoration: none; }
@@ -257,3 +257,9 @@ footer nav { display: inline; }
   .results .card h2, .results .card-head { flex: none; }
   .results .chart-box { flex: 1; min-height: 0; height: auto; }
 }
+
+/* Cache break-even page: the settings card holds the fields and the collapsed Advanced settings. */
+.be-settings .fields { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.be-settings .advanced { margin-top: 12px; }
+/* Long card labels wrap instead of being cut off (the calculator's labels are setup names, which are cut). */
+.summary.wrap-labels .stat-label { white-space: normal; overflow-wrap: anywhere; }

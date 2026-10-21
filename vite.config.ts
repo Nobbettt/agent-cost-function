@@ -8,11 +8,12 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      // Multi-page: the calculator at /, plus /how-it-works/ and /sources/.
+      // Multi-page: the calculator at /, plus /how-it-works/, /sources/ and /cache-break-even/.
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         sources: resolve(import.meta.dirname, 'sources/index.html'),
         howItWorks: resolve(import.meta.dirname, 'how-it-works/index.html'),
+        cacheBreakEven: resolve(import.meta.dirname, 'cache-break-even/index.html'),
       },
     },
   },

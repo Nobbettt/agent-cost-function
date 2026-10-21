@@ -24,6 +24,7 @@ describe('HowItWorksPage', () => {
     expect(current.tagName).not.toBe('A')
     expect(nav.getAllByRole('link').map((l) => [l.textContent, l.getAttribute('href')])).toEqual([
       ['Calculator', '/'],
+      ['Claude Cache Break-even', '/cache-break-even/'],
       ['Sources', '/sources/'],
     ])
   })

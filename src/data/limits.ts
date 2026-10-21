@@ -8,3 +8,7 @@ export const SHARED_LIMITS = {
   visibleOut: { min: 0, max: 64000, step: 100 },
   thinking: { min: 0, max: 128000, step: 100 },
 } as const
+
+/** Cache break-even page: how many interruptions its chart covers. */
+export const SHOWN_LIMITS = { min: 4, max: 40, step: 1 } as const
+export const DEFAULT_SHOWN = 12

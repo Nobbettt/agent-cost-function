@@ -12,6 +12,7 @@ export const FIELD_HELP = {
   base: 'Tokens sent at the start of every request: system prompt, tool definitions and project instructions.',
   growth: 'Tokens added to the context by each request: tool results, user messages and the previous reply. Reasoning is not included.',
   visibleOut: 'Normal output per request (text and tool calls), billed as output tokens.',
+  interruptionsShown: 'How many interruptions the chart covers. Each one is a pause longer than 5 minutes but shorter than an hour.',
   currency: 'Display currency. Costs are calculated in USD and converted at the daily ECB reference rate.',
 } as const
 

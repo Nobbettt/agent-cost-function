@@ -208,6 +208,7 @@ describe('App', () => {
     const nav = within(footer).getByRole('navigation', { name: 'Site' })
     const links = within(nav).getAllByRole('link')
     expect(links.map((l) => [l.textContent, l.getAttribute('href'), l.getAttribute('target')])).toEqual([
+      ['Claude Cache Break-even', '/cache-break-even/', null],
       ['How it is calculated', '/how-it-works/', null],
       ['Sources', '/sources/', null],
     ])

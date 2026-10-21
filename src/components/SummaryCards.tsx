@@ -12,7 +12,7 @@ interface StatProps {
   series?: SetupId
 }
 
-function Stat({ label, value, sub, series }: StatProps) {
+export function Stat({ label, value, sub, series }: StatProps) {
   return (
     <div className="stat">
       <dt>
