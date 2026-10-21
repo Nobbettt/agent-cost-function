@@ -8,7 +8,7 @@ vi.mock('./components/CostChart', async () => ({ CostChart: (await import('./tes
 
 const addBtn = () => screen.getByRole('button', { name: '+ Add setup' }) as HTMLButtonElement
 const add = () => fireEvent.click(addBtn())
-const groups = () => [...document.querySelectorAll<HTMLElement>('#settings-panel .setup')].map((g) => g.dataset.id)
+const groups = () => [...document.querySelectorAll<HTMLElement>('#settings-panel .setup[data-id]')].map((g) => g.dataset.id)
 const box = (id: SetupId) => within(screen.getByRole('group', { name: `Setup ${id}` }))
 const toggle = (id: SetupId) => document.getElementById(`setup-${id}-toggle`) as HTMLButtonElement
 const body = (id: SetupId) => document.getElementById(`setup-${id}-body`)!
@@ -36,6 +36,7 @@ describe('adding setups', () => {
     expect((c.getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('2')
     expect(toggle('C').getAttribute('aria-expanded')).toBe('true')
     expect(body('C').hidden).toBe(false)
+    expect(toggle('A').getAttribute('aria-expanded')).toBe('false')
     expect(document.activeElement).toBe(toggle('C'))
   })
 
@@ -107,32 +108,99 @@ describe('removing setups', () => {
   })
 })
 
-describe('collapsing setups', () => {
-  it('toggles aria-expanded and hides the body; the summary shows only when collapsed', () => {
+const advToggle = () => document.getElementById('advanced-toggle') as HTMLButtonElement
+const advBody = () => document.getElementById('advanced-body')!
+const openBodies = () => [...document.querySelectorAll<HTMLElement>('#settings-panel [id$="-body"]')].filter((b) => !b.hidden).map((b) => b.id)
+
+describe('the settings panel is an accordion', () => {
+  it('starts with Setup A expanded and everything else collapsed', () => {
     render(<App />)
-    const t = toggle('A')
-    expect(t.getAttribute('aria-controls')).toBe('setup-A-body')
-    expect(t.getAttribute('aria-expanded')).toBe('true')
-    expect(body('A').hidden).toBe(false)
-    expect(t.querySelector('.setup-summary')).toBeNull()
-    fireEvent.click(t)
-    expect(t.getAttribute('aria-expanded')).toBe('false')
-    expect(body('A').hidden).toBe(true)
-    expect(t.querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 7 cache breaks')
-    // Other setups are untouched.
+    expect(toggle('A').getAttribute('aria-expanded')).toBe('true')
+    expect(toggle('B').getAttribute('aria-expanded')).toBe('false')
+    expect(advToggle().getAttribute('aria-expanded')).toBe('false')
+    expect(openBodies()).toEqual(['setup-A-body'])
+  })
+
+  it('wires every header to its body', () => {
+    render(<App />)
+    expect(toggle('A').getAttribute('aria-controls')).toBe('setup-A-body')
+    expect(advToggle().getAttribute('aria-controls')).toBe('advanced-body')
+    expect(advBody().hidden).toBe(true)
+  })
+
+  it('expanding B collapses A', () => {
+    render(<App />)
+    fireEvent.click(toggle('B'))
     expect(toggle('B').getAttribute('aria-expanded')).toBe('true')
-    expect(body('B').hidden).toBe(false)
-    fireEvent.click(t)
-    expect(t.getAttribute('aria-expanded')).toBe('true')
-    expect(body('A').hidden).toBe(false)
-    expect(t.querySelector('.setup-summary')).toBeNull()
+    expect(toggle('A').getAttribute('aria-expanded')).toBe('false')
+    expect(openBodies()).toEqual(['setup-B-body'])
+  })
+
+  it('expanding Advanced settings collapses the open setup, and the other way round', () => {
+    render(<App />)
+    fireEvent.click(advToggle())
+    expect(advToggle().getAttribute('aria-expanded')).toBe('true')
+    expect(toggle('A').getAttribute('aria-expanded')).toBe('false')
+    expect(openBodies()).toEqual(['advanced-body'])
+    fireEvent.click(toggle('B'))
+    expect(advToggle().getAttribute('aria-expanded')).toBe('false')
+    expect(openBodies()).toEqual(['setup-B-body'])
+  })
+
+  it('collapsing the open item leaves all collapsed, and one click reopens it', () => {
+    render(<App />)
+    fireEvent.click(toggle('A'))
+    expect(openBodies()).toEqual([])
+    expect(toggle('A').getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(toggle('A'))
+    expect(openBodies()).toEqual(['setup-A-body'])
+  })
+
+  it('at most one body is visible through a sequence of toggles', () => {
+    render(<App />)
+    add()
+    for (const click of [toggle('A'), advToggle(), toggle('B'), toggle('C'), toggle('C'), advToggle(), advToggle()]) {
+      fireEvent.click(click)
+      expect(openBodies().length).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('the summary line shows only on collapsed setups', () => {
+    render(<App />)
+    expect(toggle('A').querySelector('.setup-summary')).toBeNull()
+    expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · 7 cache breaks')
+    fireEvent.click(toggle('B'))
+    expect(toggle('B').querySelector('.setup-summary')).toBeNull()
+    expect(toggle('A').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 7 cache breaks')
+    // Advanced settings has just its title.
+    expect(advToggle().querySelector('.setup-summary')).toBeNull()
   })
 
   it('the collapsed summary follows the values and says "no cache breaks" for 0', () => {
     render(<App />)
     fireEvent.change(box('B').getByLabelText('Cache breaking interruptions'), { target: { value: '0' } })
-    fireEvent.click(toggle('B'))
     expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · no cache breaks')
+  })
+
+  it('adding a setup expands only the new one, collapsing whatever was open', () => {
+    render(<App />)
+    fireEvent.click(advToggle())
+    add()
+    expect(openBodies()).toEqual(['setup-C-body'])
+    expect(advToggle().getAttribute('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(toggle('C'))
+  })
+
+  it('removing the expanded setup leaves all collapsed; removing another keeps the open one', () => {
+    render(<App />)
+    add()
+    expect(openBodies()).toEqual(['setup-C-body'])
+    fireEvent.click(removeBtn('C')!)
+    expect(openBodies()).toEqual([])
+    add()
+    fireEvent.click(toggle('A'))
+    fireEvent.click(removeBtn('B')!)
+    expect(openBodies()).toEqual(['setup-A-body'])
   })
 
   it('the toggle contains no interactive content, and the remove button sits outside it', () => {
@@ -142,14 +210,12 @@ describe('collapsing setups', () => {
     expect(toggle('C').contains(removeBtn('C'))).toBe(false)
   })
 
-  it('collapse state survives edits elsewhere and belongs to the setup id', () => {
+  it('help tips are in the expanded panel item', () => {
     render(<App />)
-    add()
-    fireEvent.click(toggle('B'))
-    fireEvent.click(removeBtn('C')!)
-    expect(toggle('B').getAttribute('aria-expanded')).toBe('false')
-    add()
-    expect(toggle('C').getAttribute('aria-expanded')).toBe('true')
+    expect(body('A').querySelectorAll('.info-btn')).toHaveLength(6)
+    fireEvent.click(advToggle())
+    expect(advBody().querySelectorAll('.info-btn')).toHaveLength(10)
+    expect(advBody().hidden).toBe(false)
   })
 })
 

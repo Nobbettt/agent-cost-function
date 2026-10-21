@@ -55,9 +55,10 @@ describe('App', () => {
   it('puts Advanced settings first in the panel, collapsed, then Setup A, then Setup B', () => {
     render(<App />)
     const settings = screen.getByRole('complementary', { name: 'Settings' })
-    const advanced = settings.querySelector<HTMLDetailsElement>('details#advanced')!
-    expect(advanced.querySelector('summary')!.textContent).toBe('Advanced settings')
-    expect(advanced.open).toBe(false)
+    const advanced = settings.querySelector<HTMLElement>('#advanced')!
+    expect(advanced.querySelector('#advanced-toggle')!.textContent).toBe('Advanced settings')
+    expect(advanced.querySelector('#advanced-toggle')!.getAttribute('aria-expanded')).toBe('false')
+    expect((advanced.querySelector('#advanced-body') as HTMLElement).hidden).toBe(true)
     const a = within(settings).getByRole('group', { name: 'Setup A' })
     const b = within(settings).getByRole('group', { name: 'Setup B' })
     expect(advanced.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -90,9 +91,9 @@ describe('App', () => {
 
   it('gives each setup its own radiogroup of real radio inputs', () => {
     render(<App />)
-    const groups = screen.getAllByRole('radiogroup')
+    const groups = screen.getAllByRole('radiogroup', { hidden: true })
     expect(groups).toHaveLength(2)
-    const names = groups.map((g) => new Set(within(g).getAllByRole('radio').map((r) => (r as HTMLInputElement).name)))
+    const names = groups.map((g) => new Set(within(g).getAllByRole('radio', { hidden: true }).map((r) => (r as HTMLInputElement).name)))
     expect(names.map((n) => [...n])).toEqual([['provider-A'], ['provider-B']])
     expect((setupBox('A').getByLabelText('Claude') as HTMLInputElement).checked).toBe(true)
     expect((setupBox('B').getByLabelText('Claude') as HTMLInputElement).checked).toBe(true)

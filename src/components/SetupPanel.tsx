@@ -5,6 +5,7 @@ import { MODELS, PROVIDERS, modelsOf, reasoningDefault, reasoningOptions } from 
 import { switchModel, switchProvider } from '../model/normalize'
 import { summarizeSetup } from '../model/setups'
 import type { CacheId, Effort, Provider, ReasoningMode, Setup } from '../model/types'
+import { Chevron } from './Chevron'
 import { Field } from './Field'
 import { InfoTip } from './InfoTip'
 import { NumberField } from './NumberField'
@@ -17,14 +18,6 @@ interface Props {
   onChange: (next: Setup) => void
   /** Present only while removing is allowed (more than two setups). */
   onRemove?: () => void
-}
-
-function Chevron() {
-  return (
-    <svg className="chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 2l4 4-4 4" />
-    </svg>
-  )
 }
 
 export function SetupPanel({ setup, expanded, onToggle, onChange, onRemove }: Props) {

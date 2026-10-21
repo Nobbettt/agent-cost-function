@@ -30,15 +30,16 @@ describe('field help tips', () => {
   it('every setup field has a tip with the exact text, in both setups', () => {
     render(<App />)
     for (const id of ['A', 'B']) {
+      // Only one item is expanded at a time, so look at the hidden ones too.
       const box = within(screen.getByRole('group', { name: `Setup ${id}` }))
-      for (const [label, text] of SETUP_HELP) expect(tipText(box.getByRole('button', { name: `About ${label}` }))).toBe(text)
+      for (const [label, text] of SETUP_HELP) expect(tipText(box.getByRole('button', { name: `About ${label}`, hidden: true }))).toBe(text)
     }
   })
 
   it('every Advanced settings field has a tip with the exact text', () => {
     render(<App />)
     const advanced = document.getElementById('advanced')!
-    for (const [label, text] of ADVANCED_HELP) expect(tipText(within(advanced).getByRole('button', { name: `About ${label}` }))).toBe(text)
+    for (const [label, text] of ADVANCED_HELP) expect(tipText(within(advanced).getByRole('button', { name: `About ${label}`, hidden: true }))).toBe(text)
     expect(ADVANCED_HELP).toHaveLength(10)
   })
 
@@ -69,7 +70,7 @@ describe('field help tips', () => {
     mockMatchMedia(false)
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
-    const drawerTip = document.querySelector<HTMLElement>('#settings-panel .info-btn')!
+    const drawerTip = document.querySelector<HTMLElement>('#setup-A-body .info-btn')!
     fireEvent.pointerEnter(drawerTip, { pointerType: 'mouse' })
     expect(document.getElementById(drawerTip.getAttribute('aria-describedby')!)!.classList.contains('is-open')).toBe(true)
     fireEvent.keyDown(document, { key: 'Escape' })

@@ -19,7 +19,13 @@
   --series-a: #3987e5; --series-b: #008300; --series-c: #d55181; --series-d: #c98500;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+/* App shell: the window never scrolls. The navbar is the first row; the page's own scroll container is the second,
+   so its scrollbar starts below the navbar. */
+html, body, #root { height: 100%; }
+body { margin: 0; overflow: hidden; background: var(--page); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.app { height: 100vh; height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 40px minmax(0, 1fr); }
+.scroll-region { min-height: 0; overflow-y: auto; outline: none; }
+.page-scroll { min-width: 0; }
 main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
 h1 { font-size: 22px; margin: 0 0 4px; }
 h2 { font-size: 15px; margin: 0 0 12px; }
@@ -34,6 +40,7 @@ fieldset, .card { background: var(--surface); border: 1px solid var(--border); b
 .setup[data-id="B"] { --series: var(--series-b); }
 .setup[data-id="C"] { --series: var(--series-c); }
 .setup[data-id="D"] { --series: var(--series-d); }
+.setup.advanced { border-top: 1px solid var(--border); }
 .setup-head { display: flex; align-items: flex-start; gap: 4px; padding: 4px 8px 4px 4px; }
 .setup-toggle { flex: 1; min-width: 0; display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: center; column-gap: 6px; row-gap: 2px; padding: 8px; font: inherit; color: var(--ink); text-align: left; background: none; border: 0; border-radius: 6px; cursor: pointer; }
 .setup-toggle:focus-visible, .setup-remove:focus-visible, .add-setup-btn:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
@@ -75,7 +82,7 @@ footer > div { padding-top: 12px; border-top: 1px solid var(--grid); }
 footer nav { display: inline; }
 
 /* Top bar, sticky on every page. */
-.navbar { position: sticky; top: 0; z-index: 30; height: 40px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.navbar { position: relative; z-index: 30; height: 40px; background: var(--surface); border-bottom: 1px solid var(--border); }
 .navbar nav { height: 100%; display: flex; align-items: center; gap: 20px; padding: 0 16px; }
 .brand { flex: none; font-size: 14px; font-weight: 600; color: var(--ink); text-decoration: none; white-space: nowrap; }
 .brand-short { display: none; }
@@ -163,6 +170,10 @@ footer nav { display: inline; }
   .info-bubble, .info-bubble.is-open { transition: none; }
 }
 
+/* The calculator's row under the navbar; below 1024px the content scrolls and the settings are a drawer. */
+.layout { min-width: 0; min-height: 0; height: 100%; }
+.content { height: 100%; }
+
 /* Settings panel. Below 1024px: an off-canvas drawer sliding in from the right. */
 .controls {
   position: fixed; top: 40px; right: 0; bottom: 0; z-index: 20; width: min(480px, 100vw);
@@ -187,18 +198,19 @@ footer nav { display: inline; }
   .controls .fields, .controls .setup .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* Large screens: results fill the first screen on the left, the settings are a docked sidebar pinned
-   under the top bar on the right. The sidebar can be toggled away; the left column then takes the full width.
+/* Large screens: results fill the first screen on the left (the left column is the scroll container), the settings
+   are a docked sidebar on the right with its own scroll. The sidebar can be toggled away; the left column then takes the full width.
    Scoped to main.calc / footer.wide so the sub pages keep their 1100px column. */
 @media (min-width: 1024px) {
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(510px, 30vw, 560px); align-items: start; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(510px, 30vw, 560px); grid-template-rows: minmax(0, 1fr); }
   .layout[data-open="false"] { grid-template-columns: minmax(0, 1fr); }
   .layout[data-open="false"] .controls { display: none; }
   .backdrop { display: none; }
-  .content { min-width: 0; }
+  /* A size container, so .screen can be exactly as tall as the scroll area (100cqh) although main.calc sits between them. */
+  .content { min-width: 0; height: 100%; container: content / size; }
 
   .layout .controls, .layout[data-open="true"] .controls {
-    position: sticky; top: 40px; z-index: auto; width: auto; height: calc(100vh - 40px); height: calc(100dvh - 40px);
+    position: static; z-index: auto; width: auto; height: auto; min-height: 0;
     transform: none; visibility: visible; transition: none; padding: 16px 24px 16px 0;
     background: transparent; border: 0; box-shadow: none;
   }
@@ -207,7 +219,7 @@ footer nav { display: inline; }
   footer.wide { max-width: none; margin: 0; padding: 0 24px 32px; }
 
   /* One screen tall below the top bar: the header takes its natural height, the results the rest. */
-  .screen { display: flex; flex-direction: column; height: calc(100vh - 40px); height: calc(100dvh - 40px); padding-bottom: 16px; }
+  .screen { display: flex; flex-direction: column; height: calc(100dvh - 40px); height: 100cqh; padding-bottom: 16px; }
   .screen + .card { margin-top: 0; }
 
   .page-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 16px; padding: 16px 0 12px; }

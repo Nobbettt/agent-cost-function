@@ -8,6 +8,7 @@ import { Footer } from './components/Footer'
 import { NavBar } from './components/NavBar'
 import { RateInfo } from './components/RateInfo'
 import { RateStatus } from './components/RateStatus'
+import { ScrollRegion } from './components/ScrollRegion'
 import { SettingsSidebar } from './components/SettingsSidebar'
 import { SetupPanel } from './components/SetupPanel'
 import { StepsTable } from './components/StepsTable'
@@ -25,8 +26,8 @@ import type { Setup, SetupId, Shared } from './model/types'
 
 function Calculator() {
   const [setups, setSetups] = useState<readonly Setup[]>(DEFAULT_SETUP_LIST)
-  // Collapse state per setup id; a missing entry means expanded (new setups open expanded).
-  const [expanded, setExpanded] = useState<Readonly<Record<string, boolean>>>({})
+  // Accordion: at most one panel item (Advanced settings or a setup) is expanded; null means all collapsed.
+  const [expandedId, setExpandedId] = useState<'advanced' | SetupId | null>('A')
   const [shared, setShared] = useState<Shared>(DEFAULT_SHARED)
   const panel = useSettingsPanel()
   const { displayCurrency, format, rate } = useCurrency()
@@ -50,30 +51,30 @@ function Calculator() {
   }, [setups])
 
   const updateSetup = (next: Setup) => setSetups((list) => list.map((s) => (s.id === next.id ? next : s)))
-  const toggleSetup = (id: SetupId) => setExpanded((e) => ({ ...e, [id]: !(e[id] ?? true) }))
+  const toggleItem = (id: 'advanced' | SetupId) => setExpandedId((cur) => (cur === id ? null : id))
   const add = () => {
     const next = addSetup(setups)
     const added = next.find((s) => !setups.some((o) => o.id === s.id))
     if (!added) return
     pendingFocus.current = added.id
     setSetups(next)
-    setExpanded((e) => ({ ...e, [added.id]: true }))
+    setExpandedId(added.id)
   }
   const remove = (id: SetupId) => {
     if (!canRemoveSetup(setups)) return
     pendingFocus.current = focusAfterRemove(setups, id)
     setSetups(removeSetup(setups, id))
-    setExpanded((e) => Object.fromEntries(Object.entries(e).filter(([k]) => k !== id)))
+    setExpandedId((cur) => (cur === id ? null : cur))
   }
 
   return (
-    <>
+    <div className="app">
       <NavBar
         page="calculator" settings={{ open: panel.open, onToggle: panel.toggle }} settingsButtonRef={toggleRef}
         controls={<CurrencySelect />}
       />
       <div className="layout" data-open={panel.open}>
-        <div className="content">
+        <ScrollRegion className="content">
           <main className="calc">
             <div className="screen">
               <header className="page-header">
@@ -112,15 +113,15 @@ function Calculator() {
             <RateInfo />
           </main>
           <Footer page="calculator" />
-        </div>
+        </ScrollRegion>
 
         <SettingsSidebar open={panel.open} mode={panel.mode} onClose={panel.close} returnFocusRef={toggleRef}>
-          <AdvancedSettings shared={shared} onChange={setShared} />
+          <AdvancedSettings shared={shared} onChange={setShared} expanded={expandedId === 'advanced'} onToggle={() => toggleItem('advanced')} />
           <div className="setups">
             {setups.map((s) => (
               <SetupPanel
-                key={s.id} setup={s} expanded={expanded[s.id] ?? true}
-                onToggle={() => toggleSetup(s.id)} onChange={updateSetup}
+                key={s.id} setup={s} expanded={expandedId === s.id}
+                onToggle={() => toggleItem(s.id)} onChange={updateSetup}
                 onRemove={canRemoveSetup(setups) ? () => remove(s.id) : undefined}
               />
             ))}
@@ -131,7 +132,7 @@ function Calculator() {
           </div>
         </SettingsSidebar>
       </div>
-    </>
+    </div>
   )
 }
 

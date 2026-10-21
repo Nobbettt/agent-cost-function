@@ -32,11 +32,11 @@ describe('settings panel: drawer mode (below 1024px)', () => {
     expect(backdrop()).toBeTruthy()
   })
 
-  it('opening focuses the Advanced settings summary without popping a help tip, and Esc still closes the drawer', () => {
+  it('opening focuses the Advanced settings header without popping a help tip, and Esc still closes the drawer', () => {
     mockMatchMedia(false)
     render(<App />)
     fireEvent.click(toggle())
-    expect(document.activeElement).toBe(panel().querySelector('details#advanced > summary'))
+    expect(document.activeElement).toBe(document.getElementById('advanced-toggle'))
     expect(document.querySelectorAll('.info-bubble.is-open')).toHaveLength(0)
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(toggle().getAttribute('aria-expanded')).toBe('false')
@@ -79,7 +79,7 @@ describe('settings panel: drawer mode (below 1024px)', () => {
     render(<App />)
     expect(toggle().getAttribute('aria-expanded')).toBe('false')
     expect(isInert()).toBe(true)
-    expect(document.activeElement).toBe(document.body)
+    expect(document.activeElement).toBe(document.querySelector('.content'))  // the scroll region, not a control
     fireEvent.click(toggle())
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(localStorage.getItem('acf.settings.drawer')).toBe('true')
@@ -154,7 +154,7 @@ describe('settings panel: docked mode (1024px and up)', () => {
     expect(toggle().getAttribute('aria-expanded')).toBe('true')
     act(() => media.set(false))
     expect(toggle().getAttribute('aria-expanded')).toBe('false')
-    expect(document.activeElement).toBe(document.body)
+    expect(document.activeElement).toBe(document.querySelector('.content'))  // the scroll region, not a control
     act(() => media.set(true))
     expect(toggle().getAttribute('aria-expanded')).toBe('true')
   })
