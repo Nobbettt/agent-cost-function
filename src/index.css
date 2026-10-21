@@ -87,25 +87,17 @@ footer nav { display: inline; }
 .brand { flex: none; font-size: 14px; font-weight: 600; color: var(--ink); text-decoration: none; white-space: nowrap; }
 .brand-short { display: none; }
 .nav-links { flex: none; font-size: 13px; white-space: nowrap; }
-/* Calculator controls (currency, Settings): pushed to the right edge; the page links stay beside the brand. */
+/* Calculator controls (Share, currency): pushed to the right edge; the page links stay beside the brand. */
 .nav-end { flex: none; display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .nav-links a { color: var(--ink-2); text-decoration: none; }
 .nav-links a:hover { color: var(--ink); text-decoration: underline; }
 .nav-links a[aria-current="page"] { color: var(--ink); }
 .nav-links a:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; border-radius: 2px; }
-.settings-toggle { flex: none; height: 28px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; font: inherit; font-size: 13px; color: var(--ink); background: transparent; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
-.settings-toggle:hover, .settings-toggle[aria-expanded="true"] { background: var(--page); }
-.settings-toggle:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
 @media (max-width: 639px) {
   /* Short brand; the full name stays in the accessibility tree, visually hidden. */
   .brand-full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .brand-short { display: inline; }
   .navbar nav { gap: 12px; }
-}
-@media (max-width: 479px) {
-  /* Tight: drop the Settings icon so everything fits at 375px. */
-  .settings-toggle { padding: 0 8px; }
-  .settings-toggle svg { display: none; }
 }
 @media (min-width: 1024px) { .navbar nav { padding: 0 24px; } }
 
@@ -184,50 +176,52 @@ footer nav { display: inline; }
   .info-bubble, .info-bubble.is-open { transition: none; }
 }
 
-/* The calculator's row under the navbar; below 1024px the content scrolls and the settings are a drawer. */
-.layout { min-width: 0; min-height: 0; height: 100%; }
-.content { height: 100%; }
+/* The calculator's row under the navbar: the content and the settings panel's column. */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 36px; grid-template-rows: minmax(0, 1fr); min-width: 0; min-height: 0; height: 100%; }
+.content { min-width: 0; height: 100%; }
 
-/* Settings panel. Below 1024px: an off-canvas drawer sliding in from the right. */
-.controls {
-  position: fixed; top: 40px; right: 0; bottom: 0; z-index: 20; width: min(480px, 100vw);
-  overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 12px;
-  background: var(--surface); border-left: 1px solid var(--border); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
-  transform: translateX(100%); visibility: hidden;
-  transition: transform 200ms ease, visibility 0s linear 200ms;
+/* Settings panel. Collapsed (or, below 1024px, closed) it is a 36px rail in its own column, one button. Expanded it is a docked
+   column (1024px and up) or a drawer sliding in over the content from the right (below), which then covers the rail. */
+.controls { grid-column: 2; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border-left: 1px solid var(--border); }
+.controls[data-state="expanded"] {
+  overflow-y: auto; position: fixed; top: 40px; right: 0; bottom: 0; z-index: 20; width: min(480px, 100vw);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12); animation: settings-in 200ms ease;
 }
-.layout[data-open="true"] .controls { transform: none; visibility: visible; transition: transform 200ms ease, visibility 0s; }
-@media (prefers-reduced-motion: reduce) {
-  .controls, .layout[data-open="true"] .controls { transition: none; }
-}
+@keyframes settings-in { from { transform: translateX(100%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .controls[data-state="expanded"] { animation: none; } }
 .backdrop { position: fixed; top: 40px; right: 0; bottom: 0; left: 0; z-index: 15; background: rgba(0, 0, 0, 0.4); }
-.controls > * { flex: none; margin: 0; }
+
+.settings-rail { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 12px 0; font: inherit; color: var(--ink-2); background: none; border: 0; cursor: pointer; }
+.settings-rail:hover { background: var(--page); color: var(--ink); }
+.settings-rail-label { writing-mode: vertical-rl; font-size: 12.5px; color: var(--ink-2); }
+.settings-head { flex: none; position: sticky; top: 0; z-index: 1; height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.settings-head h2 { margin: 0; font-size: 15px; }
+.settings-hide { width: 28px; height: 28px; display: grid; place-items: center; color: var(--ink-2); background: none; border: 0; border-radius: 6px; cursor: pointer; }
+.settings-hide:hover { color: var(--ink); background: var(--page); }
+.settings-rail:focus-visible, .settings-hide:focus-visible { outline: 2px solid var(--series-a); outline-offset: -2px; }
+
+.settings-body { flex: none; display: flex; flex-direction: column; gap: 16px; padding: 16px; container: controls / inline-size; }
+.settings-body[hidden] { display: none; }
+.settings-body > * { flex: none; margin: 0; }
 .controls .setups { grid-template-columns: 1fr; }
-/* One column by default; two only when the panel is wide enough for each column to hold the longest label. */
-.controls { container: controls / inline-size; }
+/* One column by default; two only when the body is wide enough for each column to hold the longest label. */
 .controls .fields, .controls .setup .fields { grid-template-columns: minmax(0, 1fr); }
 /* Longest label ("System prompt + tools (tokens)" + its tip) is about 209px: two columns need ~430px inside the card
-   (+34px card padding) = 464px of panel content. The drawer (max 480px, 456px of content) therefore stays at one column. */
+   (+34px card padding) = 464px of body content. The drawer (max 480px, 447px of body content) therefore stays at one column,
+   the docked sidebar (510px or more, 477px of body content) gets two. */
 @container controls (min-width: 470px) {
   .controls .fields, .controls .setup .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* Large screens: results fill the first screen on the left (the left column is the scroll container), the settings
-   are a docked sidebar on the right with its own scroll. The sidebar can be toggled away; the left column then takes the full width.
+   are a docked sidebar on the right with its own scroll. The sidebar collapses to a rail; the left column then takes the rest.
    Scoped to main.calc / footer.wide so the sub pages keep their 1100px column. */
 @media (min-width: 1024px) {
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(510px, 30vw, 560px); grid-template-rows: minmax(0, 1fr); }
-  .layout[data-open="false"] { grid-template-columns: minmax(0, 1fr); }
-  .layout[data-open="false"] .controls { display: none; }
+  .layout[data-open="true"] { grid-template-columns: minmax(0, 1fr) clamp(510px, 30vw, 560px); }
   .backdrop { display: none; }
   /* A size container, so .screen can be exactly as tall as the scroll area (100cqh) although main.calc sits between them. */
-  .content { min-width: 0; height: 100%; container: content / size; }
-
-  .layout .controls, .layout[data-open="true"] .controls {
-    position: static; z-index: auto; width: auto; height: auto; min-height: 0;
-    transform: none; visibility: visible; transition: none; padding: 16px 24px 16px 0;
-    background: transparent; border: 0; box-shadow: none;
-  }
+  .content { container: content / size; }
+  .controls[data-state="expanded"] { position: static; z-index: auto; width: auto; box-shadow: none; animation: none; }
 
   main.calc { max-width: none; margin: 0; padding: 0 24px 48px; }
   footer.wide { max-width: none; margin: 0; padding: 0 24px 32px; }

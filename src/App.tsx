@@ -40,7 +40,6 @@ function Calculator() {
   const { currency, displayCurrency, format, rate } = useCurrency()
   // From the compact-navbar breakpoint up the currency select lives in the navbar; below it, it is the first field of the settings panel.
   const wide = useMediaQuery(NAV_WIDE_QUERY, true)
-  const toggleRef = useRef<HTMLButtonElement>(null)
   const pendingFocus = useRef<SetupId | null>(null)
 
   const effective = useMemo(() => effectiveShared(shared), [shared])
@@ -83,7 +82,7 @@ function Calculator() {
   return (
     <div className="app">
       <NavBar
-        page="calculator" settings={{ open: panel.open, onToggle: panel.toggle }} settingsButtonRef={toggleRef}
+        page="calculator"
         controls={<><ShareButton url={shareUrl} />{wide && <CurrencySelect />}</>}
       />
       <div className="layout" data-open={panel.open}>
@@ -131,7 +130,7 @@ function Calculator() {
           <Footer page="calculator" />
         </ScrollRegion>
 
-        <SettingsSidebar open={panel.open} mode={panel.mode} onClose={panel.close} returnFocusRef={toggleRef}>
+        <SettingsSidebar open={panel.open} mode={panel.mode} onToggle={panel.toggle} onClose={panel.close}>
           {!wide && <CurrencyField />}
           <AdvancedSettings shared={shared} onChange={setShared} expanded={expandedId === 'advanced'} onToggle={() => toggleItem('advanced')} />
           <div className="setups">

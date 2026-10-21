@@ -69,14 +69,14 @@ describe('field help tips', () => {
   it('Esc closes an open tip first and leaves the drawer open; a second Esc closes the drawer', () => {
     mockMatchMedia(false)
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Show settings' }))
     const drawerTip = document.querySelector<HTMLElement>('#setup-A-body .info-btn')!
     fireEvent.pointerEnter(drawerTip, { pointerType: 'mouse' })
     expect(document.getElementById(drawerTip.getAttribute('aria-describedby')!)!.classList.contains('is-open')).toBe(true)
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(document.getElementById(drawerTip.getAttribute('aria-describedby')!)!.classList.contains('is-open')).toBe(false)
-    expect(screen.getByRole('button', { name: 'Settings' }).getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByRole('button', { name: 'Hide settings' })).toBeTruthy()
     fireEvent.keyDown(document, { key: 'Escape' })
-    expect(screen.getByRole('button', { name: 'Settings' }).getAttribute('aria-expanded')).toBe('false')
+    expect(screen.getByRole('button', { name: 'Show settings' })).toBeTruthy()
   })
 })

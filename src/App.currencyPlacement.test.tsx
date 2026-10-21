@@ -26,10 +26,10 @@ describe('the currency select moves with the width', () => {
     expect(nav().queryByLabelText('Currency')).toBeNull()
     const field = within(panel()).getByLabelText('Currency') as HTMLSelectElement
     expect(screen.getAllByLabelText('Currency')).toHaveLength(1)
-    expect(panel().firstElementChild!.contains(field)).toBe(true)
+    expect(panel().querySelector('.settings-body')!.firstElementChild!.contains(field)).toBe(true)
     // Above Advanced settings, outside the accordion, with its own help tip.
-    expect(panel().firstElementChild!.compareDocumentPosition(document.getElementById('advanced')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(panel().firstElementChild!.closest('.setup')).toBeNull()
+    expect(panel().querySelector('.settings-body')!.firstElementChild!.compareDocumentPosition(document.getElementById('advanced')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(panel().querySelector('.settings-body')!.firstElementChild!.closest('.setup')).toBeNull()
     expect(within(panel()).getByRole('button', { name: 'About Currency', hidden: true })).toBeTruthy()
     expect(field.value).toBe('USD')
   })
@@ -45,18 +45,18 @@ describe('the currency select moves with the width', () => {
     expect(asked).toContain(NAV_WIDE_QUERY)
   })
 
-  it('the navbar keeps Share and Settings below 768px', () => {
+  it('the navbar keeps Share, and no Settings button, below 768px', () => {
     mockMatchMedia(false)
     render(<App />)
     expect(nav().getByRole('button', { name: 'Share link' })).toBeTruthy()
-    expect(nav().getByRole('button', { name: 'Settings' })).toBeTruthy()
+    expect(nav().queryByRole('button', { name: /settings/i })).toBeNull()
   })
 
   it('changing it in the drawer converts the cards as before', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => body })))
     mockMatchMedia(false)
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Show settings' }))
     fireEvent.change(within(panel()).getByLabelText('Currency'), { target: { value: 'SEK' } })
     await screen.findByText(/Shown in SEK/)
     expect(stat('Setup A').value.replace(/\s/g, ' ')).toBe('SEK 426')
@@ -67,7 +67,7 @@ describe('the currency select moves with the width', () => {
   it('opening the drawer still focuses the first accordion header, not the currency select', () => {
     mockMatchMedia(false)
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Show settings' }))
     expect(document.activeElement).toBe(document.getElementById('advanced-toggle'))
   })
 })

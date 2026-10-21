@@ -65,7 +65,7 @@ describe('App', () => {
     const b = within(settings).getByRole('group', { name: 'Setup B' })
     expect(advanced.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(settings.firstElementChild).toBe(advanced)
+    expect(settings.querySelector('.settings-body')!.firstElementChild).toBe(advanced)
   })
 
   it('no longer says "Shared assumptions" anywhere', () => {

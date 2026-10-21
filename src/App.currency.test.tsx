@@ -44,13 +44,12 @@ describe('currency: USD default', () => {
     expect(options.some((o) => o.disabled)).toBe(false)
   })
 
-  it('the select sits in the navbar to the left of the Settings button', () => {
+  it('the select sits in the navbar, which has no Settings button', () => {
     stubFetch()
     render(<App />)
     const nav = screen.getByRole('navigation', { name: 'Main' })
     expect(nav.contains(select())).toBe(true)
-    const settings = within(nav).getByRole('button', { name: 'Settings' })
-    expect(select().compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(nav).queryByRole('button', { name: /settings/i })).toBeNull()
   })
 })
 

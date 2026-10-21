@@ -1,12 +1,12 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { NavBar } from './NavBar'
 
 const bar = () => within(screen.getByRole('navigation', { name: 'Main' }))
 
 describe('NavBar', () => {
-  it('on the calculator: Explore is a link to / that is the current page, the brand is a plain link, Settings is present', () => {
-    render(<NavBar page="calculator" settings={{ open: true, onToggle: () => {} }} />)
+  it('on the calculator: Explore is a link to / that is the current page, the brand is a plain link, and there is no Settings button', () => {
+    render(<NavBar page="calculator" />)
     const explore = bar().getByRole('link', { name: 'Explore' })
     expect(explore.tagName).toBe('A')
     expect(explore.getAttribute('href')).toBe('/')
@@ -19,7 +19,7 @@ describe('NavBar', () => {
       ['Agent Cost FunctionACF', '/'],
       ['Explore', '/'],
     ])
-    expect(bar().getByRole('button', { name: 'Settings' })).toBeTruthy()
+    expect(bar().queryByRole('button')).toBeNull()
   })
 
   it.each(['how-it-works', 'sources'] as const)('on %s: Explore is a same-tab link to the calculator and nothing is marked current', (page) => {
@@ -49,30 +49,17 @@ describe('NavBar', () => {
     for (const l of bar().getAllByRole('link')) expect(l.getAttribute('target')).toBeNull()
   })
 
-  it('Settings button reflects the open state and calls onToggle', () => {
-    const onToggle = vi.fn()
-    const { rerender } = render(<NavBar page="calculator" settings={{ open: false, onToggle }} />)
-    const button = bar().getByRole('button', { name: 'Settings' })
-    expect(button.getAttribute('aria-expanded')).toBe('false')
-    expect(button.getAttribute('aria-controls')).toBe('settings-panel')
-    expect(button.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
-    fireEvent.click(button)
-    expect(onToggle).toHaveBeenCalledTimes(1)
-    rerender(<NavBar page="calculator" settings={{ open: true, onToggle }} />)
-    expect(bar().getByRole('button', { name: 'Settings' }).getAttribute('aria-expanded')).toBe('true')
-  })
-
   it('keeps the brand and Explore together on the left, and the controls group last on the right', () => {
     render(
       <NavBar
-        page="calculator" settings={{ open: false, onToggle: () => {} }}
+        page="calculator"
         controls={<select aria-label="Currency"><option>USD</option></select>}
       />,
     )
     const nav = screen.getByRole('navigation', { name: 'Main' })
     expect([...nav.children].map((c) => c.className)).toEqual(['brand', 'nav-links', 'nav-end'])
     const end = nav.querySelector('.nav-end')!
-    expect([...end.children].map((c) => c.tagName)).toEqual(['SELECT', 'BUTTON'])
+    expect([...end.children].map((c) => c.tagName)).toEqual(['SELECT'])
     expect(nav.lastElementChild).toBe(end)
   })
 
