@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { mockMatchMedia } from '../test-matchmedia'
 import { NavBar } from './NavBar'
 
 const bar = () => within(screen.getByRole('navigation', { name: 'Main' }))
@@ -50,5 +51,22 @@ describe('NavBar', () => {
     expect(onToggle).toHaveBeenCalledTimes(1)
     rerender(<NavBar page="calculator" settings={{ open: true, onToggle }} />)
     expect(bar().getByRole('button', { name: 'Settings' }).getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('below 640px the visible link text is shorter, and the accessible name matches it', () => {
+    mockMatchMedia(true)
+    const { unmount } = render(<NavBar page="calculator" />)
+    expect(bar().getByRole('link', { name: 'How it works' }).getAttribute('href')).toBe('/how-it-works/')
+    expect(bar().queryByText('How it is calculated')).toBeNull()
+    expect(bar().getByRole('link', { name: 'Sources' })).toBeTruthy()
+    unmount()
+    render(<NavBar page="how-it-works" />)
+    expect(bar().getByText('How it works').getAttribute('aria-current')).toBe('page')
+  })
+
+  it('at 640px and up it keeps the full text', () => {
+    mockMatchMedia(false)
+    render(<NavBar page="sources" />)
+    expect(bar().getByRole('link', { name: 'How it is calculated' })).toBeTruthy()
   })
 })

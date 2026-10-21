@@ -1,4 +1,5 @@
 import { DEFAULT_SHARED } from '../data/defaults'
+import { FIELD_HELP, thinkingHelp } from '../data/fieldHelp'
 import { ALL_EFFORTS } from '../data/pricing'
 import type { Effort, Shared } from '../model/types'
 import { NumberField } from './NumberField'
@@ -26,14 +27,14 @@ export function SharedAssumptions({ shared, onChange }: Props) {
       <div className="fields">
         {SCALARS.map(({ key, label, ...range }) => (
           <NumberField
-            key={key} label={label} name={key} {...range}
+            key={key} label={label} help={FIELD_HELP[key]} name={key} {...range}
             fallback={DEFAULT_SHARED[key]} value={shared[key]}
             onChange={(v) => onChange({ ...shared, [key]: v })}
           />
         ))}
         {ALL_EFFORTS.map((e) => (
           <NumberField
-            key={e} label={thinkingLabel(e)} name={`think-${e}`} min={0} max={128000} step={100}
+            key={e} label={thinkingLabel(e)} help={thinkingHelp(e)} name={`think-${e}`} min={0} max={128000} step={100}
             fallback={DEFAULT_SHARED.thinking[e]} value={shared.thinking[e]}
             onChange={(v) => onChange({ ...shared, thinking: { ...shared.thinking, [e]: v } })}
           />

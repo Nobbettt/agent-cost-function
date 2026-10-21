@@ -27,7 +27,8 @@ export function SettingsSidebar({ open, mode, onClose, returnFocusRef, children 
     const before = previous.current
     previous.current = { open, mode }
     if (mode !== 'drawer' || before.mode !== mode || before.open === open) return
-    if (open) panel.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus()
+    // Skip the "?" tip buttons: focusing one would pop its tooltip open.
+    if (open) Array.from(panel.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).find((el) => !el.classList.contains('info-btn'))?.focus()
     else returnFocusRef.current?.focus()
   }, [open, mode, returnFocusRef])
 

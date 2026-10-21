@@ -75,14 +75,18 @@ footer nav { display: inline; }
   /* Short brand; the full name stays in the accessibility tree, visually hidden. */
   .brand-full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .brand-short { display: inline; }
+  .currency-wrap .info-tip { display: none; }
   .currency-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .navbar nav { gap: 8px; }
   .nav-links { gap: 10px; }
 }
 @media (max-width: 479px) {
-  /* Tight: drop the icon, and fade the link group's right edge to show that it scrolls. */
+  /* Tight: drop the Settings icon so everything fits at 375px. */
   .settings-toggle { padding: 0 8px; }
   .settings-toggle svg { display: none; }
+}
+@media (max-width: 359px) {
+  /* Below that the link group scrolls; fade its right edge to show it. */
   .nav-links { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); }
 }
 @media (min-width: 1024px) { .navbar nav { padding: 0 24px; } }
@@ -91,6 +95,30 @@ footer nav { display: inline; }
 .navbar .currency select { width: auto; height: 28px; padding: 0 6px; font-size: 13px; color: var(--ink); background: transparent; border-radius: 6px; cursor: pointer; }
 .navbar .currency select:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
 .rate-line { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.currency-wrap { flex: none; display: inline-flex; align-items: center; gap: 4px; }
+
+/* Field label row: label text and "?" tip on one line, the control below. */
+.field { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.field-head { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.field-head label, .field-label { display: block; min-width: 0; font-size: 13px; color: var(--ink-2); }
+.provider-field { margin-bottom: 12px; }
+.provider-field .toggle { margin-bottom: 0; }
+.provider-field .field-head { margin-bottom: 4px; }
+
+.info-tip { display: inline-flex; flex: none; }
+.info-btn { width: 14px; height: 14px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); display: inline-grid; place-items: center; cursor: help; }
+.info-btn:hover, .info-btn:focus-visible { color: var(--ink); }
+.info-btn:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+.info-bubble {
+  position: fixed; left: 0; top: 0; z-index: 100; width: max-content; max-width: 260px; padding: 8px 10px;
+  font-size: 12.5px; line-height: 1.4; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  visibility: hidden; opacity: 0; pointer-events: none; transition: opacity 120ms ease, visibility 0s linear 120ms;
+}
+.info-bubble.is-open { visibility: visible; opacity: 1; transition: opacity 120ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  .info-bubble, .info-bubble.is-open { transition: none; }
+}
 
 /* Settings panel. Below 1024px: an off-canvas drawer sliding in from the right. */
 .controls {

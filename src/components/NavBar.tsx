@@ -1,4 +1,5 @@
 import type { ReactNode, RefObject } from 'react'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { SITE_LINKS, type Page } from './siteLinks'
 
 interface SettingsToggle {
@@ -16,6 +17,9 @@ interface Props {
   controls?: ReactNode
 }
 
+const NARROW_QUERY = '(max-width: 639px)'
+const NARROW_LABELS: Partial<Record<Page, string>> = { 'how-it-works': 'How it works' }
+
 function SlidersIcon() {
   return (
     <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -28,6 +32,8 @@ function SlidersIcon() {
 }
 
 export function NavBar({ page, settings, settingsButtonRef, controls }: Props) {
+  // Below 640px the visible text itself is shorter, so the accessible name matches what is shown.
+  const narrow = useMediaQuery(NARROW_QUERY, false)
   return (
     <header className="navbar">
       <nav aria-label="Main">
@@ -36,11 +42,12 @@ export function NavBar({ page, settings, settingsButtonRef, controls }: Props) {
           <span className="brand-short" aria-hidden="true">ACF</span>
         </a>
         <div className="nav-links">
-          {SITE_LINKS.filter((l) => l.page !== 'calculator').map((l) =>
-            l.page === page
-              ? <span key={l.page} aria-current="page">{l.label}</span>
-              : <a key={l.page} href={l.href}>{l.label}</a>,
-          )}
+          {SITE_LINKS.filter((l) => l.page !== 'calculator').map((l) => {
+            const text = narrow ? (NARROW_LABELS[l.page] ?? l.label) : l.label
+            return l.page === page
+              ? <span key={l.page} aria-current="page">{text}</span>
+              : <a key={l.page} href={l.href}>{text}</a>
+          })}
         </div>
         {controls}
         {settings && (
