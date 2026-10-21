@@ -5,11 +5,7 @@ import { stat } from './test-summary'
 import { CURRENCY_STORAGE_KEY, FX_STORAGE_KEY, FX_TTL_MS } from './data/fx'
 
 // Chart.js does not run in jsdom: expose the currency props the real chart would receive.
-vi.mock('./components/CostChart', () => ({
-  CostChart: ({ metric, format, currency, rate }: { metric: string; format: (usd: number) => string; currency: string; rate: number }) => (
-    <div data-testid={`chart-${metric}`} data-currency={currency} data-rate={rate} data-sample={format(1234.5)} />
-  ),
-}))
+vi.mock('./components/CostChart', async () => ({ CostChart: (await import('./test-chart-mock')).CostChartMock }))
 
 const body = { amount: 1, base: 'USD', date: '2026-10-21', rates: { EUR: 0.9, SEK: 10, GBP: 0.8 } }
 const okResponse = (json: unknown = body) => ({ ok: true, status: 200, json: async () => json }) as Response
@@ -67,7 +63,8 @@ describe('currency: selecting another currency', () => {
     await screen.findByText(/Shown in SEK at 1 USD = 10 SEK/)
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(summary()).toBe('SEK 426 | SEK 289')
-    expect(stat('Difference (B − A)')).toEqual({ value: '−SEK 136', sub: 'B is 32% cheaper' })
+    expect(stat('Cheapest').value).toBe('Setup B')
+    expect(stat('Cheapest').sub.replace(/\s/g, ' ')).toBe('saves SEK 136 (32%) vs Setup A')
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
     const line = document.querySelector('.rate-info')!
     expect(line.textContent!.replace(/\s/g, ' ')).toBe('Shown in SEK at 1 USD = 10 SEK · ECB reference rate 2026-10-21 via Frankfurter')
@@ -84,7 +81,7 @@ describe('currency: selecting another currency', () => {
     // Breakdown totals: A $42.55 -> SEK 426, B $28.92 -> SEK 289, B - A in SEK.
     const cells = screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept').closest('tr')!.textContent!.replace(/\s/g, ' ')
     expect(cells).toContain('SEK 426')
-    expect(screen.getByText('B − A').closest('tr')!.textContent!.replace(/\s/g, ' ')).toContain('−SEK 136')
+    expect(screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept').closest('tr')!.lastElementChild!.textContent!.replace(/\s/g, ' ')).toBe('+SEK 136')
     expect(localStorage.getItem(CURRENCY_STORAGE_KEY)).toBe('SEK')
   })
 

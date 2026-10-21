@@ -35,7 +35,11 @@ export interface ModelSpec {
   longPrompt?: LongPrompt
 }
 
+/** Stable setup identity: its letter, and with it its colour and dash, never depends on position. */
+export type SetupId = 'A' | 'B' | 'C' | 'D'
+
 export interface Setup {
+  id: SetupId
   provider: Provider
   model: ModelId
   cache: CacheId

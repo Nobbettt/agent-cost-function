@@ -1,29 +1,28 @@
 import { MODELS } from '../data/pricing'
 import { signedMoney } from '../format'
-import type { Run, Setup, Totals } from '../model/types'
+import type { Run, Setup } from '../model/types'
 
-const COLS = ['Setup', 'Requests', 'Cache reads', 'Cache writes', 'Re-writes after pauses', 'Output + reasoning', 'Total']
+const COLS = ['Setup', 'Requests', 'Cache reads', 'Cache writes', 'Re-writes after pauses', 'Output + reasoning', 'Total', 'vs cheapest']
 
-const setupName = (s: Setup, id: string) => `${id}: ${MODELS[s.model].name}, ${s.cache}, ${s.effort}, reasoning ${s.reasoning}`
-type Format = (usd: number) => string
-const line = (name: string, t: Totals, f: Format) =>
-  [name, String(t.requests), f(t.read), f(t.write), f(t.rewrite), f(t.output), f(t.total)]
-const signed = signedMoney
+const setupName = (s: Setup) => `${s.id}: ${MODELS[s.model].name}, ${s.cache}, ${s.effort}, reasoning ${s.reasoning}`
 
 interface Props {
-  runs: readonly [Run, Run]
-  setups: readonly [Setup, Setup]
-  format: Format
+  runs: readonly Run[]
+  setups: readonly Setup[]
+  format: (usd: number) => string
 }
 
+/** One row per setup, with how much more than the cheapest each costs over the whole session. */
 export function BreakdownTable({ runs, setups, format: f }: Props) {
-  const [a, b] = [runs[0].totals, runs[1].totals]
-  const rows = [
-    line(setupName(setups[0], 'A'), a, f),
-    line(setupName(setups[1], 'B'), b, f),
-    ['B − A', String(b.requests - a.requests), signed(b.read - a.read, f), signed(b.write - a.write, f),
-     signed(b.rewrite - a.rewrite, f), signed(b.output - a.output, f), signed(b.total - a.total, f)],
-  ]
+  const cheapest = Math.min(...runs.map((r) => r.totals.total))
+  const rows = setups.map((s, i) => {
+    const t = runs[i].totals
+    const extra = t.total - cheapest
+    return [
+      setupName(s), String(t.requests), f(t.read), f(t.write), f(t.rewrite), f(t.output), f(t.total),
+      Math.abs(extra) < 1e-9 ? 'cheapest' : signedMoney(extra, f),
+    ]
+  })
   return (
     <table>
       <thead><tr>{COLS.map((c) => <th key={c}>{c}</th>)}</tr></thead>

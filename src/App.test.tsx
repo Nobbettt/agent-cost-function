@@ -3,24 +3,20 @@ import { describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { MODELS, PRICES_CHECKED } from './data/pricing'
 import { stat, summaryText } from './test-summary'
-import type { Run } from './model/types'
+import type { SetupId } from './model/types'
 
 // Chart.js does not run in jsdom; expose the props the real chart would receive.
-vi.mock('./components/CostChart', () => ({
-  CostChart: ({ runs, metric, xMax }: { runs: [Run, Run]; metric: string; xMax: number }) => (
-    <div data-testid={`chart-${metric}`} data-xmax={xMax} data-last={runs.map((r) => r.points.at(-1)?.x).join(',')} />
-  ),
-}))
+vi.mock('./components/CostChart', async () => ({ CostChart: (await import('./test-chart-mock')).CostChartMock }))
 
-const setupBox = (id: 'A' | 'B') => within(screen.getByRole('group', { name: `Setup ${id}` }))
-const DEFAULT_SUMMARY = 'Setup A$42.55Claude Opus 5.5 · 5 min cacheSetup B$28.92Claude Opus 5.5 · 1 hour cacheDifference (B − A)−$13.63B is 32% cheaperCompared at995K tokenscontext size'
+const setupBox = (id: SetupId) => within(screen.getByRole('group', { name: `Setup ${id}` }))
+const DEFAULT_SUMMARY = 'Setup A$42.55Claude Opus 5.5 · 5 min cacheSetup B$28.92Claude Opus 5.5 · 1 hour cacheCheapestSetup Bsaves $13.63 (32%) vs Setup ACompared at995K tokenscontext size'
 
 describe('App', () => {
   it('renders the default summary cards', () => {
     render(<App />)
     expect(stat('Setup A')).toEqual({ value: '$42.55', sub: 'Claude Opus 5.5 · 5 min cache' })
     expect(stat('Setup B')).toEqual({ value: '$28.92', sub: 'Claude Opus 5.5 · 1 hour cache' })
-    expect(stat('Difference (B − A)')).toEqual({ value: '−$13.63', sub: 'B is 32% cheaper' })
+    expect(stat('Cheapest')).toEqual({ value: 'Setup B', sub: 'saves $13.63 (32%) vs Setup A' })
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
     expect(summaryText().replace(/ /g, '')).toBe(DEFAULT_SUMMARY.replace(/ /g, ''))
   })
@@ -30,8 +26,7 @@ describe('App', () => {
     const summary = screen.getByRole('region', { name: 'Summary' })
     expect(summary.querySelectorAll('dl > .stat')).toHaveLength(4)
     expect(summary.querySelectorAll('dt .key')).toHaveLength(2)
-    expect(summary.querySelector('.stat[data-series="A"] dt .key')).toBeTruthy()
-    expect(summary.querySelector('.stat[data-series="B"] dt .key')).toBeTruthy()
+    expect([...summary.querySelectorAll('dt svg.key line')].map((l) => l.getAttribute('stroke'))).toEqual(['var(--series-a)', 'var(--series-b)'])
     expect(document.getElementById('headline')).toBeNull()
   })
 
@@ -80,7 +75,7 @@ describe('App', () => {
   it('keeps the breakdown and steps tables outside the results', () => {
     render(<App />)
     const results = screen.getByRole('region', { name: 'Results' })
-    expect(results.contains(screen.getByText('B − A'))).toBe(false)
+    expect(results.contains(screen.getByText('vs cheapest'))).toBe(false)
     expect(results.contains(screen.getByText('Cumulative cost at regular steps (table view)'))).toBe(false)
   })
 
@@ -187,7 +182,9 @@ describe('App', () => {
     render(<App />)
     expect(screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept')).toBeTruthy()
     expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
-    expect(screen.getByText('B − A')).toBeTruthy()
+    expect(screen.getByText('vs cheapest')).toBeTruthy()
+    expect(screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept').closest('tr')!.lastElementChild!.textContent).toBe('+$13.63')
+    expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept').closest('tr')!.lastElementChild!.textContent).toBe('cheapest')
     // No run is capped by default, so every step has a cost.
     expect(screen.queryAllByText('—')).toHaveLength(0)
     // GPT-5.6 Sol stops at 922K, so the 1M step shows a dash for that setup.

@@ -5,7 +5,7 @@ import { DOCKED_STORAGE_KEY } from './hooks/useSettingsPanel'
 import { stat } from './test-summary'
 import { mockMatchMedia } from './test-matchmedia'
 
-vi.mock('./components/CostChart', () => ({ CostChart: () => null }))
+vi.mock('./components/CostChart', async () => ({ CostChart: (await import('./test-chart-mock')).CostChartMock }))
 
 const panel = () => document.getElementById('settings-panel')!
 const toggle = () => screen.getByRole('button', { name: 'Settings' })

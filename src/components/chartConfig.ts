@@ -3,7 +3,7 @@ import {
   type ChartConfiguration, type ChartType, type InteractionItem, type InteractionModeFunction, type Plugin,
 } from 'chart.js'
 import { fmtTokens } from '../format'
-import type { Point } from '../model/types'
+import type { Point, Run, SetupId } from '../model/types'
 import { css } from '../theme'
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, Tooltip, Legend)
@@ -77,20 +77,58 @@ Interaction.modes.nearestPerDataset = nearestPerDataset
 
 const raw = (c: { raw: unknown }) => c.raw as ChartPoint | undefined
 
-/** `getFormat` formats a plotted (display-currency) value; it is read at draw time, so the currency can change without rebuilding the chart. */
-export function lineConfig(showEndLabels: boolean, getFormat: () => (usd: number) => string): ChartConfiguration<'line', ChartPoint[]> {
-  const dataset = (label: string) => ({
-    label, data: [] as ChartPoint[], borderWidth: 2, tension: 0,
+/** A 16×4 legend key drawn with the series dash. Chart.js ignores borderDash for line-style legend keys, so it is drawn here. */
+function dashedKey(color: string, dash: readonly number[]): HTMLCanvasElement {
+  const key = document.createElement('canvas')
+  key.width = 16
+  key.height = 4
+  const ctx = key.getContext('2d')
+  if (ctx) {
+    ctx.strokeStyle = color
+    ctx.lineWidth = 2
+    ctx.setLineDash([...dash])
+    ctx.beginPath()
+    ctx.moveTo(0, 2)
+    ctx.lineTo(16, 2)
+    ctx.stroke()
+  }
+  return key
+}
+
+/** The default legend items, with a dashed key for each dashed series (the colour alone is not enough for C and D). */
+function legendLabels(chart: Chart) {
+  return Chart.defaults.plugins.legend.labels.generateLabels(chart).map((item) => {
+    const dash = (item.datasetIndex === undefined ? undefined : (chart.data.datasets[item.datasetIndex] as { borderDash?: number[] } | undefined)?.borderDash)
+    return dash?.length ? { ...item, pointStyle: dashedKey(String(item.strokeStyle), dash) } : item
+  })
+}
+
+/** One line of a chart: which setup, its colour variable and dash, and its simulated run. */
+export interface ChartSeries {
+  id: SetupId
+  cssVar: string
+  dash: readonly number[]
+  run: Run
+}
+
+/** A dataset for one setup. Points, colour and dash are filled in by the chart component on every update. */
+export function makeDataset(id: SetupId) {
+  return {
+    label: `Setup ${id}`, data: [] as ChartPoint[], borderWidth: 2, tension: 0,
     pointRadius: (c: { raw: unknown }) => (raw(c)?.paused ? 4 : 0),
     pointBackgroundColor: (c: { raw: unknown; dataset: { borderColor?: unknown } }) =>
       raw(c)?.miss ? (c.dataset.borderColor as string) : css('--surface'),
     pointBorderColor: (c: { raw: unknown; dataset: { borderColor?: unknown } }) =>
       raw(c)?.miss ? css('--surface') : (c.dataset.borderColor as string),
     pointBorderWidth: 2, pointHoverRadius: 4, pointHitRadius: 12,
-  })
+  }
+}
+
+/** `getFormat` formats a plotted (display-currency) value; it is read at draw time, so the currency can change without rebuilding the chart. */
+export function lineConfig(showEndLabels: boolean, getFormat: () => (usd: number) => string): ChartConfiguration<'line', ChartPoint[]> {
   return {
     type: 'line',
-    data: { datasets: [dataset('Setup A'), dataset('Setup B')] },
+    data: { datasets: [] },
     options: {
       animation: false, responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'nearestPerDataset', intersect: false },
@@ -102,7 +140,7 @@ export function lineConfig(showEndLabels: boolean, getFormat: () => (usd: number
       },
       plugins: {
         endLabels: { enabled: showEndLabels },
-        legend: { align: 'start', labels: { usePointStyle: true, pointStyle: 'line', boxWidth: 16 } },
+        legend: { align: 'start', labels: { usePointStyle: true, pointStyle: 'line', boxWidth: 16, generateLabels: legendLabels } },
         tooltip: {
           callbacks: {
             title: (items) => `${fmtTokens(items[0].parsed.x as number)} tokens in context`,
@@ -122,8 +160,6 @@ export function lineConfig(showEndLabels: boolean, getFormat: () => (usd: number
 /** Applies the current CSS theme colours to the chart; call chart.update() afterwards. */
 export function applyTheme(chart: LineChart): void {
   const ink2 = css('--ink-2')
-  chart.data.datasets[0].borderColor = css('--series-a')
-  chart.data.datasets[1].borderColor = css('--series-b')
   for (const axis of Object.values(chart.options.scales ?? {})) {
     if (!axis) continue
     axis.ticks = { ...axis.ticks, color: css('--muted') }

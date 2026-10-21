@@ -9,7 +9,7 @@ const b = simulate(DEFAULT_SETUPS.B, DEFAULT_SHARED)
 
 describe('default setups: the cache TTL trade-off', () => {
   it('are both Claude Opus 5.5, differing only in cache lifetime', () => {
-    expect(DEFAULT_SETUPS.A).toEqual({ ...DEFAULT_SETUPS.B, cache: '5m' })
+    expect(DEFAULT_SETUPS.A).toEqual({ ...DEFAULT_SETUPS.B, id: 'A', cache: '5m' })
     expect(DEFAULT_SETUPS.B.cache).toBe('1h')
     expect([DEFAULT_SETUPS.A.interruptions, DEFAULT_SETUPS.A.pause]).toEqual([7, 6])
   })
@@ -47,10 +47,9 @@ describe('default setups: the cache TTL trade-off', () => {
   })
 
   it('compares at 995K: A $42.55, B $28.92, B is 32% cheaper, neither run capped', () => {
-    const c = compare(a, b)
+    const c = compare([{ id: 'A', run: a }, { id: 'B', run: b }])
     expect(c.common).toBe(995000)
-    expect(c.a.toFixed(2)).toBe('42.55')
-    expect(c.b.toFixed(2)).toBe('28.92')
-    expect(c).toMatchObject({ cheaper: 'B', percent: 32, capped: false })
+    expect(c.values.map((v) => v.value.toFixed(2))).toEqual(['42.55', '28.92'])
+    expect(c).toMatchObject({ cheapest: 'B', mostExpensive: 'A', percent: 32, capped: false })
   })
 })

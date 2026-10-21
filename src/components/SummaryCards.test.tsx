@@ -8,28 +8,39 @@ import { stat } from '../test-summary'
 import { SummaryCards } from './SummaryCards'
 
 const usd = (v: number) => formatMoney(v)
-const base: Comparison = { common: 995000, a: 42.55, b: 28.92, cheaper: 'B', percent: 32, capped: false }
+const base: Comparison = {
+  common: 995000,
+  values: [{ id: 'A', value: 42.55 }, { id: 'B', value: 28.92 }],
+  cheapest: 'B', mostExpensive: 'A', saving: 13.63, percent: 32, capped: false,
+}
 const setups = [DEFAULT_SETUPS.A, DEFAULT_SETUPS.B] as const
-const show = (c: Partial<Comparison> = {}, s: readonly [Setup, Setup] = setups, format = usd) =>
+const show = (c: Partial<Comparison> = {}, s: readonly Setup[] = setups, format = usd) =>
   render(<SummaryCards comparison={{ ...base, ...c }} setups={s} format={format} />)
 
-describe('SummaryCards', () => {
-  it('shows the default numbers, with B cheaper', () => {
+const C: Setup = { ...DEFAULT_SETUPS.B, id: 'C', provider: 'openai', model: 'gpt-5.6-sol', cache: '30m' }
+const D: Setup = { ...DEFAULT_SETUPS.B, id: 'D', cache: '24h' }
+const three: Partial<Comparison> = {
+  values: [{ id: 'A', value: 42.55 }, { id: 'B', value: 28.92 }, { id: 'C', value: 60.64 }],
+  cheapest: 'B', mostExpensive: 'C', saving: 31.72, percent: 52,
+}
+
+describe('SummaryCards: two setups', () => {
+  it('shows each setup, the cheapest and the compared-at size', () => {
     show()
     expect(stat('Setup A')).toEqual({ value: '$42.55', sub: 'Claude Opus 5.5 · 5 min cache' })
     expect(stat('Setup B')).toEqual({ value: '$28.92', sub: 'Claude Opus 5.5 · 1 hour cache' })
-    expect(stat('Difference (B − A)')).toEqual({ value: '−$13.63', sub: 'B is 32% cheaper' })
+    expect(stat('Cheapest')).toEqual({ value: 'Setup B', sub: 'saves $13.63 (32%) vs Setup A' })
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
   })
 
-  it('A cheaper gives a plus sign and "A is N% cheaper"', () => {
-    show({ a: 28.92, b: 42.55, cheaper: 'A' })
-    expect(stat('Difference (B − A)')).toEqual({ value: '+$13.63', sub: 'A is 32% cheaper' })
+  it('A cheaper reads the other way round', () => {
+    show({ values: [{ id: 'A', value: 28.92 }, { id: 'B', value: 42.55 }], cheapest: 'A', mostExpensive: 'B' })
+    expect(stat('Cheapest')).toEqual({ value: 'Setup A', sub: 'saves $13.63 (32%) vs Setup B' })
   })
 
-  it('equal cost is $0 and "Both cost the same"', () => {
-    show({ a: 10, b: 10, cheaper: null, percent: 0 })
-    expect(stat('Difference (B − A)')).toEqual({ value: '$0', sub: 'Both cost the same' })
+  it('equal cost says so', () => {
+    show({ values: [{ id: 'A', value: 10 }, { id: 'B', value: 10 }], cheapest: null, mostExpensive: null, saving: 0, percent: 0 })
+    expect(stat('Cheapest')).toEqual({ value: 'Equal', sub: 'All cost the same' })
   })
 
   it('a capped run changes the compared-at sub-line', () => {
@@ -40,7 +51,7 @@ describe('SummaryCards', () => {
   it('formats every value through the given formatter (the display currency)', () => {
     show({}, setups, (v) => formatMoney(v, 'SEK', 10))
     expect(stat('Setup A').value).toBe('SEK 426')
-    expect(stat('Difference (B − A)').value).toBe('−SEK 136')
+    expect(stat('Cheapest').sub.replace(/\s/g, ' ')).toBe('saves SEK 136 (32%) vs Setup A')
   })
 
   it.each<[CacheId, string]>([['5m', '5 min'], ['1h', '1 hour'], ['30m', '30 min'], ['24h', '24h'], ['in_memory', 'in_memory']])(
@@ -51,10 +62,45 @@ describe('SummaryCards', () => {
     },
   )
 
-  it('is a Summary region whose definition list holds the four cards, with series keys on A and B only', () => {
+  it('is a Summary region with four cards (two setups, Cheapest, Compared at) and a key on each setup only', () => {
     const { container } = show()
-    expect(container.querySelector('section.summary')?.getAttribute('aria-label')).toBe('Summary')
+    const section = container.querySelector('section.summary')!
+    expect(section.getAttribute('aria-label')).toBe('Summary')
+    expect(section.getAttribute('data-count')).toBe('4')
     expect(container.querySelectorAll('dl > .stat > dt')).toHaveLength(4)
     expect(container.querySelectorAll('dt .key')).toHaveLength(2)
+  })
+})
+
+describe('SummaryCards: three and four setups', () => {
+  it('three setups: one card each, Cheapest measured against the most expensive', () => {
+    const { container } = show(three, [...setups, C])
+    expect(container.querySelector('section.summary')!.getAttribute('data-count')).toBe('5')
+    expect(stat('Setup C')).toEqual({ value: '$60.64', sub: 'GPT-5.6 Sol · 30 min cache' })
+    expect(stat('Cheapest')).toEqual({ value: 'Setup B', sub: 'saves $31.72 (52%) vs Setup C' })
+    expect(container.querySelectorAll('dt .key')).toHaveLength(3)
+  })
+
+  it('four setups give six cards', () => {
+    const { container } = show(
+      { values: [...three.values!, { id: 'D', value: 50 }], cheapest: 'B', mostExpensive: 'C' },
+      [...setups, C, D],
+    )
+    expect(container.querySelector('section.summary')!.getAttribute('data-count')).toBe('6')
+    expect(container.querySelectorAll('dl > .stat')).toHaveLength(6)
+    expect(stat('Setup D')).toEqual({ value: '$50.00', sub: 'Claude Opus 5.5 · 24h cache' })
+  })
+
+  it('draws each setup\'s key with its own colour variable; C and D are dashed, A and B solid', () => {
+    const { container } = show({ ...three }, [...setups, C])
+    const lines = [...container.querySelectorAll('dt svg.key line')]
+    expect(lines.map((l) => l.getAttribute('stroke'))).toEqual(['var(--series-a)', 'var(--series-b)', 'var(--series-c)'])
+    expect(lines.map((l) => l.getAttribute('stroke-dasharray'))).toEqual([null, null, '6 3'])
+  })
+
+  it('a setup keeps its card after a removal: A and C show A and C', () => {
+    show({ values: [{ id: 'A', value: 5 }, { id: 'C', value: 3 }], cheapest: 'C', mostExpensive: 'A', saving: 2, percent: 40 }, [DEFAULT_SETUPS.A, C])
+    expect(stat('Setup C').value).toBe('$3.00')
+    expect(stat('Cheapest').value).toBe('Setup C')
   })
 })
