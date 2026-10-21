@@ -1,19 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import { compare } from '../model/compare'
 import { simulate } from '../model/simulate'
-import { DEFAULT_SETUPS, DEFAULT_SHARED } from './defaults'
+import { DEFAULT_SETUP_LIST, DEFAULT_SETUPS, DEFAULT_SHARED } from './defaults'
 import { MODELS } from './pricing'
 
 const a = simulate(DEFAULT_SETUPS.A, DEFAULT_SHARED)
 const b = simulate(DEFAULT_SETUPS.B, DEFAULT_SHARED)
+const c = simulate(DEFAULT_SETUPS.C, DEFAULT_SHARED)
 const usd = (v: number) => v.toFixed(2)
 
-describe('default setups: the 5 minute against the 1 hour cache', () => {
+describe('default setups: 5 minute and 1 hour cache with breaks, and the 5 minute cache without', () => {
   it('are both Claude Opus 5.5, differing only in the cache', () => {
     expect(DEFAULT_SETUPS.A).toEqual({ ...DEFAULT_SETUPS.B, id: 'A', cache: '5m' })
     expect(DEFAULT_SETUPS.B.cache).toBe('1h')
     expect([DEFAULT_SETUPS.A.interruptions, DEFAULT_SETUPS.B.interruptions]).toEqual([7, 7])
     expect('pause' in DEFAULT_SETUPS.A).toBe(false)
+  })
+
+  it('C is A without any interruptions, and the list is A, B, C', () => {
+    expect(DEFAULT_SETUPS.C).toEqual({ ...DEFAULT_SETUPS.A, id: 'C', interruptions: 0 })
+    expect(DEFAULT_SETUP_LIST.map((x) => x.id)).toEqual(['A', 'B', 'C'])
   })
 
   it('reach the same request count', () => {
@@ -49,11 +55,30 @@ describe('default setups: the 5 minute against the 1 hour cache', () => {
     expect(a.totals.rewrite).toBeCloseTo(rewrites, 9)
   })
 
-  it('compares at 995K: A $42.55, B $55.93, A is cheaper and saves $13.37 (24%)', () => {
-    const c = compare([{ id: 'A', run: a }, { id: 'B', run: b }])
-    expect(c.common).toBe(995000)
-    expect(c.values.map((v) => usd(v.value))).toEqual(['42.55', '55.93'])
-    expect(c).toMatchObject({ cheapest: 'A', mostExpensive: 'B', percent: 24, capped: false })
-    expect(usd(c.saving)).toBe('13.37')
+  it('C totals: 131 requests, reads $13.10, writes $4.97, no re-writes, output $7.86, total $25.93, no misses', () => {
+    expect(c.totals.requests).toBe(131)
+    expect(['read', 'write', 'rewrite', 'output', 'total'].map((k) => usd(c.totals[k as keyof typeof c.totals]))).toEqual(['13.10', '4.97', '0.00', '7.86', '25.93'])
+    expect(c.totals.rewrite).toBe(0)
+    expect(c.points.some((p) => p.miss)).toBe(false)
+  })
+
+  it('C writes like A and reads more, because no request skips its cache read', () => {
+    expect(c.totals.write).toBeCloseTo(a.totals.write, 9)
+    expect(c.totals.output).toBeCloseTo(a.totals.output, 9)
+    expect(c.totals.read).toBeGreaterThan(a.totals.read)
+  })
+
+  it('compares at 995K: A $42.55, B $55.93, C $25.93; C is cheapest and saves $29.99 (54%) against B', () => {
+    const cmp = compare([{ id: 'A', run: a }, { id: 'B', run: b }, { id: 'C', run: c }])
+    expect(cmp.common).toBe(995000)
+    expect(cmp.values.map((v) => usd(v.value))).toEqual(['42.55', '55.93', '25.93'])
+    expect(cmp).toMatchObject({ cheapest: 'C', mostExpensive: 'B', percent: 54, capped: false })
+    expect(usd(cmp.saving)).toBe('29.99')
+  })
+
+  it('A against B alone is still A cheaper by $13.37 (24%)', () => {
+    const cmp = compare([{ id: 'A', run: a }, { id: 'B', run: b }])
+    expect(cmp).toMatchObject({ cheapest: 'A', mostExpensive: 'B', percent: 24 })
+    expect(usd(cmp.saving)).toBe('13.37')
   })
 })

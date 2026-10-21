@@ -21,6 +21,18 @@ describe('encodeState', () => {
     expect(encodeState(state([A, { ...B, interruptions: 2 }]))).toBe('v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,2')
   })
 
+  it('the two-setup state is no longer the default, so it is written out and decodes to exactly A and B', () => {
+    const q = encodeState(state([A, B]))
+    expect(q).toBe('v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,7')
+    expect(roundTrip(state([A, B])).setups).toEqual([A, B])
+  })
+
+  it('the three default setups encode to nothing, and removing or changing one does not', () => {
+    expect(encodeState(state(DEFAULT_SETUP_LIST))).toBe('')
+    expect(encodeState(state([A, B, { ...DEFAULT_SETUPS.C, interruptions: 1 }]))).not.toBe('')
+    expect(encodeState(state([B, DEFAULT_SETUPS.C]))).not.toBe('')
+  })
+
   it('keys setups by their id, so a link with A and C shows A and C', () => {
     expect(encodeState(state([A, C]))).toBe('v=1&a=claude-opus-5-5,5m,high,kept,7&c=gpt-5.6-sol,30m,medium,dropped,3')
   })
@@ -28,7 +40,7 @@ describe('encodeState', () => {
   it('adds adv only when the shared numbers differ, in the documented order', () => {
     const shared: Shared = { ...DEFAULT_SHARED, growth: 7000, thinking: { ...DEFAULT_SHARED.thinking, max: 12000 } }
     expect(encodeState(state(DEFAULT_SETUP_LIST, { shared }))).toBe(
-      'v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,7&adv=1000000,20000,7000,500,0,300,1000,2500,5000,12000',
+      'v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,7&c=claude-opus-5-5,5m,high,kept,0&adv=1000000,20000,7000,500,0,300,1000,2500,5000,12000',
     )
   })
 
@@ -140,11 +152,14 @@ describe('decodeState: setups', () => {
 
   it('pads to two setups with the defaults, in order, keeping letter order', () => {
     expect(decodeState('c=gpt-5.6-sol,30m,medium,dropped,1').setups.map((s) => s.id)).toEqual(['A', 'C'])
+    // One valid setup is padded with exactly one default, never up to the three defaults.
     expect(decodeState('a=claude-opus-5-5,1h,low,kept,1').setups.map((s) => s.id)).toEqual(['A', 'B'])
     expect(decodeState('b=claude-opus-5-5,1h,low,kept,1').setups.map((s) => s.id)).toEqual(['A', 'B'])
     expect(decodeState('d=claude-opus-5-5,1h,low,kept,1').setups).toEqual([{ ...A }, expect.objectContaining({ id: 'D', effort: 'low' })])
     expect(decodeState('v=1').setups).toEqual(DEFAULT_SETUP_LIST)
-    expect(decodeState('b=nope').setups).toEqual(DEFAULT_SETUP_LIST)
+    // Setup params that all fail still leave the minimum of two (A then B), never the default C.
+    expect(decodeState('b=nope').setups).toEqual([A, B])
+    expect(decodeState('a=nope&b=nope&c=nope&d=nope').setups).toEqual([A, B])
   })
 })
 

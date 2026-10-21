@@ -27,9 +27,9 @@ const ADVANCED_HELP: [string, string][] = [
 const tipText = (btn: HTMLElement) => document.getElementById(btn.getAttribute('aria-describedby')!)?.textContent
 
 describe('field help tips', () => {
-  it('every setup field has a tip with the exact text, in both setups', () => {
+  it('every setup field has a tip with the exact text, in every setup', () => {
     render(<App />)
-    for (const id of ['A', 'B']) {
+    for (const id of ['A', 'B', 'C']) {
       // Only one item is expanded at a time, so look at the hidden ones too.
       const box = within(screen.getByRole('group', { name: `Setup ${id}` }))
       for (const [label, text] of SETUP_HELP) expect(tipText(box.getByRole('button', { name: `About ${label}`, hidden: true }))).toBe(text)
@@ -57,7 +57,7 @@ describe('field help tips', () => {
 
   it('has no tips beyond those fields', () => {
     render(<App />)
-    expect(document.querySelectorAll('.info-btn')).toHaveLength(2 * SETUP_HELP.length + ADVANCED_HELP.length + 1)
+    expect(document.querySelectorAll('.info-btn')).toHaveLength(3 * SETUP_HELP.length + ADVANCED_HELP.length + 1)
   })
 
   it('labels still focus their inputs, and the tips are outside the labels', () => {

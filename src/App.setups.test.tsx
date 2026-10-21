@@ -14,10 +14,37 @@ const toggle = (id: SetupId) => document.getElementById(`setup-${id}-toggle`) as
 const body = (id: SetupId) => document.getElementById(`setup-${id}-body`)!
 const removeBtn = (id: SetupId) => screen.queryByRole('button', { name: `Remove setup ${id}` })
 const chart = () => screen.getByTestId('chart-cum')
+// The page starts with three setups; most scenarios here start from two, so drop the default C first.
+function renderTwo() {
+  const result = render(<App />)
+  fireEvent.click(removeBtn('C')!)
+  return result
+}
 
 describe('adding setups', () => {
-  it('starts with two, no remove buttons, and an enabled Add button', () => {
+  it('starts with the three default setups, with remove buttons and an enabled Add button', () => {
     render(<App />)
+    expect(groups()).toEqual(['A', 'B', 'C'])
+    for (const id of ['A', 'B', 'C'] as const) expect(removeBtn(id)).toBeTruthy()
+    expect(addBtn().disabled).toBe(false)
+  })
+
+  it('the default C is Opus 5.5 on the 5 minute cache with no interruptions; one more can be added', () => {
+    render(<App />)
+    expect((box('C').getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('5m')
+    expect((box('C').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('0')
+    expect(toggle('A').getAttribute('aria-expanded')).toBe('true')
+    expect(toggle('B').getAttribute('aria-expanded')).toBe('false')
+    expect(toggle('C').getAttribute('aria-expanded')).toBe('false')
+    add()
+    expect(groups()).toEqual(['A', 'B', 'C', 'D'])
+    // The copy is of C, the last setup.
+    expect((box('D').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('0')
+    expect(addBtn().disabled).toBe(true)
+  })
+
+  it('removing C from the defaults leaves A and B, and the remove buttons go away', () => {
+    renderTwo()
     expect(groups()).toEqual(['A', 'B'])
     expect(removeBtn('A')).toBeNull()
     expect(removeBtn('B')).toBeNull()
@@ -25,7 +52,7 @@ describe('adding setups', () => {
   })
 
   it('the new setup is a copy of the last one, with the next free letter, expanded and focused', () => {
-    render(<App />)
+    renderTwo()
     fireEvent.change(box('B').getByLabelText('Reasoning effort'), { target: { value: 'low' } })
     fireEvent.change(box('B').getByLabelText('Cache breaking interruptions'), { target: { value: '2' } })
     add()
@@ -41,7 +68,7 @@ describe('adding setups', () => {
   })
 
   it('goes up to four; the fifth is blocked and explained', () => {
-    render(<App />)
+    renderTwo()
     add()
     add()
     expect(groups()).toEqual(['A', 'B', 'C', 'D'])
@@ -52,7 +79,7 @@ describe('adding setups', () => {
   })
 
   it('editing a setup changes only that setup', () => {
-    render(<App />)
+    renderTwo()
     add()
     fireEvent.change(box('C').getByLabelText('Cache breaking interruptions'), { target: { value: '3' } })
     expect((box('C').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('3')
@@ -63,7 +90,7 @@ describe('adding setups', () => {
 
 describe('removing setups', () => {
   it('remove buttons appear above two setups and are named after the setup', () => {
-    render(<App />)
+    renderTwo()
     add()
     for (const id of ['A', 'B', 'C'] as const) expect(removeBtn(id)).toBeTruthy()
     fireEvent.click(removeBtn('C')!)
@@ -72,7 +99,7 @@ describe('removing setups', () => {
   })
 
   it('removing B from A, B, C leaves C with its own letter and colour variable', () => {
-    render(<App />)
+    renderTwo()
     add()
     fireEvent.click(removeBtn('B')!)
     expect(groups()).toEqual(['A', 'C'])
@@ -86,7 +113,7 @@ describe('removing setups', () => {
   })
 
   it('a freed letter is reused by the next added setup', () => {
-    render(<App />)
+    renderTwo()
     add()
     fireEvent.click(removeBtn('B')!)
     add()
@@ -94,7 +121,7 @@ describe('removing setups', () => {
   })
 
   it('focus moves to the previous setup, or to the next when the first is removed', () => {
-    render(<App />)
+    renderTwo()
     add()
     add()
     fireEvent.click(removeBtn('C')!)
@@ -114,7 +141,7 @@ const openBodies = () => [...document.querySelectorAll<HTMLElement>('#settings-p
 
 describe('the settings panel is an accordion', () => {
   it('starts with Setup A expanded and everything else collapsed', () => {
-    render(<App />)
+    renderTwo()
     expect(toggle('A').getAttribute('aria-expanded')).toBe('true')
     expect(toggle('B').getAttribute('aria-expanded')).toBe('false')
     expect(advToggle().getAttribute('aria-expanded')).toBe('false')
@@ -122,14 +149,14 @@ describe('the settings panel is an accordion', () => {
   })
 
   it('wires every header to its body', () => {
-    render(<App />)
+    renderTwo()
     expect(toggle('A').getAttribute('aria-controls')).toBe('setup-A-body')
     expect(advToggle().getAttribute('aria-controls')).toBe('advanced-body')
     expect(advBody().hidden).toBe(true)
   })
 
   it('expanding B collapses A', () => {
-    render(<App />)
+    renderTwo()
     fireEvent.click(toggle('B'))
     expect(toggle('B').getAttribute('aria-expanded')).toBe('true')
     expect(toggle('A').getAttribute('aria-expanded')).toBe('false')
@@ -137,7 +164,7 @@ describe('the settings panel is an accordion', () => {
   })
 
   it('expanding Advanced settings collapses the open setup, and the other way round', () => {
-    render(<App />)
+    renderTwo()
     fireEvent.click(advToggle())
     expect(advToggle().getAttribute('aria-expanded')).toBe('true')
     expect(toggle('A').getAttribute('aria-expanded')).toBe('false')
@@ -148,7 +175,7 @@ describe('the settings panel is an accordion', () => {
   })
 
   it('collapsing the open item leaves all collapsed, and one click reopens it', () => {
-    render(<App />)
+    renderTwo()
     fireEvent.click(toggle('A'))
     expect(openBodies()).toEqual([])
     expect(toggle('A').getAttribute('aria-expanded')).toBe('false')
@@ -157,7 +184,7 @@ describe('the settings panel is an accordion', () => {
   })
 
   it('at most one body is visible through a sequence of toggles', () => {
-    render(<App />)
+    renderTwo()
     add()
     for (const click of [toggle('A'), advToggle(), toggle('B'), toggle('C'), toggle('C'), advToggle(), advToggle()]) {
       fireEvent.click(click)
@@ -166,7 +193,7 @@ describe('the settings panel is an accordion', () => {
   })
 
   it('the summary line shows only on collapsed setups', () => {
-    render(<App />)
+    renderTwo()
     expect(toggle('A').querySelector('.setup-summary')).toBeNull()
     expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · 7 cache breaks')
     fireEvent.click(toggle('B'))
@@ -177,13 +204,13 @@ describe('the settings panel is an accordion', () => {
   })
 
   it('the collapsed summary follows the values and says "no cache breaks" for 0', () => {
-    render(<App />)
+    renderTwo()
     fireEvent.change(box('B').getByLabelText('Cache breaking interruptions'), { target: { value: '0' } })
     expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · no cache breaks')
   })
 
   it('adding a setup expands only the new one, collapsing whatever was open', () => {
-    render(<App />)
+    renderTwo()
     fireEvent.click(advToggle())
     add()
     expect(openBodies()).toEqual(['setup-C-body'])
@@ -192,7 +219,7 @@ describe('the settings panel is an accordion', () => {
   })
 
   it('removing the expanded setup leaves all collapsed; removing another keeps the open one', () => {
-    render(<App />)
+    renderTwo()
     add()
     expect(openBodies()).toEqual(['setup-C-body'])
     fireEvent.click(removeBtn('C')!)
@@ -204,14 +231,14 @@ describe('the settings panel is an accordion', () => {
   })
 
   it('the toggle contains no interactive content, and the remove button sits outside it', () => {
-    render(<App />)
+    renderTwo()
     add()
     expect(toggle('C').querySelector('button, a, input, select')).toBeNull()
     expect(toggle('C').contains(removeBtn('C'))).toBe(false)
   })
 
   it('help tips are in the expanded panel item', () => {
-    render(<App />)
+    renderTwo()
     expect(body('A').querySelectorAll('.info-btn')).toHaveLength(6)
     fireEvent.click(advToggle())
     expect(advBody().querySelectorAll('.info-btn')).toHaveLength(10)
@@ -221,7 +248,7 @@ describe('the settings panel is an accordion', () => {
 
 describe('everything follows the number of setups', () => {
   it('feeds the charts one series per setup with the right colour variable and dash', () => {
-    render(<App />)
+    renderTwo()
     expect(chart().getAttribute('data-ids')).toBe('A,B')
     expect(chart().getAttribute('data-vars')).toBe('--series-a,--series-b')
     expect(chart().getAttribute('data-dashes')).toBe('solid,solid')
@@ -237,7 +264,7 @@ describe('everything follows the number of setups', () => {
   })
 
   it('three setups give a card each, with the cheapest measured against the most expensive', () => {
-    render(<App />)
+    renderTwo()
     add()
     expect(document.querySelector('.summary')!.getAttribute('data-count')).toBe('5')
     expect(stat('Setup C')).toEqual({ value: '$55.93', sub: 'Claude Opus 5.5 · 1 hour cache' })
@@ -247,7 +274,7 @@ describe('everything follows the number of setups', () => {
   })
 
   it('a changed third setup can become the cheapest', () => {
-    render(<App />)
+    renderTwo()
     add()
     fireEvent.change(box('C').getByLabelText('Model'), { target: { value: 'claude-haiku-5-5' } })
     expect(stat('Cheapest').value).toBe('Setup C')
@@ -255,7 +282,7 @@ describe('everything follows the number of setups', () => {
   })
 
   it('the breakdown has a row per setup and a "vs cheapest" column; the steps table a column per setup', () => {
-    render(<App />)
+    renderTwo()
     add()
     const rows = [...document.querySelectorAll('table')[0].querySelectorAll('tbody tr')]
     expect(rows).toHaveLength(3)
@@ -266,7 +293,7 @@ describe('everything follows the number of setups', () => {
   })
 
   it('four setups give six summary cards', () => {
-    render(<App />)
+    renderTwo()
     add()
     add()
     expect(document.querySelector('.summary')!.getAttribute('data-count')).toBe('6')
@@ -274,7 +301,7 @@ describe('everything follows the number of setups', () => {
   })
 
   it('a removal after the cheapest changes: A and C only', () => {
-    render(<App />)
+    renderTwo()
     add()
     fireEvent.click(removeBtn('B')!)
     expect(stat('Cheapest')).toEqual({ value: 'Setup A', sub: 'saves $13.37 (24%) vs Setup C' })

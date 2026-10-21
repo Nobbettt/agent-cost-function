@@ -63,8 +63,9 @@ describe('currency: selecting another currency', () => {
     await screen.findByText(/Shown in SEK at 1 USD = 10 SEK/)
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(summary()).toBe('SEK 426 | SEK 559')
-    expect(stat('Cheapest').value).toBe('Setup A')
-    expect(stat('Cheapest').sub.replace(/\s/g, ' ')).toBe('saves SEK 134 (24%) vs Setup B')
+    expect(stat('Setup C').value.replace(/\s/g, ' ')).toBe('SEK 259')
+    expect(stat('Cheapest').value).toBe('Setup C')
+    expect(stat('Cheapest').sub.replace(/\s/g, ' ')).toBe('saves SEK 300 (54%) vs Setup B')
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
     const line = document.querySelector('.rate-info')!
     expect(line.textContent!.replace(/\s/g, ' ')).toBe('Shown in SEK at 1 USD = 10 SEK · ECB reference rate 2026-10-21 via Frankfurter')
@@ -81,7 +82,7 @@ describe('currency: selecting another currency', () => {
     // Breakdown totals: A $42.55 -> SEK 426, B $55.93 -> SEK 559, vs cheapest in SEK.
     const cells = screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept').closest('tr')!.textContent!.replace(/\s/g, ' ')
     expect(cells).toContain('SEK 426')
-    expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept').closest('tr')!.lastElementChild!.textContent!.replace(/\s/g, ' ')).toBe('+SEK 134')
+    expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept').closest('tr')!.lastElementChild!.textContent!.replace(/\s/g, ' ')).toBe('+SEK 300')
     expect(localStorage.getItem(CURRENCY_STORAGE_KEY)).toBe('SEK')
   })
 

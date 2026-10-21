@@ -100,7 +100,7 @@ function decodeAdv(value: string): Shared | null {
   }
 }
 
-/** Pads to at least two setups with the default ones (first free ids, in order), keeping letter order. */
+/** Pads to at least two setups (never more) with the default ones, first free ids in order, keeping letter order. */
 function withAtLeastTwo(found: Setup[]): Setup[] {
   const list = [...found]
   for (const d of DEFAULT_SETUP_LIST) {
@@ -130,7 +130,8 @@ export function decodeState(search: string): DecodedState {
   const adv = params.get('adv')
   const cur = params.get('cur')
   return {
-    setups: found.length === 0 ? defaults.setups : withAtLeastTwo(found),
+    // No setup params at all is the plain default state; setup params that all fail still leave the minimum of two.
+    setups: SETUP_IDS.some((id) => params.has(id.toLowerCase())) ? withAtLeastTwo(found) : defaults.setups,
     shared: (adv !== null ? decodeAdv(adv) : null) ?? DEFAULT_SHARED,
     currency: isCurrencyCode(cur) ? cur : null,
     versionMismatch: false,

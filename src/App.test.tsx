@@ -9,24 +9,26 @@ import type { SetupId } from './model/types'
 vi.mock('./components/CostChart', async () => ({ CostChart: (await import('./test-chart-mock')).CostChartMock }))
 
 const setupBox = (id: SetupId) => within(screen.getByRole('group', { name: `Setup ${id}` }))
-const DEFAULT_SUMMARY = 'Setup A$42.55Claude Opus 5.5 · 5 min cacheSetup B$55.93Claude Opus 5.5 · 1 hour cacheCheapestSetup Asaves $13.37 (24%) vs Setup BCompared at995K tokenscontext size'
+const DEFAULT_SUMMARY = 'Setup A$42.55Claude Opus 5.5 · 5 min cacheSetup B$55.93Claude Opus 5.5 · 1 hour cacheSetup C$25.93Claude Opus 5.5 · 5 min cacheCheapestSetup Csaves $29.99 (54%) vs Setup BCompared at995K tokenscontext size'
 
 describe('App', () => {
   it('renders the default summary cards', () => {
     render(<App />)
     expect(stat('Setup A')).toEqual({ value: '$42.55', sub: 'Claude Opus 5.5 · 5 min cache' })
     expect(stat('Setup B')).toEqual({ value: '$55.93', sub: 'Claude Opus 5.5 · 1 hour cache' })
-    expect(stat('Cheapest')).toEqual({ value: 'Setup A', sub: 'saves $13.37 (24%) vs Setup B' })
+    expect(stat('Setup C')).toEqual({ value: '$25.93', sub: 'Claude Opus 5.5 · 5 min cache' })
+    expect(stat('Cheapest')).toEqual({ value: 'Setup C', sub: 'saves $29.99 (54%) vs Setup B' })
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
     expect(summaryText().replace(/ /g, '')).toBe(DEFAULT_SUMMARY.replace(/ /g, ''))
   })
 
-  it('is a Summary region of four definition-list cards, with series keys on the setups only', () => {
+  it('is a Summary region of five definition-list cards, with series keys on the three setups only', () => {
     render(<App />)
     const summary = screen.getByRole('region', { name: 'Summary' })
-    expect(summary.querySelectorAll('dl > .stat')).toHaveLength(4)
-    expect(summary.querySelectorAll('dt .key')).toHaveLength(2)
-    expect([...summary.querySelectorAll('dt svg.key line')].map((l) => l.getAttribute('stroke'))).toEqual(['var(--series-a)', 'var(--series-b)'])
+    expect(summary.querySelectorAll('dl > .stat')).toHaveLength(5)
+    expect(summary.getAttribute('data-count')).toBe('5')
+    expect(summary.querySelectorAll('dt .key')).toHaveLength(3)
+    expect([...summary.querySelectorAll('dt svg.key line')].map((l) => l.getAttribute('stroke'))).toEqual(['var(--series-a)', 'var(--series-b)', 'var(--series-c)'])
     expect(document.getElementById('headline')).toBeNull()
   })
 
@@ -80,11 +82,12 @@ describe('App', () => {
     expect(results.contains(screen.getByText('Cumulative cost at regular steps (table view)'))).toBe(false)
   })
 
-  it('feeds both charts with the two runs', () => {
+  it('feeds both charts with the three runs', () => {
     render(<App />)
     for (const metric of ['cum', 'req']) {
       const chart = screen.getByTestId(`chart-${metric}`)
-      expect(chart.getAttribute('data-last')).toBe('995000,995000')
+      expect(chart.getAttribute('data-last')).toBe('995000,995000,995000')
+      expect(chart.getAttribute('data-dashes')).toBe('solid,solid,6 3')
       expect(chart.getAttribute('data-xmax')).toBe('1000000')
     }
   })
@@ -92,23 +95,23 @@ describe('App', () => {
   it('gives each setup its own radiogroup of real radio inputs', () => {
     render(<App />)
     const groups = screen.getAllByRole('radiogroup', { hidden: true })
-    expect(groups).toHaveLength(2)
+    expect(groups).toHaveLength(3)
     const names = groups.map((g) => new Set(within(g).getAllByRole('radio', { hidden: true }).map((r) => (r as HTMLInputElement).name)))
-    expect(names.map((n) => [...n])).toEqual([['provider-A'], ['provider-B']])
+    expect(names.map((n) => [...n])).toEqual([['provider-A'], ['provider-B'], ['provider-C']])
     expect((setupBox('A').getByLabelText('Claude') as HTMLInputElement).checked).toBe(true)
     expect((setupBox('B').getByLabelText('Claude') as HTMLInputElement).checked).toBe(true)
     expect((setupBox('B').getByLabelText('OpenAI') as HTMLInputElement).checked).toBe(false)
   })
 
-  it('starts with Opus 5.5 on a 5 min and a 1 hour cache, 7 cache breaking interruptions each', () => {
+  it('starts with Opus 5.5 on a 5 min, a 1 hour and a 5 min cache with 7, 7 and 0 cache breaking interruptions', () => {
     render(<App />)
-    for (const [id, cache] of [['A', '5m'], ['B', '1h']] as const) {
+    for (const [id, cache, breaks] of [['A', '5m', '7'], ['B', '1h', '7'], ['C', '5m', '0']] as const) {
       const box = setupBox(id)
       expect((box.getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
       expect((box.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe(cache)
       expect((box.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('high')
       expect((box.getByLabelText('Earlier reasoning in context') as HTMLSelectElement).value).toBe('kept')
-      expect((box.getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('7')
+      expect((box.getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe(breaks)
       expect(box.queryByLabelText('Pause per interruption (min)')).toBeNull()
     }
   })
@@ -184,8 +187,10 @@ describe('App', () => {
     expect(screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept')).toBeTruthy()
     expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
     expect(screen.getByText('vs cheapest')).toBeTruthy()
-    expect(screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept').closest('tr')!.lastElementChild!.textContent).toBe('cheapest')
-    expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept').closest('tr')!.lastElementChild!.textContent).toBe('+$13.37')
+    const vs = (label: string) => screen.getByText(label).closest('tr')!.lastElementChild!.textContent
+    expect(vs('A: Claude Opus 5.5, 5m, high, reasoning kept')).toBe('+$16.62')
+    expect(vs('B: Claude Opus 5.5, 1h, high, reasoning kept')).toBe('+$29.99')
+    expect(vs('C: Claude Opus 5.5, 5m, high, reasoning kept')).toBe('cheapest')
     // No run is capped by default, so every step has a cost.
     expect(screen.queryAllByText('—')).toHaveLength(0)
     // GPT-5.6 Sol stops at 922K, so the 1M step shows a dash for that setup.

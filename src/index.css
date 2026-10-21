@@ -128,7 +128,11 @@ footer nav { display: inline; }
 .summary[data-count="5"] dl { --n: 5; }
 .summary[data-count="6"] dl { --n: 6; }
 @container (max-width: 959px) { .summary[data-count="6"] dl { --n: 3; } }
-@container (max-width: 799px) { .summary[data-count="5"] dl { --n: 3; } }
+@container (max-width: 799px) {
+  .summary[data-count="5"] dl { --n: 3; }
+  /* 3 + 2: the last card spans two columns, so the second row has no empty slot. */
+  .summary[data-count="5"] .stat:last-child { grid-column: span 2; }
+}
 @container (max-width: 559px) { .summary[data-count="4"] dl { --n: 2; } }
 @container (max-width: 439px) {
   .summary[data-count] dl { --n: 2; }

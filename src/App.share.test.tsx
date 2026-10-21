@@ -79,7 +79,7 @@ describe('loading from a link', () => {
     at('/?v=9&a=claude-opus-5-5,1h,low,kept,2&b=gpt-5.5,24h,low,dropped,1&cur=SEK')
     render(<App />)
     expect(screen.getByText('This link was made with a newer version of the calculator; showing the defaults.').getAttribute('role')).toBe('status')
-    expect(groups()).toEqual(['A', 'B'])
+    expect(groups()).toEqual(['A', 'B', 'C'])
     expect(stat('Setup A').sub).toBe('Claude Opus 5.5 · 5 min cache')
     expect((screen.getByLabelText('Currency') as HTMLSelectElement).value).toBe('USD')
   })
@@ -115,7 +115,7 @@ describe('the address bar follows the state', () => {
     expect(spy).not.toHaveBeenCalled()
     act(() => { vi.advanceTimersByTime(1) })
     expect(spy).toHaveBeenCalledTimes(1)
-    expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,2')
+    expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,2&c=claude-opus-5-5,5m,high,kept,0')
     expect(window.history.length).toBe(length)
   })
 
@@ -126,12 +126,20 @@ describe('the address bar follows the state', () => {
     act(() => { vi.advanceTimersByTime(300) })
     const query = new URLSearchParams(window.location.search)
     expect(query.get('v')).toBe('1')
-    expect(query.get('c')).toBe('claude-opus-5-5,1h,high,kept,7')
+    expect(query.get('c')).toBe('claude-opus-5-5,5m,high,kept,0')
+    expect(query.get('d')).toBe('claude-opus-5-5,5m,high,kept,0')
     expect(query.get('adv')).toBe('1000000,20000,7000,500,0,300,1000,2500,5000,10000')
-    fireEvent.click(screen.getByRole('button', { name: 'Remove setup C' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove setup D' }))
     fireEvent.change(screen.getByLabelText('Added per request (tokens)'), { target: { value: '5000' } })
     act(() => { vi.advanceTimersByTime(300) })
     expect(window.location.search).toBe('')
+  })
+
+  it('removing a default setup leaves a link that decodes to exactly the two that remain', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Remove setup C' }))
+    act(() => { vi.advanceTimersByTime(300) })
+    expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,7')
   })
 
   it('the share button copies the same link as the address bar', async () => {
