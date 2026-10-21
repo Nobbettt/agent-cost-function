@@ -33,7 +33,7 @@ describe('currency: USD default', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
     expect(select().value).toBe('USD')
     expect(summary()).toBe('$42.55 | $28.92')
-    expect(document.querySelector('.rate-line')).toBeNull()
+    expect(document.querySelector('.rate-status, .rate-info')).toBeNull()
     expect(screen.getByRole('heading', { name: 'Cumulative cost vs context size' })).toBeTruthy()
     expect(screen.getByTestId('chart-cum').getAttribute('data-currency')).toBe('USD')
     expect(screen.getByTestId('chart-cum').getAttribute('data-rate')).toBe('1')
@@ -59,7 +59,7 @@ describe('currency: USD default', () => {
 })
 
 describe('currency: selecting another currency', () => {
-  it('fetches once and converts the summary cards, tables and charts; shows the rate line', async () => {
+  it('fetches once and converts the summary cards, tables and charts; shows the rate info', async () => {
     const fetchSpy = stubFetch()
     render(<App />)
     pick('SEK')
@@ -69,7 +69,7 @@ describe('currency: selecting another currency', () => {
     expect(summary()).toBe('SEK 426 | SEK 289')
     expect(stat('Difference (B − A)')).toEqual({ value: '−SEK 136', sub: 'B is 32% cheaper' })
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
-    const line = document.querySelector('.rate-line')!
+    const line = document.querySelector('.rate-info')!
     expect(line.textContent!.replace(/\s/g, ' ')).toBe('Shown in SEK at 1 USD = 10 SEK · ECB reference rate 2026-10-21 via Frankfurter')
     const link = within(line as HTMLElement).getByRole('link', { name: 'Frankfurter' })
     expect([link.getAttribute('href'), link.getAttribute('target'), link.getAttribute('rel')]).toEqual(['https://frankfurter.dev', '_blank', 'noopener'])
@@ -98,7 +98,7 @@ describe('currency: selecting another currency', () => {
     expect(summary()).toBe('€38.30 | €26.03')
     pick('USD')
     expect(summary()).toBe('$42.55 | $28.92')
-    expect(document.querySelector('.rate-line')).toBeNull()
+    expect(document.querySelector('.rate-status, .rate-info')).toBeNull()
     expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
 
@@ -109,6 +109,60 @@ describe('currency: selecting another currency', () => {
     await screen.findByText(/Shown in SEK/)
     const disabled = (within(select()).getAllByRole('option') as HTMLOptionElement[]).filter((o) => o.disabled).map((o) => o.value)
     expect(disabled).toEqual(['NOK', 'DKK', 'CHF', 'JPY', 'CAD', 'AUD', 'CNY', 'INR'])
+  })
+})
+
+describe('currency: where the rate text goes', () => {
+  const steps = () => screen.getByText('Cumulative cost at regular steps (table view)').closest('details')!
+  const results = () => screen.getByRole('region', { name: 'Results' })
+
+  it('the rate info sits after the steps table, outside the results, once SEK is in use', async () => {
+    stubFetch()
+    render(<App />)
+    pick('SEK')
+    await screen.findByText(/Shown in SEK at 1 USD = 10 SEK/)
+    const info = document.querySelector('.rate-info')!
+    expect(info.compareDocumentPosition(steps()) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
+    expect(steps().nextElementSibling).toBe(info)
+    expect(results().contains(info)).toBe(false)
+    expect(document.querySelector('.rate-status')).toBeNull()
+    // Nothing left under the cards: no empty element, no gap.
+    expect(document.querySelector('.summary-block')!.children).toHaveLength(1)
+  })
+
+  it('loading feedback stays directly under the summary cards, with no rate info yet', async () => {
+    let finish!: (r: Response) => void
+    stubFetch(() => new Promise<Response>((resolve) => (finish = resolve)))
+    render(<App />)
+    pick('SEK')
+    const status = screen.getByText('Loading exchange rate…')
+    expect(status.getAttribute('role')).toBe('status')
+    expect(status.previousElementSibling).toBe(document.querySelector('.summary'))
+    expect(results().contains(status)).toBe(true)
+    expect(document.querySelector('.rate-info')).toBeNull()
+    // Settle the request so it does not stay in flight for the next test; the status gives way to the info.
+    finish(okResponse())
+    await screen.findByText(/Shown in SEK at 1 USD = 10 SEK/)
+    expect(document.querySelector('.rate-status')).toBeNull()
+  })
+
+  it('the failure notice stays directly under the summary cards, with no rate info', async () => {
+    stubFetch(async () => {
+      throw new Error('offline')
+    })
+    render(<App />)
+    pick('SEK')
+    const status = await screen.findByText("Couldn't load exchange rates, showing USD.")
+    expect(status.previousElementSibling).toBe(document.querySelector('.summary'))
+    expect(results().contains(status)).toBe(true)
+    expect(document.querySelector('.rate-info')).toBeNull()
+  })
+
+  it('USD shows neither, and leaves no empty element under the cards', () => {
+    stubFetch()
+    render(<App />)
+    expect(document.querySelector('.rate-status, .rate-info')).toBeNull()
+    expect(document.querySelector('.summary-block')!.children).toHaveLength(1)
   })
 })
 
@@ -184,7 +238,7 @@ describe('currency: failures', () => {
     })
     render(<App />)
     await screen.findByText(/couldn't refresh, showing the last known rate/)
-    expect(document.querySelector('.rate-line')!.textContent).toContain('1 USD = 5 SEK · ECB reference rate 2026-10-01')
+    expect(document.querySelector('.rate-info')!.textContent).toContain('1 USD = 5 SEK · ECB reference rate 2026-10-01')
     expect(stat('Setup A').value).toBe('SEK 213')
   })
 

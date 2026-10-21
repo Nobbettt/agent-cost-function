@@ -95,7 +95,8 @@ footer nav { display: inline; }
 .navbar label.currency { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
 .navbar .currency select { width: auto; height: 28px; padding: 0 6px; font-size: 13px; color: var(--ink); background: transparent; border-radius: 6px; cursor: pointer; }
 .navbar .currency select:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
-.rate-line { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.rate-status, .rate-info { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.rate-info { margin-top: 12px; }
 
 /* Summary cards: four across when the results column is wide enough, 2x2 on phones, one column when tiny. */
 .summary { container-type: inline-size; margin-top: 16px; }

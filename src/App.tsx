@@ -4,7 +4,8 @@ import { CostChart } from './components/CostChart'
 import { CurrencySelect } from './components/CurrencySelect'
 import { Footer } from './components/Footer'
 import { NavBar } from './components/NavBar'
-import { RateLine } from './components/RateLine'
+import { RateInfo } from './components/RateInfo'
+import { RateStatus } from './components/RateStatus'
 import { SettingsSidebar } from './components/SettingsSidebar'
 import { SetupPanel } from './components/SetupPanel'
 import { SharedAssumptions } from './components/SharedAssumptions'
@@ -52,7 +53,7 @@ function Calculator() {
               <section className="results" aria-label="Results">
                 <div className="summary-block">
                   <SummaryCards comparison={comparison} setups={[setupA, setupB]} format={format} />
-                  <RateLine />
+                  <RateStatus />
                 </div>
 
                 <section className="card">
@@ -76,6 +77,8 @@ function Calculator() {
               <summary>Cumulative cost at regular steps (table view)</summary>
               <div className="table-wrap"><StepsTable runs={runs} session={effective.session} format={format} /></div>
             </details>
+
+            <RateInfo />
           </main>
           <Footer page="calculator" />
         </div>
