@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { NAV_WIDE_QUERY } from './data/breakpoints'
 import { stat } from './test-summary'
 import { mockMatchMedia } from './test-matchmedia'
 
@@ -11,7 +12,7 @@ const panel = () => document.getElementById('settings-panel')!
 const body = { amount: 1, base: 'USD', date: '2026-10-21', rates: { EUR: 0.9, SEK: 10 } }
 
 describe('the currency select moves with the width', () => {
-  it('from 640px up it is in the navbar and not in the settings panel', () => {
+  it('from 768px up it is in the navbar and not in the settings panel', () => {
     mockMatchMedia(true)
     render(<App />)
     expect(nav().getByLabelText('Currency')).toBeTruthy()
@@ -19,7 +20,7 @@ describe('the currency select moves with the width', () => {
     expect(screen.getAllByLabelText('Currency')).toHaveLength(1)
   })
 
-  it('below 640px it is the first item of the settings panel and not in the navbar', () => {
+  it('below 768px it is the first item of the settings panel and not in the navbar', () => {
     mockMatchMedia(false)
     render(<App />)
     expect(nav().queryByLabelText('Currency')).toBeNull()
@@ -33,7 +34,18 @@ describe('the currency select moves with the width', () => {
     expect(field.value).toBe('USD')
   })
 
-  it('the navbar keeps Share and Settings below 640px', () => {
+  it('decides with the shared compact-navbar query, 768px', () => {
+    expect(NAV_WIDE_QUERY).toBe('(min-width: 768px)')
+    const asked: string[] = []
+    vi.stubGlobal('matchMedia', (q: string) => {
+      asked.push(q)
+      return { matches: true, addEventListener: () => {}, removeEventListener: () => {} }
+    })
+    render(<App />)
+    expect(asked).toContain(NAV_WIDE_QUERY)
+  })
+
+  it('the navbar keeps Share and Settings below 768px', () => {
     mockMatchMedia(false)
     render(<App />)
     expect(nav().getByRole('button', { name: 'Share link' })).toBeTruthy()

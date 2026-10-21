@@ -17,6 +17,7 @@ import { StepsTable } from './components/StepsTable'
 import { SummaryCards } from './components/SummaryCards'
 import { CurrencyProvider } from './currency/CurrencyProvider'
 import { useCurrency } from './currency/context'
+import { NAV_WIDE_QUERY } from './data/breakpoints'
 import { MAX_SETUPS, SERIES } from './data/series'
 import { useMediaQuery } from './hooks/useMediaQuery'
 import { useSettingsPanel } from './hooks/useSettingsPanel'
@@ -37,8 +38,8 @@ function Calculator() {
   const [shared, setShared] = useState<Shared>(fromLink.shared)
   const panel = useSettingsPanel()
   const { currency, displayCurrency, format, rate } = useCurrency()
-  // From 640px the currency select lives in the navbar; below that it is the first field of the settings panel.
-  const wide = useMediaQuery('(min-width: 640px)', true)
+  // From the compact-navbar breakpoint up the currency select lives in the navbar; below it, it is the first field of the settings panel.
+  const wide = useMediaQuery(NAV_WIDE_QUERY, true)
   const toggleRef = useRef<HTMLButtonElement>(null)
   const pendingFocus = useRef<SetupId | null>(null)
 
