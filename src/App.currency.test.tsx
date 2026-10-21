@@ -79,9 +79,9 @@ describe('currency: selecting another currency', () => {
       expect(screen.getByTestId(`chart-${metric}`).getAttribute('data-sample')!.replace(/\s/g, ' ')).toBe('SEK 12345')
     }
     // Breakdown totals: A $42.55 -> SEK 426, B $55.93 -> SEK 559, vs cheapest in SEK.
-    const cells = screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept').closest('tr')!.textContent!.replace(/\s/g, ' ')
+    const cells = screen.getByText('Setup A: Claude Opus 5.5, 5m, high, reasoning kept').closest('tr')!.textContent!.replace(/\s/g, ' ')
     expect(cells).toContain('SEK 426')
-    expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept').closest('tr')!.lastElementChild!.textContent!.replace(/\s/g, ' ')).toBe('+SEK 300')
+    expect(screen.getByText('Setup B: Claude Opus 5.5, 1h, high, reasoning kept').closest('tr')!.lastElementChild!.textContent!.replace(/\s/g, ' ')).toBe('+SEK 300')
     expect(localStorage.getItem(CURRENCY_STORAGE_KEY)).toBe('SEK')
   })
 

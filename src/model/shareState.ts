@@ -4,6 +4,7 @@ import { INTERRUPTION_LIMITS, SHARED_LIMITS } from '../data/limits'
 import { ALL_EFFORTS, MODELS } from '../data/pricing'
 import { SETUP_IDS } from '../data/series'
 import { normalizeSetup } from './normalize'
+import { cleanName } from './setups'
 import type { CacheId, Effort, ReasoningMode, Setup, SetupId, Shared } from './types'
 
 /** Version of the link format. Always written (except for the all-default state, whose link is just "/"). */
@@ -26,11 +27,11 @@ export interface DecodedState {
   hadParams: boolean
 }
 
-const OWN_PARAMS = ['v', 'a', 'b', 'c', 'd', 'adv', 'cur'] as const
+const OWN_PARAMS = ['v', 'a', 'b', 'c', 'd', 'na', 'nb', 'nc', 'nd', 'adv', 'cur'] as const
 const THINKING_ORDER = ALL_EFFORTS // none, low, medium, high, xhigh, max
 
 const sameSetup = (a: Setup, b: Setup) =>
-  a.id === b.id && a.model === b.model && a.cache === b.cache && a.effort === b.effort && a.reasoning === b.reasoning && a.interruptions === b.interruptions
+  a.id === b.id && a.model === b.model && a.cache === b.cache && a.effort === b.effort && a.reasoning === b.reasoning && a.interruptions === b.interruptions && a.name === b.name
 
 function advValues(s: Shared): number[] {
   return [s.session, s.base, s.growth, s.visibleOut, ...THINKING_ORDER.map((e) => s.thinking[e])].map(Math.round)
@@ -46,7 +47,8 @@ const isDefaultState = (s: ShareState) =>
 
 /**
  * The query string (no leading "?") for a state. Empty for the all-default state, so the default link is a
- * clean "/". Commas stay readable; values only ever come from known enums and integers, so that is safe.
+ * clean "/". Commas stay readable; setup values only ever come from known enums and integers, so that is safe,
+ * and in a name a literal comma is just as valid as an escaped one.
  */
 export function encodeState(state: ShareState): string {
   if (isDefaultState(state)) return ''
@@ -54,6 +56,11 @@ export function encodeState(state: ShareState): string {
   params.set('v', String(SHARE_VERSION))
   for (const s of state.setups) {
     params.set(s.id.toLowerCase(), [s.model, s.cache, s.effort, s.reasoning, s.interruptions].join(','))
+  }
+  // Names are free text (commas, "&", emoji), so each gets its own param; URLSearchParams escapes them.
+  for (const s of state.setups) {
+    const name = cleanName(s.name, s.id)
+    if (name) params.set(`n${s.id.toLowerCase()}`, name)
   }
   if (!sameShared(state.shared, DEFAULT_SHARED)) params.set('adv', advValues(state.shared).join(','))
   if (state.currency !== 'USD') params.set('cur', state.currency)
@@ -125,7 +132,9 @@ export function decodeState(search: string): DecodedState {
   const found = SETUP_IDS.flatMap((id) => {
     const value = params.get(id.toLowerCase())
     const setup = value === null ? null : decodeSetup(id, value)
-    return setup ? [setup] : []
+    if (!setup) return []
+    const name = cleanName(params.get(`n${id.toLowerCase()}`), id)
+    return [name ? { ...setup, name } : setup]
   })
   const adv = params.get('adv')
   const cur = params.get('cur')

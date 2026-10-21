@@ -12,7 +12,7 @@ const groups = () => [...document.querySelectorAll<HTMLElement>('#settings-panel
 const box = (id: SetupId) => within(screen.getByRole('group', { name: `Setup ${id}` }))
 const toggle = (id: SetupId) => document.getElementById(`setup-${id}-toggle`) as HTMLButtonElement
 const body = (id: SetupId) => document.getElementById(`setup-${id}-body`)!
-const removeBtn = (id: SetupId) => screen.queryByRole('button', { name: `Remove setup ${id}` })
+const removeBtn = (id: SetupId) => screen.queryByRole('button', { name: `Remove Setup ${id}` })
 const chart = () => screen.getByTestId('chart-cum')
 // The page starts with three setups; most scenarios here start from two, so drop the default C first.
 function renderTwo() {
@@ -306,6 +306,6 @@ describe('everything follows the number of setups', () => {
     fireEvent.click(removeBtn('B')!)
     expect(stat('Cheapest')).toEqual({ value: 'Setup A', sub: 'saves $13.37 (24%) vs Setup C' })
     const rows = [...document.querySelectorAll('table')[0].querySelectorAll('tbody tr')]
-    expect(rows.map((r) => r.firstElementChild!.textContent!.slice(0, 2))).toEqual(['A:', 'C:'])
+    expect(rows.map((r) => r.firstElementChild!.textContent!.slice(0, 8))).toEqual(['Setup A:', 'Setup C:'])
   })
 })

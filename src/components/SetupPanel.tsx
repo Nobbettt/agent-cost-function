@@ -1,10 +1,10 @@
-import { Fragment, useId } from 'react'
+import { Fragment, useEffect, useId, useRef, useState } from 'react'
 import { DEFAULT_SETUPS } from '../data/defaults'
 import { FIELD_HELP } from '../data/fieldHelp'
 import { INTERRUPTION_LIMITS } from '../data/limits'
 import { MODELS, PROVIDERS, modelsOf, reasoningDefault, reasoningOptions } from '../data/pricing'
 import { switchModel, switchProvider } from '../model/normalize'
-import { summarizeSetup } from '../model/setups'
+import { MAX_NAME_LENGTH, cleanName, displayName, summarizeSetup } from '../model/setups'
 import type { CacheId, Effort, Provider, ReasoningMode, Setup } from '../model/types'
 import { Chevron } from './Chevron'
 import { Field } from './Field'
@@ -21,29 +21,95 @@ interface Props {
   onRemove?: () => void
 }
 
+const HIDDEN = { visibility: 'hidden' } as const
+
 export function SetupPanel({ setup, expanded, onToggle, onChange, onRemove }: Props) {
   const { id } = setup
   const uid = useId()
   const model = MODELS[setup.model]
   const d = DEFAULT_SETUPS.A // fallback for the interruption fields; every default setup shares these
   const set = (patch: Partial<Setup>) => onChange({ ...setup, ...patch })
+  const name = displayName(setup)
+
+  // Renaming: the toggle becomes a text input in place. Enter or blur commits through cleanName, Esc cancels,
+  // and focus goes back to the edit button (unless a blur moved it to another control on purpose).
+  const [draft, setDraft] = useState<string | null>(null)
+  const input = useRef<HTMLInputElement>(null)
+  const renameButton = useRef<HTMLButtonElement>(null)
+  const refocus = useRef(false)
+  const editing = draft !== null
+
+  const finish = (commit: boolean, returnFocus = true) => {
+    if (draft === null) return
+    refocus.current = returnFocus
+    setDraft(null)
+    if (commit) onChange({ ...setup, name: cleanName(draft, id) })
+  }
+  useEffect(() => {
+    if (editing) {
+      input.current?.focus()
+      input.current?.select()
+    } else if (refocus.current) {
+      refocus.current = false
+      renameButton.current?.focus()
+    }
+  }, [editing])
+  // Esc is taken in the capture phase, so it cancels the edit without also closing the drawer or a help tip.
+  useEffect(() => {
+    if (!editing) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.stopPropagation()
+      finish(false)
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  })
+
+  const summary = !expanded && <span className="setup-summary">{summarizeSetup(setup)}</span>
 
   return (
-    <div className="setup" role="group" aria-labelledby={`setup-${id}-title`} data-id={id}>
+    <div className="setup" role="group" aria-label={name} data-id={id}>
       <div className="setup-head">
+        {editing ? (
+          <div className="setup-toggle setup-editing" data-expanded={expanded}>
+            <Chevron />
+            <span className="setup-title">
+              <SeriesKey id={id} />
+              <input
+                ref={input} className="setup-name-input" type="text" name={`name-${id}`} aria-label={`Name for setup ${id}`}
+                maxLength={MAX_NAME_LENGTH} autoComplete="off" spellCheck={false} value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); finish(true) } }}
+                onBlur={(e) => finish(true, !e.relatedTarget)}
+              />
+            </span>
+            {summary}
+          </div>
+        ) : (
+          <button
+            type="button" id={`setup-${id}-toggle`} className="setup-toggle"
+            aria-expanded={expanded} aria-controls={`setup-${id}-body`} onClick={onToggle}
+          >
+            <Chevron />
+            <span className="setup-title">
+              <SeriesKey id={id} />
+              <span id={`setup-${id}-title`} className="setup-name">{name}</span>
+            </span>
+            {summary}
+          </button>
+        )}
+        {/* Hidden, not removed, while editing, so the header keeps its width and the title does not reflow. */}
         <button
-          type="button" id={`setup-${id}-toggle`} className="setup-toggle"
-          aria-expanded={expanded} aria-controls={`setup-${id}-body`} onClick={onToggle}
+          ref={renameButton} type="button" className="setup-rename" aria-label={`Rename ${name}`}
+          style={editing ? HIDDEN : undefined} onClick={() => setDraft(name)}
         >
-          <Chevron />
-          <span className="setup-title">
-            <SeriesKey id={id} />
-            <span id={`setup-${id}-title`}>Setup {id}</span>
-          </span>
-          {!expanded && <span className="setup-summary">{summarizeSetup(setup)}</span>}
+          <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M7.8 2.2l2 2M2 10l.5-2.3L8.3 1.9a.7.7 0 0 1 1 0l.8.8a.7.7 0 0 1 0 1L4.3 9.5 2 10z" />
+          </svg>
         </button>
         {onRemove && (
-          <button type="button" className="setup-remove" aria-label={`Remove setup ${id}`} onClick={onRemove}>
+          <button type="button" className="setup-remove" aria-label={`Remove ${name}`} style={editing ? HIDDEN : undefined} onClick={onRemove}>
             <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
               <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" />
             </svg>
@@ -56,7 +122,7 @@ export function SetupPanel({ setup, expanded, onToggle, onChange, onRemove }: Pr
             <span className="field-label">Provider</span>
             <InfoTip label="Provider" text={FIELD_HELP.provider} />
           </div>
-          <div className="toggle" role="radiogroup" aria-label={`Provider for setup ${id}`}>
+          <div className="toggle" role="radiogroup" aria-label={`Provider for ${name}`}>
             {(Object.entries(PROVIDERS) as [Provider, (typeof PROVIDERS)[Provider]][]).map(([k, p]) => (
               <Fragment key={k}>
                 <input

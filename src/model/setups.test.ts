@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETUP_LIST, DEFAULT_SETUPS } from '../data/defaults'
 import {
-  addSetup, canAddSetup, canRemoveSetup, firstFreeId, focusAfterRemove, modelAndCache, removeSetup, summarizeSetup,
+  addSetup, canAddSetup, canRemoveSetup, cleanName, displayName, firstFreeId, focusAfterRemove, modelAndCache, removeSetup, summarizeSetup,
 } from './setups'
 import type { Setup, SetupId } from './types'
 
@@ -105,5 +105,51 @@ describe('focusAfterRemove', () => {
   it('is null for an unknown id or a lone setup', () => {
     expect(focusAfterRemove(list, 'D')).toBeNull()
     expect(focusAfterRemove(make('A'), 'A')).toBeNull()
+  })
+})
+
+describe('displayName', () => {
+  it('is the custom name, trimmed, or "Setup X" when there is none or it is blank', () => {
+    expect(displayName({ id: 'B' })).toBe('Setup B')
+    expect(displayName({ id: 'B', name: '  Fast cache ' })).toBe('Fast cache')
+    expect(displayName({ id: 'B', name: '   ' })).toBe('Setup B')
+  })
+
+  it('a new setup copies the last one without its custom name', () => {
+    const named: Setup[] = [{ ...A, id: 'A', name: 'Mine' }, { ...B, name: 'Fast cache' }]
+    const next = addSetup(named)
+    expect(next.map(displayName)).toEqual(['Mine', 'Fast cache', 'Setup C'])
+    expect(next[2].name).toBeUndefined()
+    expect(named[1].name).toBe('Fast cache')
+  })
+})
+
+describe('cleanName', () => {
+  it('trims and collapses whitespace runs, tabs and newlines to one space', () => {
+    expect(cleanName('  Fast   cache \t\n now ', 'B')).toBe('Fast cache now')
+  })
+
+  it('strips control characters and lone surrogates', () => {
+    expect(cleanName('Fa\u0000st\u0007 c\u001bache', 'B')).toBe('Fast cache')
+    expect(cleanName('a\uD800b', 'B')).toBe('ab')
+  })
+
+  it('cuts at 40 and does not leave a trailing space or half an emoji', () => {
+    expect(cleanName('x'.repeat(60), 'A')).toBe('x'.repeat(40))
+    expect(cleanName(`${'x'.repeat(39)} yyyy`, 'A')).toBe('x'.repeat(39))
+    const cut = cleanName(`${'x'.repeat(39)}\u{1F680}tail`, 'A')!
+    expect(cut).toBe('x'.repeat(39))
+    expect(cut).not.toMatch(/[\uD800-\uDBFF]$/)
+    expect(cleanName('\u{1F680}'.repeat(30), 'A')).toBe('\u{1F680}'.repeat(20))
+  })
+
+  it('keeps emoji and other unicode', () => {
+    expect(cleanName('Snabb cache \u{1F680} \u00E5\u00E4\u00F6 \u65E5\u672C', 'B')).toBe('Snabb cache \u{1F680} \u00E5\u00E4\u00F6 \u65E5\u672C')
+    expect(cleanName('\u{1F468}\u200D\u{1F4BB}', 'B')).toBe('\u{1F468}\u200D\u{1F4BB}')
+  })
+
+  it('gives undefined for nothing, only whitespace or control characters, and for the default name of that setup', () => {
+    for (const raw of [undefined, null, '', '   ', '\u0000\u0007', ' Setup  B '] as const) expect(cleanName(raw, 'B')).toBeUndefined()
+    expect(cleanName('Setup B', 'A')).toBe('Setup B')
   })
 })

@@ -129,7 +129,7 @@ describe('the address bar follows the state', () => {
     expect(query.get('c')).toBe('claude-opus-5-5,5m,high,kept,0')
     expect(query.get('d')).toBe('claude-opus-5-5,5m,high,kept,0')
     expect(query.get('adv')).toBe('1000000,20000,7000,500,0,300,1000,2500,5000,10000')
-    fireEvent.click(screen.getByRole('button', { name: 'Remove setup D' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Setup D' }))
     fireEvent.change(screen.getByLabelText('Added per request (tokens)'), { target: { value: '5000' } })
     act(() => { vi.advanceTimersByTime(300) })
     expect(window.location.search).toBe('')
@@ -137,7 +137,7 @@ describe('the address bar follows the state', () => {
 
   it('removing a default setup leaves a link that decodes to exactly the two that remain', () => {
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Remove setup C' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Setup C' }))
     act(() => { vi.advanceTimersByTime(300) })
     expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,7&b=claude-opus-5-5,1h,high,kept,7')
   })

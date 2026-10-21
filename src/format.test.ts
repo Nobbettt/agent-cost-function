@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { everyOtherTickLabel, fmtPrice, fmtTokens, fmtUsd, formatMoney, signedMoney } from './format'
+import { everyOtherTickLabel, fmtPrice, fmtTokens, fmtUsd, formatMoney, signedMoney, truncateLabel } from './format'
 
 describe('fmtTokens', () => {
   it('formats raw, K and M', () => {
@@ -101,5 +101,14 @@ describe('everyOtherTickLabel', () => {
     const sek = (v: number) => formatMoney(v, 'SEK', 10)
     expect(everyOtherTickLabel(2, 2, sek).replace(/\s/g, ' ')).toBe('SEK 20.00')
     expect(everyOtherTickLabel(2, 3, sek)).toBe('')
+  })
+})
+
+describe('truncateLabel', () => {
+  it('keeps short text and cuts long text to the limit with an ellipsis, by code point', () => {
+    expect(truncateLabel('Fast cache', 14)).toBe('Fast cache')
+    expect(truncateLabel('x'.repeat(14), 14)).toBe('x'.repeat(14))
+    expect(truncateLabel('x'.repeat(15), 14)).toBe(`${'x'.repeat(13)}\u2026`)
+    expect(truncateLabel('\u{1F680}'.repeat(20), 14)).toBe(`${'\u{1F680}'.repeat(13)}\u2026`)
   })
 })

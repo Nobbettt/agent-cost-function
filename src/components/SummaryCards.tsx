@@ -1,6 +1,6 @@
 import { fmtTokens } from '../format'
 import type { Comparison } from '../model/compare'
-import { modelAndCache } from '../model/setups'
+import { displayName, modelAndCache } from '../model/setups'
 import type { Setup, SetupId } from '../model/types'
 import { SeriesKey } from './SeriesKey'
 
@@ -17,7 +17,7 @@ function Stat({ label, value, sub, series }: StatProps) {
     <div className="stat">
       <dt>
         {series && <SeriesKey id={series} />}
-        {label}
+        <span className="stat-label" title={label}>{label}</span>
       </dt>
       <dd>
         <span className="stat-value">{value}</span>
@@ -36,18 +36,22 @@ interface Props {
 /** The result at a glance: each setup's cost, the cheapest one, and the context size they are compared at. */
 export function SummaryCards({ comparison: c, setups, format }: Props) {
   const valueOf = (id: SetupId) => c.values.find((v) => v.id === id)?.value ?? 0
+  const nameOf = (id: SetupId | null) => {
+    const s = setups.find((o) => o.id === id)
+    return s ? displayName(s) : `Setup ${id}`
+  }
   const cheapest =
     c.cheapest === null
       ? { value: 'Equal', sub: 'All cost the same' }
       : {
-          value: `Setup ${c.cheapest}`,
-          sub: `saves ${format(c.saving)} (${c.percent}%) vs Setup ${c.mostExpensive}`,
+          value: nameOf(c.cheapest),
+          sub: `saves ${format(c.saving)} (${c.percent}%) vs ${nameOf(c.mostExpensive)}`,
         }
   return (
     <section className="summary" aria-label="Summary" data-count={setups.length + 2}>
       <dl>
         {setups.map((s) => (
-          <Stat key={s.id} label={`Setup ${s.id}`} series={s.id} value={format(valueOf(s.id))} sub={modelAndCache(s)} />
+          <Stat key={s.id} label={displayName(s)} series={s.id} value={format(valueOf(s.id))} sub={modelAndCache(s)} />
         ))}
         <Stat label="Cheapest" value={cheapest.value} sub={cheapest.sub} />
         <Stat

@@ -65,3 +65,9 @@ export const everyOtherTickLabel = (value: number, index: number, format: (v: nu
 export const fmtUsd = (v: number): string => formatMoney(v, 'USD', 1)
 
 export const fmtPrice = (v: number): string => `$${+v.toFixed(4)}`
+
+/** At most `max` characters (code points), the last one "…" when cut, so a long name fits a direct label. */
+export function truncateLabel(text: string, max: number): string {
+  const chars = Array.from(text)
+  return chars.length <= max ? text : `${chars.slice(0, max - 1).join('')}…`
+}

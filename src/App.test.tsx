@@ -184,13 +184,13 @@ describe('App', () => {
 
   it('shows the breakdown and steps tables', () => {
     render(<App />)
-    expect(screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept')).toBeTruthy()
-    expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
+    expect(screen.getByText('Setup A: Claude Opus 5.5, 5m, high, reasoning kept')).toBeTruthy()
+    expect(screen.getByText('Setup B: Claude Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
     expect(screen.getByText('vs cheapest')).toBeTruthy()
     const vs = (label: string) => screen.getByText(label).closest('tr')!.lastElementChild!.textContent
-    expect(vs('A: Claude Opus 5.5, 5m, high, reasoning kept')).toBe('+$16.62')
-    expect(vs('B: Claude Opus 5.5, 1h, high, reasoning kept')).toBe('+$29.99')
-    expect(vs('C: Claude Opus 5.5, 5m, high, reasoning kept')).toBe('cheapest')
+    expect(vs('Setup A: Claude Opus 5.5, 5m, high, reasoning kept')).toBe('+$16.62')
+    expect(vs('Setup B: Claude Opus 5.5, 1h, high, reasoning kept')).toBe('+$29.99')
+    expect(vs('Setup C: Claude Opus 5.5, 5m, high, reasoning kept')).toBe('cheapest')
     // No run is capped by default, so every step has a cost.
     expect(screen.queryAllByText('—')).toHaveLength(0)
     // GPT-5.6 Sol stops at 922K, so the 1M step shows a dash for that setup.

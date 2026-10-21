@@ -25,7 +25,7 @@ import { buildShareUrl, useShareUrlSync } from './hooks/useShareUrl'
 import { compare } from './model/compare'
 import { effectiveShared } from './model/normalize'
 import { decodeState, encodeState } from './model/shareState'
-import { addSetup, canAddSetup, canRemoveSetup, focusAfterRemove, removeSetup } from './model/setups'
+import { addSetup, canAddSetup, canRemoveSetup, displayName, focusAfterRemove, removeSetup } from './model/setups'
 import { simulate } from './model/simulate'
 import type { Setup, SetupId, Shared } from './model/types'
 
@@ -50,7 +50,7 @@ function Calculator() {
   useShareUrlSync(query)
   const shareUrl = buildShareUrl(query)
   const series = useMemo<ChartSeries[]>(
-    () => setups.map((s, i) => ({ id: s.id, ...SERIES[s.id], run: runs[i] })),
+    () => setups.map((s, i) => ({ id: s.id, name: displayName(s), ...SERIES[s.id], run: runs[i] })),
     [setups, runs],
   )
 
@@ -122,7 +122,7 @@ function Calculator() {
 
             <details className="card">
               <summary>Cumulative cost at regular steps (table view)</summary>
-              <div className="table-wrap"><StepsTable runs={runs} ids={setups.map((s) => s.id)} session={effective.session} format={format} /></div>
+              <div className="table-wrap"><StepsTable runs={runs} setups={setups} session={effective.session} format={format} /></div>
             </details>
 
             <RateInfo />

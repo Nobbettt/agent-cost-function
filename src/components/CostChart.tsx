@@ -48,7 +48,7 @@ export function CostChart({ series, metric, xMax, endLabels = false, label, form
         c.data.datasets.push(makeDataset(s.id))
         ds = c.data.datasets[i]
       }
-      ds.label = `Setup ${s.id}`
+      ds.label = s.name
       ds.borderColor = css(s.cssVar)
       ds.borderDash = [...s.dash]
       ds.data = s.run.points.map((p) => ({ ...p, y: p[metric] * rate }))

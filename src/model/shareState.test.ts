@@ -250,3 +250,57 @@ describe('decodeState: garbage in, valid state out', () => {
     }
   })
 })
+
+describe('setup names', () => {
+  const named = (s: Setup, name: string): Setup => ({ ...s, name })
+
+  it('are written as na..nd only when set, escaped, and the default state stays a clean "/"', () => {
+    expect(encodeState(state(DEFAULT_SETUP_LIST))).toBe('')
+    const q = new URLSearchParams(encodeState(state([A, named(B, 'Fast cache')])))
+    expect(q.get('nb')).toBe('Fast cache')
+    expect(q.has('na')).toBe(false)
+    expect(q.get('v')).toBe('1')
+  })
+
+  it('a name alone makes the default state non-default', () => {
+    const q = encodeState(state(DEFAULT_SETUP_LIST.map((s) => (s.id === 'B' ? named(s, 'Fast cache') : s))))
+    expect(new URLSearchParams(q).get('nb')).toBe('Fast cache')
+  })
+
+  it('round-trips names with commas, "&", "=", "#", "%", spaces and emoji', () => {
+    const names = ['a, b', 'x&y=z', '100% #1 + more', 'Snabb \u{1F680} cache', 'Fast cache']
+    const setups = [named(A, names[0]), named(B, names[1]), named(C, names[2]), named(D, names[3])]
+    const back = roundTrip(state(setups)).setups
+    expect(back).toEqual(setups)
+    expect(roundTrip(state([named(A, names[4]), B])).setups).toEqual([named(A, names[4]), B])
+  })
+
+  it('the query survives a real URL parse', () => {
+    const q = encodeState(state([named(A, 'a, b&c=d \u{1F680}'), B]))
+    expect(decodeState(new URL(`https://x.test/?${q}`).search).setups[0].name).toBe('a, b&c=d \u{1F680}')
+  })
+
+  it('are cleaned on decode: trimmed, collapsed, stripped, cut, default or blank dropped', () => {
+    const d = decodeState(`?v=1&a=${A.model},5m,high,kept,7&b=${B.model},1h,high,kept,7&c=${B.model},5m,high,kept,0&d=${B.model},5m,high,kept,0` +
+      `&na=${encodeURIComponent('  too   many \t spaces\u0000 ')}&nb=${'x'.repeat(100)}&nc=Setup%20C&nd=%20%20`)
+    expect(d.setups.map((s) => s.name)).toEqual(['too many spaces', 'x'.repeat(40), undefined, undefined])
+  })
+
+  it('a name for a setup that is not in the link is ignored', () => {
+    const d = decodeState(`?v=1&a=${A.model},5m,high,kept,7&b=${B.model},1h,high,kept,7&nc=Ghost&nd=Ghost2`)
+    expect(d.setups.map((s) => s.id)).toEqual(['A', 'B'])
+    expect(d.setups.every((s) => s.name === undefined)).toBe(true)
+    expect(d.hadParams).toBe(true)
+  })
+
+  it('a link with only a name param is not the plain default state', () => {
+    const d = decodeState('?nb=Ghost')
+    expect(d.hadParams).toBe(true)
+    expect(d.setups).toEqual(DEFAULT_SETUP_LIST)
+  })
+
+  it('never makes the page lie about colour or order: names only ride on their own id', () => {
+    const d = decodeState(`?v=1&b=${B.model},1h,high,kept,7&a=${A.model},5m,high,kept,7&nb=Beta`)
+    expect(d.setups.map((s) => [s.id, s.name])).toEqual([['A', undefined], ['B', 'Beta']])
+  })
+})

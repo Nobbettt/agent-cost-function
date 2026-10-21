@@ -16,6 +16,27 @@ export function summarizeSetup(s: Setup): string {
   return `${modelAndCache(s)} · ${s.effort} · reasoning ${s.reasoning} · ${breaks}`
 }
 
+export const MAX_NAME_LENGTH = 40
+
+/** What a setup is called everywhere: its custom name, or "Setup A". User text: render as text only, never as HTML. */
+export const displayName = (s: Pick<Setup, 'id' | 'name'>): string => s.name?.trim() || `Setup ${s.id}`
+
+/**
+ * The one place a typed or linked name is validated: whitespace runs become one space, control characters and
+ * lone surrogates are dropped, the result is trimmed and cut at 40 UTF-16 units without splitting a surrogate pair.
+ * Empty, or equal to the default "Setup X", gives undefined, so the setup falls back to its default name.
+ */
+export function cleanName(raw: string | null | undefined, id: SetupId): string | undefined {
+  if (!raw) return undefined
+  let s = raw.replace(/\s+/g, ' ').replace(/[\p{Cc}\p{Cs}]/gu, '').trim()
+  if (s.length > MAX_NAME_LENGTH) {
+    s = s.slice(0, MAX_NAME_LENGTH)
+    if (/[\uD800-\uDBFF]$/.test(s)) s = s.slice(0, -1)
+    s = s.trimEnd()
+  }
+  return !s || s === `Setup ${id}` ? undefined : s
+}
+
 export const canAddSetup = (setups: readonly Setup[]): boolean => setups.length < MAX_SETUPS
 export const canRemoveSetup = (setups: readonly Setup[]): boolean => setups.length > MIN_SETUPS
 
@@ -25,14 +46,14 @@ export function firstFreeId(setups: readonly Setup[]): SetupId | null {
 }
 
 /**
- * A new setup that copies the last one, with the first free id. The list stays in letter order, so
+ * A new setup that copies the last one (but not its custom name), with the first free id. The list stays in letter order, so
  * the new setup may sit between existing ones. Returns the same list when it is full.
  */
 export function addSetup(setups: readonly Setup[]): Setup[] {
   const id = firstFreeId(setups)
   const last = setups.at(-1)
   if (id === null || !last) return [...setups]
-  return [...setups, { ...last, id }].sort((a, b) => a.id.localeCompare(b.id))
+  return [...setups, { ...last, id, name: undefined }].sort((a, b) => a.id.localeCompare(b.id))
 }
 
 /** The list without that setup; the others keep their ids (and so their colours). A no-op at the minimum. */

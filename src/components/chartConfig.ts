@@ -2,7 +2,7 @@ import {
   Chart, Interaction, Legend, LinearScale, LineController, LineElement, PointElement, Tooltip,
   type ChartConfiguration, type ChartType, type InteractionItem, type InteractionModeFunction, type Plugin,
 } from 'chart.js'
-import { everyOtherTickLabel, fmtTokens } from '../format'
+import { everyOtherTickLabel, fmtTokens, truncateLabel } from '../format'
 import type { Point, Run, SetupId } from '../model/types'
 import { css } from '../theme'
 
@@ -39,22 +39,38 @@ const crosshair: Plugin<'line'> = {
   },
 }
 
-// Direct labels at each line's end; nudged apart when they would overlap.
+// Direct labels at each line's end ("Fast cache $55.93"); nudged apart when they would overlap.
 // The formatter is closed over, not passed as a plugin option: Chart.js would treat a function option as
 // scriptable and call it with its own context.
+const END_LABEL_NAME_MAX = 14
+const END_LABEL_FONT = '600 12px system-ui, -apple-system, sans-serif'
+const endLabelText = (ds: { label?: string; data: ChartPoint[] }, format: (usd: number) => string) =>
+  `${truncateLabel(ds.label ?? '', END_LABEL_NAME_MAX)} ${format(ds.data.at(-1)?.y ?? 0)}`
+
 const makeEndLabels = (getFormat: () => (usd: number) => string): Plugin<'line', { enabled: boolean }> => ({
   id: 'endLabels',
+  // The names are user text of any width: reserve exactly the room the widest label needs (8px gap, 4px slack).
+  beforeLayout(chart, _args, opts) {
+    if (!opts.enabled) return
+    const { ctx } = chart
+    const format = getFormat()
+    ctx.save()
+    ctx.font = END_LABEL_FONT
+    const widest = Math.max(0, ...(chart as LineChart).data.datasets.map((ds) => ctx.measureText(endLabelText(ds, format)).width))
+    ctx.restore()
+    chart.options.layout = { ...chart.options.layout, padding: { right: Math.ceil(widest) + 12 } }
+  },
   afterDatasetsDraw(chart, _args, opts) {
     if (!opts.enabled) return
     const format = getFormat()
     const { ctx, chartArea } = chart
     const labels = (chart as LineChart).data.datasets.map((ds, i) => {
       const last = chart.getDatasetMeta(i).data.at(-1)
-      return last && { x: last.x, y: Math.max(last.y, chartArea.top + 6), text: `${ds.label?.slice(-1)} ${format(ds.data.at(-1)?.y ?? 0)}` }
+      return last && { x: last.x, y: Math.max(last.y, chartArea.top + 6), text: endLabelText(ds, format) }
     }).filter((l) => !!l).sort((a, b) => a.y - b.y)
     labels.forEach((l, i) => { if (i && l.y - labels[i - 1].y < 14) l.y = labels[i - 1].y + 14 })
     ctx.save()
-    ctx.font = '600 12px system-ui, -apple-system, sans-serif'
+    ctx.font = END_LABEL_FONT
     ctx.fillStyle = css('--ink-2')
     ctx.textBaseline = 'middle'
     for (const l of labels) ctx.fillText(l.text, l.x + 8, l.y)
@@ -94,6 +110,8 @@ export function legendLabels(chart: Chart) {
 /** One line of a chart: which setup, its colour variable and dash, and its simulated run. */
 export interface ChartSeries {
   id: SetupId
+  /** The display name: the legend, tooltip and end label text. */
+  name: string
   cssVar: string
   dash: readonly number[]
   run: Run

@@ -46,6 +46,8 @@ export interface Setup {
   effort: Effort
   reasoning: ReasoningMode
   interruptions: number
+  /** Custom display name; absent means "Setup X". Always set through cleanName. */
+  name?: string
 }
 
 export interface Shared {

@@ -1,10 +1,11 @@
 import { MODELS } from '../data/pricing'
 import { signedMoney } from '../format'
+import { displayName } from '../model/setups'
 import type { Run, Setup } from '../model/types'
 
 const COLS = ['Setup', 'Requests', 'Cache reads', 'Cache writes', 'Re-writes after cache breaks', 'Output + reasoning', 'Total', 'vs cheapest']
 
-const setupName = (s: Setup) => `${s.id}: ${MODELS[s.model].name}, ${s.cache}, ${s.effort}, reasoning ${s.reasoning}`
+const setupName = (s: Setup) => `${displayName(s)}: ${MODELS[s.model].name}, ${s.cache}, ${s.effort}, reasoning ${s.reasoning}`
 
 interface Props {
   runs: readonly Run[]
@@ -27,7 +28,7 @@ export function BreakdownTable({ runs, setups, format: f }: Props) {
     <table>
       <thead><tr>{COLS.map((c) => <th key={c}>{c}</th>)}</tr></thead>
       <tbody>
-        {rows.map((r) => <tr key={r[0]}>{r.map((v, i) => <td key={i}>{v}</td>)}</tr>)}
+        {rows.map((r, i) => <tr key={setups[i].id}>{r.map((v, i) => <td key={i}>{v}</td>)}</tr>)}
       </tbody>
     </table>
   )

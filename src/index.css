@@ -43,13 +43,22 @@ fieldset, .card { background: var(--surface); border: 1px solid var(--border); b
 .setup.advanced { border-top: 1px solid var(--border); }
 .setup-head { display: flex; align-items: flex-start; gap: 4px; padding: 4px 8px 4px 4px; }
 .setup-toggle { flex: 1; min-width: 0; display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: center; column-gap: 6px; row-gap: 2px; padding: 8px; font: inherit; color: var(--ink); text-align: left; background: none; border: 0; border-radius: 6px; cursor: pointer; }
-.setup-toggle:focus-visible, .setup-remove:focus-visible, .add-setup-btn:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+.setup-toggle:focus-visible, .setup-remove:focus-visible, .setup-rename:focus-visible, .add-setup-btn:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
 .chevron { justify-self: center; color: var(--ink-2); transition: transform 150ms ease; }
-.setup-toggle[aria-expanded="true"] .chevron { transform: rotate(90deg); }
-.setup-title { grid-column: 2; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.setup-toggle[aria-expanded="true"] .chevron, .setup-editing[data-expanded="true"] .chevron { transform: rotate(90deg); }
+.setup-title { grid-column: 2; min-width: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.setup-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Renaming: the toggle's place is taken by an input that reads as the title, same size and weight. */
+.setup-editing { cursor: default; }
+.setup-name-input { flex: 1; min-width: 0; margin: -3px 0; padding: 2px 6px; font: inherit; font-weight: 600; color: var(--ink); background: var(--page); border: 1px solid var(--border); border-radius: 4px; }
+.setup-name-input:focus-visible { outline: 2px solid var(--series-a); outline-offset: 0; }
 .setup-summary { grid-column: 2; font-size: 12.5px; color: var(--ink-2); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .setup-remove { flex: none; width: 28px; height: 28px; margin-top: 6px; display: grid; place-items: center; color: var(--muted); background: none; border: 0; border-radius: 6px; cursor: pointer; }
-.setup-remove:hover, .setup-remove:focus-visible { color: var(--ink); background: var(--page); }
+.setup-remove:hover, .setup-remove:focus-visible, .setup-rename:hover, .setup-rename:focus-visible { color: var(--ink); background: var(--page); }
+/* The pencil sits in the tab order but is only seen while the header is hovered or focused (always on touch screens). */
+.setup-rename { flex: none; width: 28px; height: 28px; margin-top: 6px; display: grid; place-items: center; color: var(--muted); background: none; border: 0; border-radius: 6px; cursor: pointer; opacity: 0; }
+.setup-head:hover .setup-rename, .setup-head:focus-within .setup-rename { opacity: 1; }
+@media (hover: none) { .setup-rename { opacity: 1; } }
 .setup-body { padding: 0 16px 16px; }
 .add-setup { display: flex; align-items: center; gap: 12px; }
 .add-setup-btn { padding: 6px 12px; font: inherit; font-size: 13px; color: var(--ink); background: transparent; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
@@ -112,6 +121,7 @@ footer nav { display: inline; }
 .summary dl { --n: 4; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 12px; margin: 0; }
 .stat { min-width: 0; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
 .stat dt { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
+.stat-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stat dd { margin: 0; }
 .stat-value { display: block; font-size: 20px; font-weight: 600; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere; }
 .stat-sub { display: block; font-size: 12.5px; line-height: 1.35; color: var(--ink-2); }
