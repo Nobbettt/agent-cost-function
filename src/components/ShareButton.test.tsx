@@ -1,10 +1,11 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockMatchMedia } from '../test-matchmedia'
+import { SHARE_TEXT_QUERY } from '../data/breakpoints'
 import { ShareButton } from './ShareButton'
 
 const URL_ = 'https://example.com/?v=1&a=claude-opus-5-5,1h,low,kept,2'
-const button = () => screen.getByRole('button', { name: 'Share link' })
+const button = () => screen.getByRole('button', { name: /^share current view$/i })
 const click = () => act(async () => { fireEvent.click(button()) })
 const define = (name: 'clipboard' | 'share', value: unknown) => Object.defineProperty(navigator, name, { value, configurable: true, writable: true })
 
@@ -20,9 +21,10 @@ describe('ShareButton: copying', () => {
     vi.useRealTimers()
   })
 
-  it('has a visible "Share" label, an aria-hidden icon and the name "Share link"', () => {
+  it('has the visible label "Share Current View", an aria-hidden icon, and its name comes from the text', () => {
     render(<ShareButton url={URL_} />)
-    expect(button().textContent).toBe('Share')
+    expect(button().textContent).toBe('Share Current View')
+    expect(button().hasAttribute('aria-label')).toBe(false)
     expect(button().querySelector('svg')!.getAttribute('aria-hidden')).toBe('true')
   })
 
@@ -148,5 +150,35 @@ describe('ShareButton: copy by hand', () => {
     await click()
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByRole('status').textContent).toBe('Link copied')
+  })
+})
+
+describe('ShareButton: label by width', () => {
+  it('shows the text from 1024px up, with no aria-label', () => {
+    mockMatchMedia(true)
+    render(<ShareButton url={URL_} />)
+    expect(button().textContent).toBe('Share Current View')
+    expect(button().hasAttribute('aria-label')).toBe(false)
+  })
+
+  it('is icon-only below 1024px, named "Share current view" by an aria-label', () => {
+    mockMatchMedia(false)
+    render(<ShareButton url={URL_} />)
+    expect(button().textContent).toBe('')
+    expect(button().getAttribute('aria-label')).toBe('Share current view')
+    expect(button().querySelector('svg')!.getAttribute('aria-hidden')).toBe('true')
+    expect(screen.queryByText('Share Current View')).toBeNull()
+  })
+
+  it('asks the dedicated width query', () => {
+    const asked: string[] = []
+    vi.stubGlobal('matchMedia', (q: string) => {
+      asked.push(q)
+      return { matches: true, addEventListener: () => {}, removeEventListener: () => {} }
+    })
+    render(<ShareButton url={URL_} />)
+    expect(asked).toContain(SHARE_TEXT_QUERY)
+    expect(SHARE_TEXT_QUERY).toBe('(min-width: 1024px)')
+    vi.unstubAllGlobals()
   })
 })

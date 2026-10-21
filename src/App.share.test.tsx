@@ -170,14 +170,14 @@ describe('the address bar follows the state', () => {
     render(<App />)
     fireEvent.change(box('B').getByLabelText('Cache breaking interruptions'), { target: { value: '2' } })
     act(() => { vi.advanceTimersByTime(300) })
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Share link' })) })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^share current view$/i })) })
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}${window.location.pathname}${window.location.search}`)
     Reflect.deleteProperty(navigator, 'clipboard')
   })
 
   it('the share button sits in the navbar before the currency select', () => {
     render(<App />)
-    const share = screen.getByRole('button', { name: 'Share link' })
+    const share = screen.getByRole('button', { name: /^share current view$/i })
     const currency = screen.getByLabelText('Currency')
     expect(share.compareDocumentPosition(currency) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.getByRole('navigation', { name: 'Main' }).contains(share)).toBe(true)

@@ -45,10 +45,10 @@ describe('the currency select moves with the width', () => {
     expect(asked).toContain(NAV_WIDE_QUERY)
   })
 
-  it('the navbar keeps Share, and no Settings button, below 768px', () => {
+  it('the navbar keeps an icon-only Share (named "Share current view"), and no Settings button, below 768px', () => {
     mockMatchMedia(false)
     render(<App />)
-    expect(nav().getByRole('button', { name: 'Share link' })).toBeTruthy()
+    expect(nav().getByRole('button', { name: /^share current view$/i })).toBeTruthy()
     expect(nav().queryByRole('button', { name: /settings/i })).toBeNull()
   })
 

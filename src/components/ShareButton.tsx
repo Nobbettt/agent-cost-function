@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { SHARE_TEXT_QUERY } from '../data/breakpoints'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 const TITLE = 'Agent Cost Function'
 const STATUS_MS = 2000
@@ -25,6 +27,8 @@ export function ShareButton({ url }: { url: string }) {
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const input = useRef<HTMLInputElement>(null)
   const button = useRef<HTMLButtonElement>(null)
+  // With the text shown the name comes from it; icon-only, from an aria-label (so the name is "Share current view" either way).
+  const withText = useMediaQuery(SHARE_TEXT_QUERY, true)
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
@@ -81,9 +85,9 @@ export function ShareButton({ url }: { url: string }) {
 
   return (
     <span className="share">
-      <button ref={button} type="button" className="share-btn" aria-label="Share link" onClick={share}>
+      <button ref={button} type="button" className="share-btn" aria-label={withText ? undefined : 'Share current view'} onClick={share}>
         <ShareIcon />
-        <span className="share-label">Share</span>
+        {withText && <span className="share-label">Share Current View</span>}
       </button>
       {copied && <span className="share-status" role="status">Link copied</span>}
       {manual && (
