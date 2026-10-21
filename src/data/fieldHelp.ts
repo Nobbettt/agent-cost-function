@@ -13,7 +13,9 @@ export const FIELD_HELP = {
   growth: 'Tokens added to the context by each request: tool results, user messages and the previous reply. Reasoning is not included. Entered in thousands of tokens.',
   visibleOut: 'Normal output per request (text and tool calls), billed as output tokens. Entered in thousands of tokens.',
   explicitHours: 'How long the session lasts in real time. The explicit cache is kept for this long, and storage is billed per hour.',
-  interruptionsShown: 'How many interruptions the chart covers. Each one is a pause longer than 5 minutes but shorter than an hour.',
+  pausesShort: 'Pauses longer than 5 minutes but no longer than an hour. Each one makes the 5-minute cache write the whole context again; the 1-hour cache survives it.',
+  pausesLong: 'Pauses longer than an hour. Both caches expire, so both write the whole context again; the 1-hour cache pays 2× input for it.',
+  interruptionsShown: 'How many pauses of 5–60 min the chart covers. It is extended to fit your pauses if they are more.',
   currency: 'Display currency. Costs are calculated in USD and converted at the daily ECB reference rate.',
 } as const
 

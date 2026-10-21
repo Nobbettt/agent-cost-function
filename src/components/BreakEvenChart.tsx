@@ -9,6 +9,8 @@ interface Props {
   curve: readonly CurvePoint[]
   /** Where the two costs meet, or null when they do not within the curve. */
   exact: number | null
+  /** The chosen number of 5–60 min pauses: marked on both lines. */
+  yourK: number
   /** Text of the break-even marker, e.g. "break-even ≈ 1.3". */
   markerText: string
   label: string
@@ -20,7 +22,7 @@ interface Props {
 }
 
 /** Session cost against the number of interruptions, for the 5 minute and the 1 hour cache. */
-export function BreakEvenChart({ curve, exact, markerText, label, format, currency, rate }: Props) {
+export function BreakEvenChart({ curve, exact, yourK, markerText, label, format, currency, rate }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const chart = useRef<BreakEvenChartType | null>(null)
   const scheme = useColorScheme()
@@ -51,9 +53,10 @@ export function BreakEvenChart({ curve, exact, markerText, label, format, curren
     const yTitle = c.options.scales!.y!.title
     if (yTitle) yTitle.text = currency
     c.options.plugins!.breakEven = { x: exact, text: markerText }
+    c.options.plugins!.yourPauses = { x: yourK, text: 'your pauses' }
     applyTheme(c)
     c.update()
-  }, [curve, exact, markerText, scheme, format, currency, rate])
+  }, [curve, exact, yourK, markerText, scheme, format, currency, rate])
 
   return (
     <div className="chart-box">

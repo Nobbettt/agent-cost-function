@@ -23,7 +23,7 @@ export const modelAndCache = (s: Setup): string =>
   `${MODELS[s.model].name} · ${usesExplicitCache(s) ? `${CACHE_LABEL[s.cache]} + explicit` : CACHE_LABEL[s.cache]} cache${usesExplicitCache(s) ? ` (${s.explicitHours} h)` : ''}`
 
 /** "6 cache breaks", "1 cache break", "no cache breaks": the one wording of the interruption count. */
-export const cacheBreaks = (s: Setup): string =>
+export const cacheBreaks = (s: Pick<Setup, 'interruptions'>): string =>
   s.interruptions === 0 ? 'no cache breaks' : `${s.interruptions} cache break${s.interruptions === 1 ? '' : 's'}`
 
 /** The setup card's sub-line: "Claude Opus 5.5 · 5 min cache · 6 cache breaks". */

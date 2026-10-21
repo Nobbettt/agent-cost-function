@@ -19,3 +19,8 @@ export const TOKENS_PER_K = 1000
 /** Gemini explicit cache: how many hours the cache is kept (and its storage billed). */
 export const EXPLICIT_HOURS_LIMITS = { min: 0.25, max: 168, step: 0.25 } as const
 export const DEFAULT_EXPLICIT_HOURS = 2
+
+/** Cache break-even page: how many pauses of each kind (5 to 60 min, and longer than an hour) the scenario has. */
+export const PAUSE_LIMITS = { min: 0, max: 40, step: 1 } as const
+export const DEFAULT_SHORT_PAUSES = 2
+export const DEFAULT_LONG_PAUSES = 0
