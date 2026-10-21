@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fmtPrice, fmtTokens, fmtUsd } from './format'
+import { fmtPrice, fmtTokens, fmtUsd, formatMoney } from './format'
 
 describe('fmtTokens', () => {
   it('formats raw, K and M', () => {
@@ -28,5 +28,50 @@ describe('fmtPrice', () => {
     expect(fmtPrice(0.75)).toBe('$0.75')
     expect(fmtPrice(0.025 * 10)).toBe('$0.25')
     expect(fmtPrice(0.123456)).toBe('$0.1235')
+  })
+})
+
+describe('formatMoney', () => {
+  it('USD output is identical to fmtUsd', () => {
+    expect(formatMoney(33.06)).toBe('$33.06')
+    expect(formatMoney(0.078, 'USD', 1)).toBe('$0.078')
+    expect(formatMoney(0, 'USD', 1)).toBe('$0')
+    expect(formatMoney(100, 'USD', 1)).toBe('$100')
+    for (const v of [0, 0.00123, 0.078, 0.5, 1, 1.005, 9.995, 33.06, 99.995, 100, 123.4, 1234.56, 40000.5]) {
+      expect(formatMoney(v, 'USD', 1)).toBe(fmtUsd(v))
+    }
+    expect(fmtUsd(1234.56)).toBe('$1235')
+  })
+
+  it('converts and keeps the magnitude rules for EUR and SEK', () => {
+    expect(formatMoney(33.06, 'EUR', 0.89)).toBe('€29.42')
+    expect(formatMoney(5.5, 'EUR', 0.89)).toBe('€4.90')
+    expect(formatMoney(33.06, 'SEK', 9.8785).replace(/\s/g, ' ')).toBe('SEK 327')
+    expect(formatMoney(5.5, 'SEK', 9.8785).replace(/\s/g, ' ')).toBe('SEK 54.33')
+  })
+
+  it('keeps two significant digits below 1 and prints 0 for zero', () => {
+    expect(formatMoney(0.078, 'EUR', 0.89)).toBe('€0.069')
+    expect(formatMoney(0.00123, 'GBP', 0.75)).toBe('£0.00092')
+    expect(formatMoney(0, 'EUR', 0.89)).toBe('€0')
+  })
+
+  it('zero-decimal currencies (JPY) never get forced decimals', () => {
+    expect(formatMoney(33.06, 'JPY', 150)).toBe('¥4959')
+    expect(formatMoney(0.5, 'JPY', 150)).toBe('¥75')
+    expect(formatMoney(0.02, 'JPY', 150)).toBe('¥3')
+    expect(formatMoney(0.001, 'JPY', 150)).toBe('¥0.15')
+    expect(formatMoney(0, 'JPY', 150)).toBe('¥0')
+  })
+
+  it('never shows NaN: a bad rate falls back to USD, a non-finite value is a dash', () => {
+    for (const rate of [0, -1, NaN, Infinity]) expect(formatMoney(33.06, 'SEK', rate)).toBe('$33.06')
+    expect(formatMoney(NaN, 'EUR', 0.89)).toBe('—')
+    expect(formatMoney(Infinity)).toBe('—')
+  })
+
+  it('shows an unknown currency code bare, and negatives with a leading minus', () => {
+    expect(formatMoney(2, 'XXXX', 1)).toBe('XXXX 2.00')
+    expect(formatMoney(-5, 'USD', 1)).toBe('-$5.00')
   })
 })

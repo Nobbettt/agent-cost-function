@@ -33,6 +33,10 @@ Prices, cache rules and model limits live in `src/data/pricing.ts` (verified 202
 - https://developers.openai.com/api/docs/guides/prompt-caching
 - https://developers.openai.com/api/docs/guides/reasoning
 
+## Display currency
+
+All maths is in USD, which is the default and makes no network request. Picking another currency fetches the daily ECB reference rates once (cached for 24h in `localStorage`) from [Frankfurter](https://frankfurter.dev); the URL is `FX_URL` in `src/data/fx.ts`.
+
 ## Deploy
 
 Deploys go out via GitHub Actions on merge to main.

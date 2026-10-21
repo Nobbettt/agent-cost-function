@@ -21,7 +21,7 @@ export default defineConfig({
     setupFiles: ['src/test-setup.ts'],
     coverage: {
       provider: 'v8',
-      include: ['src/model/**', 'src/format.ts', 'src/data/**', 'src/hooks/**'],
+      include: ['src/model/**', 'src/format.ts', 'src/data/**', 'src/hooks/**', 'src/currency/**'],
       exclude: ['src/**/*.test.ts', 'src/model/types.ts'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },

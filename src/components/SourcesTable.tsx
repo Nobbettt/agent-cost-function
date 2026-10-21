@@ -35,6 +35,7 @@ export function SourcesTable() {
       </div>
       <ul className="notes" style={{ marginTop: 12 }}>
         <li>Prices are USD per million tokens, standard tier. Cache column "write" is the multiplier on input for writing to the cache. * marks a documented default; where none is marked the docs do not state one.</li>
+        <li>Model prices are in USD, as the providers publish them. The display currency only converts the calculated costs, using the Frankfurter rates listed below.</li>
         {Object.values(DOCS).map((d) => (
           <li key={d.url}><ExternalLink href={d.url}>{d.url}</ExternalLink>{`: ${d.proves}`}</li>
         ))}

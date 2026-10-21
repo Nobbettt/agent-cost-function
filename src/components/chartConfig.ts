@@ -2,7 +2,7 @@ import {
   Chart, Interaction, Legend, LinearScale, LineController, LineElement, PointElement, Tooltip,
   type ChartConfiguration, type ChartType, type InteractionItem, type InteractionModeFunction, type Plugin,
 } from 'chart.js'
-import { fmtTokens, fmtUsd } from '../format'
+import { fmtTokens } from '../format'
 import type { Point } from '../model/types'
 import { css } from '../theme'
 
@@ -40,14 +40,17 @@ const crosshair: Plugin<'line'> = {
 }
 
 // Direct labels at each line's end; nudged apart when they would overlap.
-const endLabels: Plugin<'line', { enabled: boolean }> = {
+// The formatter is closed over, not passed as a plugin option: Chart.js would treat a function option as
+// scriptable and call it with its own context.
+const makeEndLabels = (getFormat: () => (usd: number) => string): Plugin<'line', { enabled: boolean }> => ({
   id: 'endLabels',
   afterDatasetsDraw(chart, _args, opts) {
     if (!opts.enabled) return
+    const format = getFormat()
     const { ctx, chartArea } = chart
     const labels = (chart as LineChart).data.datasets.map((ds, i) => {
       const last = chart.getDatasetMeta(i).data.at(-1)
-      return last && { x: last.x, y: Math.max(last.y, chartArea.top + 6), text: `${ds.label?.slice(-1)} ${fmtUsd(ds.data.at(-1)?.y ?? 0)}` }
+      return last && { x: last.x, y: Math.max(last.y, chartArea.top + 6), text: `${ds.label?.slice(-1)} ${format(ds.data.at(-1)?.y ?? 0)}` }
     }).filter((l) => !!l).sort((a, b) => a.y - b.y)
     labels.forEach((l, i) => { if (i && l.y - labels[i - 1].y < 14) l.y = labels[i - 1].y + 14 })
     ctx.save()
@@ -57,7 +60,7 @@ const endLabels: Plugin<'line', { enabled: boolean }> = {
     for (const l of labels) ctx.fillText(l.text, l.x + 8, l.y)
     ctx.restore()
   },
-}
+})
 
 // The two setups can have different x positions (reasoning kept in context changes the step),
 // so the tooltip picks each dataset's point nearest the pointer instead of matching by index.
@@ -74,7 +77,8 @@ Interaction.modes.nearestPerDataset = nearestPerDataset
 
 const raw = (c: { raw: unknown }) => c.raw as ChartPoint | undefined
 
-export function lineConfig(showEndLabels: boolean): ChartConfiguration<'line', ChartPoint[]> {
+/** `getFormat` formats a plotted (display-currency) value; it is read at draw time, so the currency can change without rebuilding the chart. */
+export function lineConfig(showEndLabels: boolean, getFormat: () => (usd: number) => string): ChartConfiguration<'line', ChartPoint[]> {
   const dataset = (label: string) => ({
     label, data: [] as ChartPoint[], borderWidth: 2, tension: 0,
     pointRadius: (c: { raw: unknown }) => (raw(c)?.paused ? 4 : 0),
@@ -94,7 +98,7 @@ export function lineConfig(showEndLabels: boolean): ChartConfiguration<'line', C
       scales: {
         x: { type: 'linear', min: 0, ticks: { callback: (v) => fmtTokens(Number(v)), maxTicksLimit: 11 },
              title: { display: true, text: 'Context size (tokens)' } },
-        y: { beginAtZero: true, ticks: { callback: (v) => fmtUsd(Number(v)) }, title: { display: true, text: 'USD' } },
+        y: { beginAtZero: true, ticks: { callback: (v) => getFormat()(Number(v)) }, title: { display: true, text: 'USD' } },
       },
       plugins: {
         endLabels: { enabled: showEndLabels },
@@ -102,7 +106,7 @@ export function lineConfig(showEndLabels: boolean): ChartConfiguration<'line', C
         tooltip: {
           callbacks: {
             title: (items) => `${fmtTokens(items[0].parsed.x as number)} tokens in context`,
-            label: (it) => `${fmtUsd(it.parsed.y as number)}  ${it.dataset.label}`,
+            label: (it) => `${getFormat()(it.parsed.y as number)}  ${it.dataset.label}`,
             afterLabel: (it) => (it.raw as ChartPoint).miss ? '  pause outlived the cache: full re-write'
                               : (it.raw as ChartPoint).paused ? '  pause within cache lifetime: cache kept' : '',
             labelColor: (it) => ({ borderColor: it.dataset.borderColor as string, backgroundColor: it.dataset.borderColor as string }),
@@ -111,7 +115,7 @@ export function lineConfig(showEndLabels: boolean): ChartConfiguration<'line', C
         },
       },
     },
-    plugins: [crosshair, endLabels],
+    plugins: [crosshair, makeEndLabels(getFormat)],
   }
 }
 

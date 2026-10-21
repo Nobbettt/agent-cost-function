@@ -11,16 +11,24 @@ interface Props {
   xMax: number
   endLabels?: boolean
   label: string
+  /** Formats a USD amount in the display currency (ticks, tooltips, end labels). */
+  format: (usd: number) => string
+  /** Display currency code, used as the y-axis title. */
+  currency: string
+  /** Units of `currency` per USD. Points are plotted in the display currency so the axis gets round ticks. */
+  rate: number
 }
 
-export function CostChart({ runs, metric, xMax, endLabels = false, label }: Props) {
+export function CostChart({ runs, metric, xMax, endLabels = false, label, format, currency, rate }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const chart = useRef<Chart<'line', ChartPoint[]> | null>(null)
   const scheme = useColorScheme()
+  const formatRef = useRef(format)
+  const rateRef = useRef(rate)
 
   // Create once; destroy on unmount. endLabels is fixed per chart instance.
   useEffect(() => {
-    const instance = new Chart(canvas.current!, lineConfig(endLabels))
+    const instance = new Chart(canvas.current!, lineConfig(endLabels, () => (plotted) => formatRef.current(plotted / rateRef.current)))
     chart.current = instance
     return () => {
       instance.destroy()
@@ -33,12 +41,16 @@ export function CostChart({ runs, metric, xMax, endLabels = false, label }: Prop
     const c = chart.current
     if (!c) return
     runs.forEach((r, i) => {
-      c.data.datasets[i].data = r.points.map((p) => ({ ...p, y: p[metric] }))
+      c.data.datasets[i].data = r.points.map((p) => ({ ...p, y: p[metric] * rate }))
     })
     c.options.scales!.x!.max = xMax
+    formatRef.current = format
+    rateRef.current = rate
+    const yTitle = c.options.scales!.y!.title
+    if (yTitle) yTitle.text = currency
     applyTheme(c)
     c.update()
-  }, [runs, metric, xMax, scheme, endLabels])
+  }, [runs, metric, xMax, scheme, endLabels, format, currency, rate])
 
   return (
     <div className="chart-box">

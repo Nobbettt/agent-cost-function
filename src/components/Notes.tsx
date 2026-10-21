@@ -8,6 +8,7 @@ export function Notes() {
         <li>OpenAI's older cache modes have no fixed lifetime: <code>in_memory</code> lasts about 5–10 minutes idle and <code>24h</code> typically about 30 minutes. This page uses 5 and 30 minutes.</li>
         <li>Long prompts: Claude Haiku 5.5 bills a request at 5× once its prompt passes 100K tokens. OpenAI models bill 2× input and cache and 1.5× output for the whole request once the prompt passes 272K tokens.</li>
         <li>Reasoning tokens per effort level are not published by either provider. The numbers in Shared assumptions are guesses, the same for every model, and the levels do not mean the same amount of work across models.</li>
+        <li>Costs are calculated in USD and converted for display at the daily ECB reference rate (via Frankfurter). USD is the default and needs no network request; the rate is only fetched when another currency is selected.</li>
         <li>Not modelled: compaction, subagents, fast/priority/flex/batch pricing, regional pricing, reasoning kept only within the current turn (treated as dropped), and effort changing how many requests a task takes.</li>
       </ul>
     </section>

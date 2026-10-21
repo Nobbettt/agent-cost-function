@@ -75,10 +75,22 @@ footer nav { display: inline; }
   /* Short brand; the full name stays in the accessibility tree, visually hidden. */
   .brand-full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .brand-short { display: inline; }
+  .currency-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .navbar nav { gap: 8px; }
   .nav-links { gap: 10px; }
 }
+@media (max-width: 479px) {
+  /* Tight: drop the icon, and fade the link group's right edge to show that it scrolls. */
+  .settings-toggle { padding: 0 8px; }
+  .settings-toggle svg { display: none; }
+  .nav-links { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); }
+}
 @media (min-width: 1024px) { .navbar nav { padding: 0 24px; } }
+
+.navbar label.currency { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.navbar .currency select { width: auto; height: 28px; padding: 0 6px; font-size: 13px; color: var(--ink); background: transparent; border-radius: 6px; cursor: pointer; }
+.navbar .currency select:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+.rate-line { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
 
 /* Settings panel. Below 1024px: an off-canvas drawer sliding in from the right. */
 .controls {
@@ -128,6 +140,7 @@ footer nav { display: inline; }
 
   /* overflow-y: if the window is too short for two 260px charts, the results scroll instead of overlapping the tables. */
   .results { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .headline-block { flex: none; }
   .results .headline { margin: 0; flex: none; }
   .results .card { margin: 0; flex: 1 1 0; min-height: 260px; display: flex; flex-direction: column; }
   .results .card h2 { flex: none; }

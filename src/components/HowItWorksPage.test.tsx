@@ -8,8 +8,9 @@ describe('HowItWorksPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'How it is calculated' })).toBeTruthy()
     expect(screen.getAllByRole('heading')).toHaveLength(1)
     expect(screen.getByRole('link', { name: 'calculator' }).getAttribute('href')).toBe('/')
-    expect(screen.getAllByRole('listitem').filter((li) => li.closest('main'))).toHaveLength(7)
+    expect(screen.getAllByRole('listitem').filter((li) => li.closest('main'))).toHaveLength(8)
     expect(screen.getByText(/Every request sends the whole context/)).toBeTruthy()
+    expect(screen.getByText(/Costs are calculated in USD and converted for display at the daily ECB reference rate/)).toBeTruthy()
   })
 
   it('has the site nav with this page as aria-current text', () => {

@@ -1,4 +1,4 @@
-import type { RefObject } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import { SITE_LINKS, type Page } from './siteLinks'
 
 interface SettingsToggle {
@@ -12,6 +12,8 @@ interface Props {
   settings?: SettingsToggle
   /** Ref for the Settings button, so the drawer can return focus to it. */
   settingsButtonRef?: RefObject<HTMLButtonElement | null>
+  /** Calculator page only: extra controls (the currency select) placed left of the Settings button. */
+  controls?: ReactNode
 }
 
 function SlidersIcon() {
@@ -25,7 +27,7 @@ function SlidersIcon() {
   )
 }
 
-export function NavBar({ page, settings, settingsButtonRef }: Props) {
+export function NavBar({ page, settings, settingsButtonRef, controls }: Props) {
   return (
     <header className="navbar">
       <nav aria-label="Main">
@@ -40,6 +42,7 @@ export function NavBar({ page, settings, settingsButtonRef }: Props) {
               : <a key={l.page} href={l.href}>{l.label}</a>,
           )}
         </div>
+        {controls}
         {settings && (
           <button
             type="button" className="settings-toggle" ref={settingsButtonRef}

@@ -11,6 +11,7 @@ export const DOCS = {
   openaiPricing: { url: 'https://developers.openai.com/api/docs/pricing', proves: 'OpenAI input, cached input, cache write, output and over-272K prices' },
   openaiCaching: { url: 'https://developers.openai.com/api/docs/guides/prompt-caching', proves: 'OpenAI cache lifetimes (30m; in_memory; 24h), write 1.25× on GPT-5.6 and later, no write fee before' },
   openaiReasoning: { url: 'https://developers.openai.com/api/docs/guides/reasoning', proves: 'Reasoning billed as output; reasoning.context default per model family' },
+  frankfurter: { url: 'https://frankfurter.dev', proves: 'Exchange rates for the display currency (ECB reference rates, daily)' },
 } as const
 
 export const openaiPage = (id: ModelId) => `https://developers.openai.com/api/docs/models/${id}`

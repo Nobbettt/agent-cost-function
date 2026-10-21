@@ -1,13 +1,17 @@
 import { useMemo, useRef, useState } from 'react'
 import { BreakdownTable } from './components/BreakdownTable'
 import { CostChart } from './components/CostChart'
+import { CurrencySelect } from './components/CurrencySelect'
 import { Footer } from './components/Footer'
 import { Headline } from './components/Headline'
 import { NavBar } from './components/NavBar'
+import { RateLine } from './components/RateLine'
 import { SettingsSidebar } from './components/SettingsSidebar'
 import { SetupPanel } from './components/SetupPanel'
 import { SharedAssumptions } from './components/SharedAssumptions'
 import { StepsTable } from './components/StepsTable'
+import { CurrencyProvider } from './currency/CurrencyProvider'
+import { useCurrency } from './currency/context'
 import { DEFAULT_SETUPS, DEFAULT_SHARED } from './data/defaults'
 import { useSettingsPanel } from './hooks/useSettingsPanel'
 import { compare } from './model/compare'
@@ -15,11 +19,12 @@ import { effectiveShared } from './model/normalize'
 import { simulate } from './model/simulate'
 import type { Run, Setup, Shared } from './model/types'
 
-export default function App() {
+function Calculator() {
   const [setupA, setSetupA] = useState<Setup>(DEFAULT_SETUPS.A)
   const [setupB, setSetupB] = useState<Setup>(DEFAULT_SETUPS.B)
   const [shared, setShared] = useState<Shared>(DEFAULT_SHARED)
   const panel = useSettingsPanel()
+  const { displayCurrency, format, rate } = useCurrency()
   const toggleRef = useRef<HTMLButtonElement>(null)
 
   const effective = useMemo(() => effectiveShared(shared), [shared])
@@ -31,7 +36,10 @@ export default function App() {
 
   return (
     <>
-      <NavBar page="calculator" settings={{ open: panel.open, onToggle: panel.toggle }} settingsButtonRef={toggleRef} />
+      <NavBar
+        page="calculator" settings={{ open: panel.open, onToggle: panel.toggle }} settingsButtonRef={toggleRef}
+        controls={<CurrencySelect />}
+      />
       <div className="layout" data-open={panel.open}>
         <div className="content">
           <main className="calc">
@@ -42,28 +50,31 @@ export default function App() {
               </header>
 
               <section className="results" aria-label="Results">
-                <Headline comparison={comparison} />
+                <div className="headline-block">
+                  <Headline comparison={comparison} format={format} />
+                  <RateLine />
+                </div>
 
                 <section className="card">
-                  <h2>Cumulative cost (USD) vs context size</h2>
-                  <CostChart runs={runs} metric="cum" xMax={effective.session} endLabels label="Cumulative cost per setup as context grows" />
+                  <h2>Cumulative cost ({displayCurrency}) vs context size</h2>
+                  <CostChart runs={runs} metric="cum" xMax={effective.session} endLabels label="Cumulative cost per setup as context grows" format={format} currency={displayCurrency} rate={rate} />
                 </section>
 
                 <section className="card">
-                  <h2>Cost per request (USD) vs context size</h2>
-                  <CostChart runs={runs} metric="req" xMax={effective.session} label="Cost of each request per setup as context grows" />
+                  <h2>Cost per request ({displayCurrency}) vs context size</h2>
+                  <CostChart runs={runs} metric="req" xMax={effective.session} label="Cost of each request per setup as context grows" format={format} currency={displayCurrency} rate={rate} />
                 </section>
               </section>
             </div>
 
             <section className="card">
               <h2>Breakdown at end of session</h2>
-              <div className="table-wrap"><BreakdownTable runs={runs} setups={[setupA, setupB]} /></div>
+              <div className="table-wrap"><BreakdownTable runs={runs} setups={[setupA, setupB]} format={format} /></div>
             </section>
 
             <details className="card">
               <summary>Cumulative cost at regular steps (table view)</summary>
-              <div className="table-wrap"><StepsTable runs={runs} session={effective.session} /></div>
+              <div className="table-wrap"><StepsTable runs={runs} session={effective.session} format={format} /></div>
             </details>
           </main>
           <Footer page="calculator" />
@@ -78,5 +89,13 @@ export default function App() {
         </SettingsSidebar>
       </div>
     </>
+  )
+}
+
+export default function App() {
+  return (
+    <CurrencyProvider>
+      <Calculator />
+    </CurrencyProvider>
   )
 }
