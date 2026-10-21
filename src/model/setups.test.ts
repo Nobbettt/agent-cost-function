@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETUP_LIST, DEFAULT_SETUPS } from '../data/defaults'
 import {
-  addSetup, canAddSetup, canRemoveSetup, cleanName, displayName, firstFreeId, cacheBreaks, cardSubline, focusAfterRemove, modelAndCache, removeSetup, summarizeSetup,
+  addSetup, canAddSetup, canRemoveSetup, cleanName, displayName, firstFreeId, cacheBreaks, cardSubline, toggleExplicit, usesExplicitCache, focusAfterRemove, modelAndCache, removeSetup, summarizeSetup,
 } from './setups'
 import type { Setup, SetupId } from './types'
 
@@ -151,6 +151,30 @@ describe('cleanName', () => {
   it('gives undefined for nothing, only whitespace or control characters, and for the default name of that setup', () => {
     for (const raw of [undefined, null, '', '   ', '\u0000\u0007', ' Setup  B '] as const) expect(cleanName(raw, 'B')).toBeUndefined()
     expect(cleanName('Setup B', 'A')).toBe('Setup B')
+  })
+})
+
+describe('explicit cache in the card and the summary', () => {
+  const pro: Setup = { ...A, provider: 'google', model: 'gemini-3.1-pro-preview', cache: 'implicit', effort: 'high', reasoning: 'kept', interruptions: 6 }
+
+  it('says "implicit + explicit cache (2 h)" only while the explicit cache is on', () => {
+    expect(cardSubline({ ...pro, explicitHours: 2 })).toBe('Gemini 3.1 Pro Preview · implicit + explicit cache (2 h) · 6 cache breaks')
+    expect(cardSubline({ ...pro, explicitHours: 0.25 })).toContain('implicit + explicit cache (0.25 h)')
+    expect(cardSubline(pro)).toBe('Gemini 3.1 Pro Preview · implicit cache · 6 cache breaks')
+    expect(summarizeSetup({ ...pro, explicitHours: 2 })).toBe('Gemini 3.1 Pro Preview · implicit + explicit cache (2 h) · high · reasoning kept · 6 cache breaks')
+  })
+
+  it('ignores explicitHours on a model without the option', () => {
+    expect(cardSubline({ ...pro, model: 'gemini-4-argon', explicitHours: 2 })).toBe('Gemini 4 Argon · implicit cache · 6 cache breaks')
+    expect(usesExplicitCache({ model: 'claude-opus-5-5', explicitHours: 2 })).toBe(false)
+    expect(usesExplicitCache({ model: 'gemini-3.8-flash', explicitHours: 2 })).toBe(true)
+    expect(usesExplicitCache({ model: 'gemini-3.8-flash' })).toBe(false)
+  })
+
+  it('toggleExplicit turns it on with the default hours, keeps existing hours, and turns it off', () => {
+    expect(toggleExplicit(pro, true).explicitHours).toBe(2)
+    expect(toggleExplicit({ ...pro, explicitHours: 7 }, true).explicitHours).toBe(7)
+    expect('explicitHours' in toggleExplicit({ ...pro, explicitHours: 7 }, false)).toBe(false)
   })
 })
 

@@ -16,7 +16,7 @@ export const DOCS = {
   xaiReasoning: { url: 'https://docs.x.ai/docs/guides/reasoning', proves: 'Which xAI models support which reasoning_effort levels; reasoning tokens billed as part of total consumption (no rate is stated, so the output rate is assumed); carrying reasoning across turns on grok-4.7' },
   googlePricing: { url: 'https://ai.google.dev/gemini-api/docs/pricing', proves: 'Gemini input, cached input and output prices (thinking included in output), scheduled price increases, and 2× / 1.5× prices above 200K tokens on Gemini 3.1 Pro Preview (page updated 2026-10-19)' },
   googleModels: { url: 'https://ai.google.dev/gemini-api/docs/models', proves: 'Gemini model list and input token limits (each model page lists its own limit)' },
-  googleCaching: { url: 'https://ai.google.dev/gemini-api/docs/caching', proves: 'Gemini implicit caching: on by default, automatic, no savings guarantee, no lifetime stated, no write or storage fee; explicit caching with a TTL and hourly storage fee (not modelled)' },
+  googleCaching: { url: 'https://ai.google.dev/gemini-api/docs/caching', proves: 'Gemini implicit caching: on by default, automatic, no savings guarantee, no lifetime stated, no write or storage fee; explicit caching (generateContent only, not for Gemini 4 Argon): TTL defaults to 1 hour, storage billed per hour, cost saving guarantee' },
   googleThinking: { url: 'https://ai.google.dev/gemini-api/docs/thinking', proves: 'Gemini thinking levels per model and their defaults; thinking tokens billed with output; thought blocks resent on later turns' },
   frankfurter: { url: 'https://frankfurter.dev', proves: 'Exchange rates for the display currency (ECB reference rates, daily)' },
 } as const
@@ -27,11 +27,13 @@ export const DOCS = {
  */
 export function priceOn(model: ModelSpec, date?: string): ModelSpec {
   const due = date === undefined ? undefined : model.schedule?.filter((c) => c.from <= date).at(-1)
-  return due ? { ...model, in: due.in, out: due.out, read: due.read ?? model.read } : model
+  return due
+    ? { ...model, in: due.in, out: due.out, read: due.read ?? model.read, ...(model.explicitStorage === undefined ? {} : { explicitStorage: due.storage ?? model.explicitStorage }) }
+    : model
 }
 
 /** One announced change, with every model it applies to (models with the same date and prices are grouped). */
-export interface UpcomingChange { from: string; models: string[]; in: number; cached: number; out: number }
+export interface UpcomingChange { from: string; models: string[]; in: number; cached: number; out: number; storage?: number }
 
 /** The scheduled changes dated after `today`, earliest first. Once a date has passed its change is gone from here. */
 export function upcomingChanges(today: string): UpcomingChange[] {
@@ -40,8 +42,8 @@ export function upcomingChanges(today: string): UpcomingChange[] {
     for (const c of model.schedule ?? []) {
       if (c.from <= today) continue
       const cached = +(c.in * (c.read ?? model.read)).toFixed(6)
-      const key = `${c.from}|${c.in}|${cached}|${c.out}`
-      const group = groups.get(key) ?? { from: c.from, models: [], in: c.in, cached, out: c.out }
+      const key = `${c.from}|${c.in}|${cached}|${c.out}|${c.storage ?? ''}`
+      const group = groups.get(key) ?? { from: c.from, models: [], in: c.in, cached, out: c.out, ...(c.storage === undefined ? {} : { storage: c.storage }) }
       group.models.push(model.name)
       groups.set(key, group)
     }
@@ -59,11 +61,11 @@ const CLAUDE_CACHE: readonly CacheOption[] = [
 // xAI: automatic prefix caching, no stated lifetime and no documented write fee. A cache break re-reads the context at the full input price.
 const XAI_CACHE: readonly CacheOption[] = [{ id: 'auto', label: 'best-effort · no write fee', minutes: 0, write: 1 }]
 // Google: implicit caching is on by default and automatic: no stated lifetime, no write or storage fee, no guarantee of savings.
-// Explicit caches (a TTL and an hourly storage fee) are not modelled.
+// Gemini 3.x can also keep the fixed prompt in an explicit cache (`explicitStorage`: an hourly storage fee); Argon cannot.
 const GOOGLE_CACHE: readonly CacheOption[] = [{ id: 'implicit', label: 'implicit · no write fee', minutes: 0, write: 1 }]
 const OPENAI_30M: CacheOption = { id: '30m', label: '30 min · write 1.25×', minutes: 30, write: 1.25 }
-const OPENAI_24H: CacheOption = { id: '24h', label: '24h · ~30 min typical · no write fee', minutes: 30, write: 1 }
-const OPENAI_IN_MEMORY: CacheOption = { id: 'in_memory', label: 'in_memory · ~5–10 min · no write fee', minutes: 5, write: 1 }
+const OPENAI_24H: CacheOption = { id: '24h', label: '24h', minutes: 30, write: 1 }
+const OPENAI_IN_MEMORY: CacheOption = { id: 'in_memory', label: 'in_memory', minutes: 5, write: 1 }
 
 export const ALL_EFFORTS: readonly Effort[] = ['none', 'low', 'medium', 'high', 'xhigh', 'max']
 const LOW_TO_MAX: readonly Effort[] = ['low', 'medium', 'high', 'xhigh', 'max']
@@ -72,7 +74,7 @@ const NONE_TO_XHIGH: readonly Effort[] = ['none', 'low', 'medium', 'high', 'xhig
 const LOW_TO_XHIGH: readonly Effort[] = ['low', 'medium', 'high', 'xhigh']
 const LOW_TO_HIGH: readonly Effort[] = ['low', 'medium', 'high']
 const GOOGLE_LONG = { above: 200000, inMult: 2, outMult: 1.5 }
-const FLASH_RISE = { from: '2027-01-01', in: 1.5, out: 7.5 } // Gemini 3.8 and 3.6 Flash
+const FLASH_RISE = { from: '2027-01-01', in: 1.5, out: 7.5, storage: 1 } // Gemini 3.8 and 3.6 Flash
 const OPENAI_LONG = { above: 272000, inMult: 2, outMult: 1.5 }
 // xAI bills the whole request at 2× once its prompt reaches 200K tokens (inclusive, unlike OpenAI's "above 272K").
 const XAI_LONG = { above: 200000, inclusive: true, inMult: 2, outMult: 2 }
@@ -105,10 +107,10 @@ export const MODELS: Readonly<Record<ModelId, ModelSpec>> = {
   'grok-4.5':          { provider: 'xai', name: 'Grok 4.5',  in: 2, out: 6, read: 0.15, maxInput: 500000, efforts: LOW_TO_HIGH, defaultEffort: 'high', cache: XAI_CACHE, reasoning: DROPPED, longPrompt: XAI_LONG },
   'grok-4.20-0309-non-reasoning': { provider: 'xai', name: 'Grok 4.20 (non-reasoning)', in: 1.25, out: 2.5, read: 0.16, maxInput: 1e6, efforts: ['none'], defaultEffort: null, cache: XAI_CACHE, reasoning: DROPPED, longPrompt: XAI_LONG },
   'gemini-4-argon':        { provider: 'google', name: 'Gemini 4 Argon',         in: 2,    out: 10,   read: 0.05, maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'], schedule: [{ from: '2026-12-01', in: 4, out: 20 }] },
-  'gemini-3.8-flash':      { provider: 'google', name: 'Gemini 3.8 Flash',       in: 0.75, out: 3.75, read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'], schedule: [FLASH_RISE] },
-  'gemini-3.6-flash':      { provider: 'google', name: 'Gemini 3.6 Flash',       in: 0.75, out: 3.75, read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'], schedule: [FLASH_RISE] },
-  'gemini-3.5-flash-lite': { provider: 'google', name: 'Gemini 3.5 Flash-Lite',  in: 0.3,  out: 2.5,  read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: null, fallbackEffort: 'low', cache: GOOGLE_CACHE, reasoning: ['kept'] },
-  'gemini-3.1-pro-preview': { provider: 'google', name: 'Gemini 3.1 Pro Preview', in: 2,    out: 12,   read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'high', cache: GOOGLE_CACHE, reasoning: ['kept'], longPrompt: GOOGLE_LONG },
+  'gemini-3.8-flash':      { provider: 'google', name: 'Gemini 3.8 Flash',       in: 0.75, out: 3.75, read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'], explicitStorage: 0.5, schedule: [FLASH_RISE] },
+  'gemini-3.6-flash':      { provider: 'google', name: 'Gemini 3.6 Flash',       in: 0.75, out: 3.75, read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'medium', cache: GOOGLE_CACHE, reasoning: ['kept'], explicitStorage: 0.5, schedule: [FLASH_RISE] },
+  'gemini-3.5-flash-lite': { provider: 'google', name: 'Gemini 3.5 Flash-Lite',  in: 0.3,  out: 2.5,  read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: null, fallbackEffort: 'low', cache: GOOGLE_CACHE, reasoning: ['kept'], explicitStorage: 1 },
+  'gemini-3.1-pro-preview': { provider: 'google', name: 'Gemini 3.1 Pro Preview', in: 2,    out: 12,   read: 0.1,  maxInput: 1048576, efforts: LOW_TO_HIGH, defaultEffort: 'high', cache: GOOGLE_CACHE, reasoning: ['kept'], explicitStorage: 4.5, longPrompt: GOOGLE_LONG },
 }
 
 export const PROVIDERS: Readonly<Record<Provider, { name: string; defaultModel: ModelId; sources: readonly (keyof typeof DOCS)[] }>> = {

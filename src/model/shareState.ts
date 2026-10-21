@@ -1,10 +1,10 @@
 import { DEFAULT_SETUP_LIST, DEFAULT_SETUPS, DEFAULT_SHARED } from '../data/defaults'
 import { isCurrencyCode, type CurrencyCode } from '../data/fx'
-import { INTERRUPTION_LIMITS, SHARED_LIMITS } from '../data/limits'
+import { EXPLICIT_HOURS_LIMITS, INTERRUPTION_LIMITS, SHARED_LIMITS } from '../data/limits'
 import { ALL_EFFORTS, MODELS } from '../data/pricing'
 import { SETUP_IDS } from '../data/series'
 import { normalizeSetup } from './normalize'
-import { cleanName } from './setups'
+import { cleanName, usesExplicitCache } from './setups'
 import type { CacheId, Effort, ReasoningMode, Setup, SetupId, Shared } from './types'
 
 /** Version of the link format. Always written (except for the all-default state, whose link is just "/"). */
@@ -31,7 +31,7 @@ const OWN_PARAMS = ['v', 'a', 'b', 'c', 'd', 'na', 'nb', 'nc', 'nd', 'adv', 'cur
 const THINKING_ORDER = ALL_EFFORTS // none, low, medium, high, xhigh, max
 
 const sameSetup = (a: Setup, b: Setup) =>
-  a.id === b.id && a.model === b.model && a.cache === b.cache && a.effort === b.effort && a.reasoning === b.reasoning && a.interruptions === b.interruptions && a.name === b.name
+  a.id === b.id && a.model === b.model && a.cache === b.cache && a.effort === b.effort && a.reasoning === b.reasoning && a.interruptions === b.interruptions && a.name === b.name && a.explicitHours === b.explicitHours
 
 function advValues(s: Shared): number[] {
   return [s.session, s.base, s.growth, s.visibleOut, ...THINKING_ORDER.map((e) => s.thinking[e])].map(Math.round)
@@ -55,7 +55,7 @@ export function encodeState(state: ShareState): string {
   const params = new URLSearchParams()
   params.set('v', String(SHARE_VERSION))
   for (const s of state.setups) {
-    params.set(s.id.toLowerCase(), [s.model, s.cache, s.effort, s.reasoning, s.interruptions].join(','))
+    params.set(s.id.toLowerCase(), [s.model, s.cache, s.effort, s.reasoning, s.interruptions, ...(usesExplicitCache(s) ? [`x${s.explicitHours}`] : [])].join(','))
   }
   // Names are free text (commas, "&", emoji), so each gets its own param; URLSearchParams escapes them.
   for (const s of state.setups) {
@@ -71,11 +71,20 @@ const INT = /^\d+$/
 const clampInt = (text: string | undefined, min: number, max: number, fallback: number) =>
   text !== undefined && INT.test(text) ? Math.min(max, Math.max(min, Number(text))) : fallback
 
+/** The optional `x<hours>` field (an explicit cache): a number clamped to the allowed range, null when absent or malformed. */
+function decodeHours(text: string | undefined): number | null {
+  const m = text === undefined ? null : /^x(\d+(?:\.\d+)?)$/.exec(text)
+  if (!m) return null
+  const hours = Math.round(Number(m[1]) * 100) / 100
+  return Number.isFinite(hours) ? Math.min(EXPLICIT_HOURS_LIMITS.max, Math.max(EXPLICIT_HOURS_LIMITS.min, hours)) : null
+}
+
 /** One `a`–`d` value to a valid setup, or null when the model is unknown. */
 function decodeSetup(id: SetupId, value: string): Setup | null {
-  const [model, cache, effort, reasoning, interruptions] = value.split(',')
+  const [model, cache, effort, reasoning, interruptions, extra] = value.split(',')
   if (!model || !Object.hasOwn(MODELS, model)) return null
   const spec = MODELS[model]
+  const explicitHours = decodeHours(extra)
   // Wrong cache, effort or reasoning for this model fall back exactly like a model switch in the UI.
   return normalizeSetup(
     {
@@ -86,6 +95,7 @@ function decodeSetup(id: SetupId, value: string): Setup | null {
       effort: effort as Effort,
       reasoning: reasoning as ReasoningMode,
       interruptions: clampInt(interruptions, INTERRUPTION_LIMITS.min, INTERRUPTION_LIMITS.max, DEFAULT_SETUPS.A.interruptions),
+      ...(explicitHours === null ? {} : { explicitHours }),
     },
     spec,
   )

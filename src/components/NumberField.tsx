@@ -17,6 +17,8 @@ interface Props {
   onChange: (value: number) => void
   /** Tokens per displayed unit (1000 shows and types thousands). `min`, `max`, `step`, `fallback`, `value` and `onChange` stay in the stored unit. */
   scale?: number
+  /** A short note under the input. */
+  note?: string
 }
 
 
@@ -25,7 +27,7 @@ interface Props {
  * (or `fallback` when empty or not a number). With `scale` the input shows and takes `scale`-sized units
  * (thousands of tokens), while the value, the limits and the clamping stay in the stored unit.
  */
-export function NumberField({ label, help, name, min, max, step, fallback, value, onChange, scale = 1 }: Props) {
+export function NumberField({ label, help, name, min, max, step, fallback, value, onChange, scale = 1, note }: Props) {
   const id = useId()
   const [text, setText] = useState(displayValue(value, scale))
   // Typed units to the stored unit (rounded to a whole number once scaled), then clamped there.
@@ -35,10 +37,11 @@ export function NumberField({ label, help, name, min, max, step, fallback, value
     return String(Math.round(n * scale))
   }
   return (
-    <Field id={id} label={label} help={help}>
+    <Field id={id} label={label} help={help} note={note}>
       <input
         id={id}
         name={name}
+        aria-describedby={note ? `${id}-note` : undefined}
         type="number"
         min={+(min / scale).toFixed(3)}
         max={+(max / scale).toFixed(3)}

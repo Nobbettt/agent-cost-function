@@ -369,3 +369,65 @@ describe('Google models in links', () => {
     expect(encodeState(state(d.setups))).toBe(q)
   })
 })
+
+describe('the explicit cache in links', () => {
+  const pro = (extra: Partial<Setup> = {}): Setup => ({ id: 'A', provider: 'google', model: 'gemini-3.1-pro-preview', cache: 'implicit', effort: 'high', reasoning: 'kept', interruptions: 6, ...extra })
+  const decodeA = (value: string) => decodeState(`?v=1&a=${value}&b=claude-opus-5-5,5m,high,kept,1`).setups[0]
+
+  it('writes a sixth field x<hours> only when it is on, and round-trips it', () => {
+    expect(new URLSearchParams(encodeState(state([pro({ explicitHours: 2 }), B]))).get('a')).toBe('gemini-3.1-pro-preview,implicit,high,kept,6,x2')
+    expect(new URLSearchParams(encodeState(state([pro(), B]))).get('a')).toBe('gemini-3.1-pro-preview,implicit,high,kept,6')
+    for (const hours of [0.25, 1.5, 2, 24, 168]) {
+      const s = pro({ explicitHours: hours })
+      expect(decodeState(`?${encodeState(state([s, B]))}`).setups[0]).toEqual(s)
+    }
+  })
+
+  it('is not written for a model that cannot have one, and a link carrying it there ignores it', () => {
+    expect(new URLSearchParams(encodeState(state([pro({ model: 'gemini-4-argon', explicitHours: 2 }), B]))).get('a')).toBe('gemini-4-argon,implicit,high,kept,6')
+    expect(decodeA('gemini-4-argon,implicit,high,kept,6,x2')).not.toHaveProperty('explicitHours')
+    expect(decodeA('claude-opus-5-5,5m,high,kept,6,x2')).not.toHaveProperty('explicitHours')
+    expect(decodeA('grok-4.7,auto,high,kept,6,x2')).not.toHaveProperty('explicitHours')
+  })
+
+  it('clamps the hours to 0.25..168 and rounds to two decimals', () => {
+    expect(decodeA('gemini-3.8-flash,implicit,medium,kept,0,x0').explicitHours).toBe(0.25)
+    expect(decodeA('gemini-3.8-flash,implicit,medium,kept,0,x0.1').explicitHours).toBe(0.25)
+    expect(decodeA('gemini-3.8-flash,implicit,medium,kept,0,x9999').explicitHours).toBe(168)
+    expect(decodeA('gemini-3.8-flash,implicit,medium,kept,0,x1.234').explicitHours).toBe(1.23)
+  })
+
+  it('ignores an invalid x field: nothing, a sign, letters, two dots, a different prefix, extra commas', () => {
+    for (const bad of ['', 'x', 'x-1', 'xabc', 'x2.5.5', 'y2', 'X2', '2', 'x1e3', 'x 2', 'x2h']) {
+      const s = decodeA(`gemini-3.8-flash,implicit,medium,kept,3,${bad}`)
+      expect(s, bad).not.toHaveProperty('explicitHours')
+      expect(s.interruptions, bad).toBe(3)
+    }
+    expect(decodeA('gemini-3.8-flash,implicit,medium,kept,3,x2,x4')).toMatchObject({ explicitHours: 2, interruptions: 3 })
+  })
+
+  it('an old link without the field is unchanged, and the all-default state is still a clean "/"', () => {
+    expect(decodeA('gemini-3.8-flash,implicit,medium,kept,3')).toEqual({ id: 'A', provider: 'google', model: 'gemini-3.8-flash', cache: 'implicit', effort: 'medium', reasoning: 'kept', interruptions: 3 })
+    expect(encodeState(state(DEFAULT_SETUP_LIST))).toBe('')
+    expect(encodeState(state(DEFAULT_SETUP_LIST.map((s) => ({ ...s }))))).toBe('')
+  })
+
+  it('fuzz: whatever follows in the sixth field, the decoded setups stay valid and an explicit cache only sits on Gemini 3.x within range', () => {
+    const junk = ['x2', 'x0.25', 'x168', 'x169', 'x-5', 'xNaN', 'xInfinity', 'x', 'x\u0000', 'x2,x3', 'x' + '9'.repeat(400), 'x0.' + '9'.repeat(400), ',,,', '%', 'x2%2Cx3']
+    const models = ['gemini-3.1-pro-preview', 'gemini-3.8-flash', 'gemini-4-argon', 'claude-opus-5-5', 'grok-4.7', 'gpt-5.5']
+    for (const model of models) {
+      for (const j of junk) {
+        const d = decodeState(`?v=1&a=${model},x,y,z,2,${j}&b=${encodeURIComponent(model)},auto,none,kept,1,${encodeURIComponent(j)}`)
+        expect(d.setups.length).toBeGreaterThanOrEqual(2)
+        for (const s of d.setups) {
+          if (s.explicitHours === undefined) continue
+          expect(MODELS[s.model].explicitStorage).toBeDefined()
+          expect(s.explicitHours).toBeGreaterThanOrEqual(0.25)
+          expect(s.explicitHours).toBeLessThanOrEqual(168)
+        }
+        const again = decodeState(`?${encodeState(state(d.setups))}`)
+        expect(again.setups).toEqual(d.setups)
+      }
+    }
+  })
+})

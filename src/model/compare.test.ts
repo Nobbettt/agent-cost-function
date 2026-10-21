@@ -8,7 +8,7 @@ import type { Run, SetupId } from './types'
 
 const run = (cums: number[], end = 100): Run => ({
   points: cums.map((cum, i) => ({ x: (i + 1) * 10, cum, req: 0, miss: false })),
-  totals: { requests: cums.length, read: 0, write: 0, rewrite: 0, output: 0, total: cums.at(-1) ?? 0 },
+  totals: { requests: cums.length, read: 0, write: 0, rewrite: 0, storage: 0, output: 0, total: cums.at(-1) ?? 0 },
   end,
 })
 const entries = (spec: [SetupId, number[], number?][]): RunEntry[] => spec.map(([id, cums, end]) => ({ id, run: run(cums, end) }))

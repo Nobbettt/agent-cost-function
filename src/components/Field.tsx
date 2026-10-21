@@ -7,10 +7,12 @@ interface Props {
   label: string
   help: string
   children: ReactNode
+  /** A short note under the control; the control points at it with aria-describedby={`${id}-note`}. */
+  note?: string
 }
 
 /** Label with its "?" tip on one row, then the control. The tip sits outside the <label> so clicking it never focuses the control. */
-export function Field({ id, label, help, children }: Props) {
+export function Field({ id, label, help, children, note }: Props) {
   return (
     <div className="field">
       <div className="field-head">
@@ -18,6 +20,7 @@ export function Field({ id, label, help, children }: Props) {
         <InfoTip label={label} text={help} />
       </div>
       {children}
+      {note && <p className="field-note" id={`${id}-note`}>{note}</p>}
     </div>
   )
 }

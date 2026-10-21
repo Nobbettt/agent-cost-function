@@ -1,3 +1,4 @@
+import { DEFAULT_EXPLICIT_HOURS } from '../data/limits'
 import { MODELS } from '../data/pricing'
 import { MAX_SETUPS, MIN_SETUPS, SETUP_IDS } from '../data/series'
 import type { CacheId, Setup, SetupId } from './types'
@@ -7,8 +8,19 @@ export const CACHE_LABEL: Readonly<Record<CacheId, string>> = {
   '5m': '5 min', '1h': '1 hour', '30m': '30 min', '24h': '24h', in_memory: 'in_memory', auto: 'best-effort', implicit: 'implicit',
 }
 
-/** "Claude Opus 5.5 · 5 min cache": the model and its cache. */
-export const modelAndCache = (s: Setup): string => `${MODELS[s.model].name} · ${CACHE_LABEL[s.cache]} cache`
+/** True when the setup keeps its fixed prompt in an explicit cache (Gemini 3.x with the option on). */
+export const usesExplicitCache = (s: Pick<Setup, 'model' | 'explicitHours'>): boolean =>
+  MODELS[s.model]?.explicitStorage !== undefined && s.explicitHours !== undefined
+
+/** The setup with its explicit cache switched on (for the default number of hours) or off. */
+export function toggleExplicit(s: Setup, on: boolean): Setup {
+  const { explicitHours, ...rest } = s
+  return on ? { ...rest, explicitHours: explicitHours ?? DEFAULT_EXPLICIT_HOURS } : rest
+}
+
+/** "Claude Opus 5.5 · 5 min cache": the model and its cache; "· implicit + explicit cache (2 h)" with an explicit cache. */
+export const modelAndCache = (s: Setup): string =>
+  `${MODELS[s.model].name} · ${usesExplicitCache(s) ? `${CACHE_LABEL[s.cache]} + explicit` : CACHE_LABEL[s.cache]} cache${usesExplicitCache(s) ? ` (${s.explicitHours} h)` : ''}`
 
 /** "6 cache breaks", "1 cache break", "no cache breaks": the one wording of the interruption count. */
 export const cacheBreaks = (s: Setup): string =>

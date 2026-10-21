@@ -98,6 +98,17 @@ describe('switchProvider', () => {
     expect(switchProvider(switchProvider(A, 'google'), 'claude')).toMatchObject({ provider: 'claude', model: 'claude-opus-5-5', cache: '5m' })
   })
 
+  it('the explicit cache survives a switch between Gemini 3.x models and is dropped everywhere else', () => {
+    const on = { ...switchProvider(A, 'google'), model: 'gemini-3.1-pro-preview', explicitHours: 6 }
+    expect(switchModel(on, 'gemini-3.8-flash').explicitHours).toBe(6)
+    expect(switchModel(on, 'gemini-3.5-flash-lite').explicitHours).toBe(6)
+    expect('explicitHours' in switchModel(on, 'gemini-4-argon')).toBe(false)
+    expect('explicitHours' in switchProvider(on, 'claude')).toBe(false)
+    expect('explicitHours' in switchProvider(on, 'xai')).toBe(false)
+    expect('explicitHours' in normalizeSetup(on, MODELS['claude-opus-5-5'])).toBe(false)
+    expect(normalizeSetup(on, MODELS['gemini-3.6-flash']).explicitHours).toBe(6)
+  })
+
   it('every provider default model belongs to that provider', () => {
     for (const [p, v] of Object.entries(PROVIDERS)) expect(MODELS[v.defaultModel].provider).toBe(p)
     expect(modelsOf('claude').every(([, m]) => m.provider === 'claude')).toBe(true)

@@ -8,6 +8,12 @@ function pick<T>(values: readonly T[], wanted?: T | null, fallback?: T | null): 
   return values[0]
 }
 
+/** The setup with its explicit cache dropped when the model offers none (it only exists on Gemini 3.x). */
+function withExplicitFor(setup: Setup, model: ModelSpec): Setup {
+  const { explicitHours, ...rest } = setup
+  return model.explicitStorage !== undefined && explicitHours !== undefined ? { ...rest, explicitHours } : rest
+}
+
 /**
  * Makes setup.cache, effort and reasoning valid for `model`. The current values are kept when the model
  * allows them. Otherwise effort falls back to the model's default (or 'medium'), cache to the first
@@ -15,7 +21,7 @@ function pick<T>(values: readonly T[], wanted?: T | null, fallback?: T | null): 
  */
 export function normalizeSetup(setup: Setup, model: ModelSpec): Setup {
   return {
-    ...setup,
+    ...withExplicitFor(setup, model),
     cache: pick(model.cache.map((c) => c.id), setup.cache),
     effort: pick(model.efforts, setup.effort, model.defaultEffort ?? model.fallbackEffort ?? 'medium'),
     reasoning: pick(reasoningOptions(model), setup.reasoning, reasoningDefault(model)),
@@ -32,7 +38,7 @@ export function switchProvider(setup: Setup, provider: Provider): Setup {
   const model = PROVIDERS[provider].defaultModel
   const spec = MODELS[model]
   return {
-    ...setup,
+    ...withExplicitFor(setup, spec),
     provider,
     model,
     cache: pick(spec.cache.map((c) => c.id)),

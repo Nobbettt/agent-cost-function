@@ -29,6 +29,8 @@ export interface PriceChange {
   out: number
   /** Cache-read multiplier from then on; the model's own when omitted. */
   read?: number
+  /** Explicit cache storage price (USD per 1M tokens per hour) from then on; the model's own when omitted. */
+  storage?: number
 }
 
 /** Prices in USD per million tokens; `read` is the cache-read multiplier on input. */
@@ -49,6 +51,8 @@ export interface ModelSpec {
   longPrompt?: LongPrompt
   /** Announced price changes, sorted ascending by date. `in`, `out` and `read` above are the prices before the first one. */
   schedule?: readonly PriceChange[]
+  /** USD per 1M tokens per hour for an explicit cache of the fixed prompt; only on models that offer one (Gemini 3.x). */
+  explicitStorage?: number
 }
 
 /** Stable setup identity: its letter, and with it its colour and dash, never depends on position. */
@@ -64,6 +68,8 @@ export interface Setup {
   interruptions: number
   /** Custom display name; absent means "Setup X". Always set through cleanName. */
   name?: string
+  /** Hours an explicit cache of the fixed prompt is kept (and billed for); undefined means off. Only on models with `explicitStorage`. */
+  explicitHours?: number
 }
 
 export interface Shared {
@@ -86,6 +92,8 @@ export interface Totals {
   read: number
   write: number
   rewrite: number
+  /** Explicit cache storage for the whole session (0 when there is none). Included in `total`. */
+  storage: number
   output: number
   total: number
 }

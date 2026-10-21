@@ -3,7 +3,7 @@ import { fmtPrice, fmtTokens } from '../format'
 import { useToday } from '../hooks/useToday'
 import type { ModelId, ModelSpec } from '../model/types'
 
-const COLS = ['Model', 'Input', 'Cache read', 'Output', 'Prompt cache', 'Long prompt', 'Max input', 'Effort (default)', 'Earlier reasoning', 'Source']
+const COLS = ['Model', 'Input', 'Cache read', 'Output', 'Prompt cache', 'Long prompt', 'Max input', 'Effort (default)', 'Earlier reasoning', 'Explicit cache storage', 'Source']
 
 const longRule = (m: ModelSpec) =>
   m.longPrompt ? `${m.longPrompt.inclusive ? '≥' : '>'}${fmtTokens(m.longPrompt.above)}: in ${m.longPrompt.inMult}×, out ${m.longPrompt.outMult}×` : '—'
@@ -21,6 +21,7 @@ function Row({ id, m }: { id: ModelId; m: ModelSpec }) {  // m is already priced
     m.cache.map((c) => `${c.id} ${c.write}×`).join(', '), longRule(m), fmtTokens(m.maxInput),
     m.efforts.map((e) => (e === m.defaultEffort ? `${e}*` : e)).join(' '),
     reasoningOptions(m).map((r) => (r === reasoningDefault(m) ? `${r}*` : r)).join(' '),
+    m.explicitStorage === undefined ? '—' : `${fmtPrice(m.explicitStorage)}/h`,
   ]
   return <tr>{cells.map((c, i) => <td key={i}>{c}</td>)}<td>{source}</td></tr>
 }
@@ -46,12 +47,12 @@ export function SourcesTable() {
             Announced price changes (input / cached input / output, USD per million tokens); the table shows the prices in force today, {today}:
             <ul>
               {upcoming.map((u) => (
-                <li key={`${u.from}-${u.models.join()}`}>{`${u.models.join(' and ')}: ${usd(u.in)} / ${usd(u.cached)} / ${usd(u.out)} from ${u.from}`}</li>
+                <li key={`${u.from}-${u.models.join()}`}>{`${u.models.join(' and ')}: ${usd(u.in)} / ${usd(u.cached)} / ${usd(u.out)} from ${u.from}${u.storage === undefined ? '' : ` (explicit cache storage ${usd(u.storage)} per million tokens per hour)`}`}</li>
               ))}
             </ul>
           </li>
         )}
-        <li>Google caching is implicit only: on by default, automatic, with no stated lifetime, no write or storage fee and no guarantee of savings. Explicit caches (a TTL and an hourly storage fee) are not modelled. Thinking tokens are billed with output, and Gemini keeps earlier thoughts in context. Gemini 4 Argon shares one 1,048,576-token limit between input and output; it is used as the max input for all Gemini models.</li>
+        <li>Google caches implicitly by default: automatic, with no stated lifetime, no write or storage fee and no guarantee of savings. Gemini 3.x can also keep the fixed prompt in an explicit cache (generateContent only, not the Interactions API; not Gemini 4 Argon): its TTL defaults to 1 hour with no bounds, cached tokens carry a cost saving guarantee, and storage is billed per million tokens per hour of TTL (the "Explicit cache storage" column, per hour; no 200K tier is listed for it). Creating the cache is assumed to cost the standard input price: Google Cloud's docs say so, the Gemini API docs don't state it. Thinking tokens are billed with output, and Gemini keeps earlier thoughts in context. Gemini 4 Argon shares one 1,048,576-token limit between input and output; it is used as the max input for all Gemini models.</li>
         <li>Gemini's `minimal` thinking level isn't offered here, so Gemini 3.5 Flash-Lite, whose default is minimal, has no default marked and falls back to low.</li>
         <li>Not included: Gemini 2.5 models (access limited to earlier users), Gemini 3 Flash Preview and Gemini 3.1 Flash-Lite (not checked).</li>
         <li>Not included: grok-4.3, grok-4.20 reasoning and multi-agent, grok-build-0.1 (reasoning behaviour not documented).</li>

@@ -111,7 +111,7 @@ describe('App', () => {
     for (const [id, cache, breaks] of [['A', '5m', '6'], ['B', '1h', '1'], ['C', '5m', '0']] as const) {
       const box = setupBox(id)
       expect((box.getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
-      expect((box.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe(cache)
+      expect((box.getByLabelText('Cache lifetime') as HTMLSelectElement).value).toBe(cache)
       expect((box.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('high')
       expect((box.getByLabelText('Earlier reasoning in context') as HTMLSelectElement).value).toBe('kept')
       expect((box.getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe(breaks)
@@ -123,15 +123,15 @@ describe('App', () => {
     render(<App />)
     const a = setupBox('A')
     fireEvent.change(a.getByLabelText('Reasoning effort'), { target: { value: 'low' } })
-    fireEvent.change(a.getByLabelText('Prompt cache'), { target: { value: '1h' } })
+    fireEvent.change(a.getByLabelText('Cache lifetime'), { target: { value: '1h' } })
     fireEvent.click(a.getByLabelText('OpenAI'))
     expect((a.getByLabelText('Model') as HTMLSelectElement).value).toBe('gpt-5.6-sol')
-    expect((a.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('30m')
+    expect(a.getByLabelText('Cache lifetime').textContent).toBe('30 min (fixed)')
     expect((a.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('medium')
     expect((a.getByLabelText('Earlier reasoning in context') as HTMLSelectElement).value).toBe('kept')
     // Setup B is untouched.
     expect((setupBox('B').getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
-    expect((setupBox('B').getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('1h')
+    expect((setupBox('B').getByLabelText('Cache lifetime') as HTMLSelectElement).value).toBe('1h')
   })
 
   it('has four providers in each setup: Claude, OpenAI, xAI and Google, with unique radio names per setup', () => {
@@ -151,8 +151,8 @@ describe('App', () => {
     const c = setupBox('C')
     fireEvent.click(c.getByLabelText('xAI'))
     expect((c.getByLabelText('Model') as HTMLSelectElement).value).toBe('grok-4.7')
-    expect((c.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('auto')
-    expect([...(c.getByLabelText('Prompt cache') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['best-effort · no write fee'])
+    expect(c.getByLabelText('Cache').textContent).toBe('Automatic')
+    expect(c.queryByRole('combobox', { name: 'Cache' })).toBeNull()
     expect((c.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('high')
     expect([...(c.getByLabelText('Reasoning effort') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['low', 'medium', 'high (default)', 'xhigh'])
     expect((c.getByLabelText('Earlier reasoning in context') as HTMLSelectElement).value).toBe('kept')
@@ -162,7 +162,7 @@ describe('App', () => {
     // Back to Claude: the Opus 5.5 defaults return.
     fireEvent.click(c.getByLabelText('Claude'))
     expect((c.getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
-    expect((c.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('5m')
+    expect((c.getByLabelText('Cache lifetime') as HTMLSelectElement).value).toBe('5m')
     expect(stat('Setup C').sub).toBe('Claude Opus 5.5 · 5 min cache · no cache breaks')
   })
 
@@ -174,8 +174,7 @@ describe('App', () => {
     expect([...(c.getByLabelText('Model') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual([
       'Gemini 4 Argon', 'Gemini 3.8 Flash', 'Gemini 3.6 Flash', 'Gemini 3.5 Flash-Lite', 'Gemini 3.1 Pro Preview',
     ])
-    expect((c.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('implicit')
-    expect([...(c.getByLabelText('Prompt cache') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['implicit · no write fee'])
+    expect(c.getByLabelText('Cache').textContent).toBe('Implicit (automatic)')
     expect((c.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('medium')
     expect([...(c.getByLabelText('Reasoning effort') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['low', 'medium (default)', 'high'])
     expect([...(c.getByLabelText('Earlier reasoning in context') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['kept (default)'])
@@ -249,10 +248,10 @@ describe('App', () => {
     render(<App />)
     const a = setupBox('A')
     fireEvent.change(a.getByLabelText('Reasoning effort'), { target: { value: 'low' } })
-    fireEvent.change(a.getByLabelText('Prompt cache'), { target: { value: '1h' } })
+    fireEvent.change(a.getByLabelText('Cache lifetime'), { target: { value: '1h' } })
     fireEvent.change(a.getByLabelText('Model'), { target: { value: 'claude-sonnet-5-5' } })
     expect((a.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('low')
-    expect((a.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('1h')
+    expect((a.getByLabelText('Cache lifetime') as HTMLSelectElement).value).toBe('1h')
 
     fireEvent.change(a.getByLabelText('Reasoning effort'), { target: { value: 'xhigh' } })
     fireEvent.change(a.getByLabelText('Model'), { target: { value: 'claude-sonnet-4-6' } })

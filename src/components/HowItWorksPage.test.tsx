@@ -14,7 +14,7 @@ describe('HowItWorksPage', () => {
     expect(screen.queryByText(/in_memory/)).toBeNull()
     expect(screen.queryByText(/hollow marker/)).toBeNull()
     expect(screen.getByText('xAI caches automatically with no documented lifetime and no write fee; entries can be evicted at any time. Here every cache break means the next request pays the full input price for the whole context. Reasoning tokens are assumed to cost the output rate.')).toBeTruthy()
-    expect(screen.getByText("Google caches implicitly (on by default, no lifetime stated, no write fee, no guarantee). Explicit caches with a TTL and an hourly storage fee aren't modelled. Every cache break means the next request pays the full input price for the whole context.")).toBeTruthy()
+    expect(screen.getByText("Google caches implicitly by default (no lifetime, no write fee, no guarantee). Optionally an explicit cache keeps the prompt and tools cached for a set time, guaranteed, for an hourly storage fee; after a cache break only the conversation is written again.")).toBeTruthy()
     expect(screen.getByText(/Gemini 3.1 Pro Preview bills 2× input and cached input and 1.5× output for the whole request once the prompt passes 200K tokens/)).toBeTruthy()
     expect(screen.getByText(/xAI models bill 2× input, cached input and output for the whole request once the prompt reaches 200K tokens/)).toBeTruthy()
     expect(screen.getByText(/Where a provider has announced a price change, the site uses the price in force on the day you view it\./)).toBeTruthy()

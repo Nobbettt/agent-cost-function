@@ -31,7 +31,7 @@ describe('adding setups', () => {
 
   it('the default C is Opus 5.5 on the 5 minute cache with no interruptions; one more can be added', () => {
     render(<App />)
-    expect((box('C').getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('5m')
+    expect((box('C').getByLabelText('Cache lifetime') as HTMLSelectElement).value).toBe('5m')
     expect((box('C').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('0')
     expect(toggle('A').getAttribute('aria-expanded')).toBe('true')
     expect(toggle('B').getAttribute('aria-expanded')).toBe('false')
@@ -58,7 +58,7 @@ describe('adding setups', () => {
     add()
     expect(groups()).toEqual(['A', 'B', 'C'])
     const c = box('C')
-    expect((c.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('1h')
+    expect((c.getByLabelText('Cache lifetime') as HTMLSelectElement).value).toBe('1h')
     expect((c.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('low')
     expect((c.getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('2')
     expect(toggle('C').getAttribute('aria-expanded')).toBe('true')

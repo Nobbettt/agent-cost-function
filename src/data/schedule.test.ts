@@ -12,8 +12,8 @@ describe('scheduled price changes', () => {
       expect(dates).toEqual([...dates].sort())
     }
     expect(MODELS['gemini-4-argon'].schedule).toEqual([{ from: '2026-12-01', in: 4, out: 20 }])
-    expect(MODELS['gemini-3.8-flash'].schedule).toEqual([{ from: '2027-01-01', in: 1.5, out: 7.5 }])
-    expect(MODELS['gemini-3.6-flash'].schedule).toEqual([{ from: '2027-01-01', in: 1.5, out: 7.5 }])
+    expect(MODELS['gemini-3.8-flash'].schedule).toEqual([{ from: '2027-01-01', in: 1.5, out: 7.5, storage: 1 }])
+    expect(MODELS['gemini-3.6-flash'].schedule).toEqual([{ from: '2027-01-01', in: 1.5, out: 7.5, storage: 1 }])
   })
 
   it('priceOn: Gemini 4 Argon is $2 / $0.10 / $10 before 2026-12-01 and $4 / $0.20 / $20 from that day on', () => {
@@ -61,7 +61,7 @@ describe('scheduled price changes', () => {
   it('upcomingChanges lists only changes after today, grouped by date and prices, earliest first', () => {
     expect(upcomingChanges('2026-11-30')).toEqual([
       { from: '2026-12-01', models: ['Gemini 4 Argon'], in: 4, cached: 0.2, out: 20 },
-      { from: '2027-01-01', models: ['Gemini 3.8 Flash', 'Gemini 3.6 Flash'], in: 1.5, cached: 0.15, out: 7.5 },
+      { from: '2027-01-01', models: ['Gemini 3.8 Flash', 'Gemini 3.6 Flash'], in: 1.5, cached: 0.15, out: 7.5, storage: 1 },
     ])
     expect(upcomingChanges('2026-12-01').map((u) => u.from)).toEqual(['2027-01-01'])
     expect(upcomingChanges('2026-12-31').map((u) => u.from)).toEqual(['2027-01-01'])

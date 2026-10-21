@@ -1,15 +1,17 @@
 import { Fragment, useEffect, useId, useRef, useState } from 'react'
+import { CACHE_INFO, EXPLICIT_BREAK_NOTE, EXPLICIT_CHECKBOX_NOTE, EXPLICIT_HOURS_NOTE, EXPLICIT_UNAVAILABLE_NOTE } from '../data/cacheNotes'
 import { DEFAULT_SETUPS } from '../data/defaults'
 import { FIELD_HELP } from '../data/fieldHelp'
-import { INTERRUPTION_LIMITS } from '../data/limits'
+import { DEFAULT_EXPLICIT_HOURS, EXPLICIT_HOURS_LIMITS, INTERRUPTION_LIMITS } from '../data/limits'
 import { MODELS, PROVIDERS, modelsOf, reasoningDefault, reasoningOptions } from '../data/pricing'
 import { switchModel, switchProvider } from '../model/normalize'
-import { MAX_NAME_LENGTH, cleanName, displayName, summarizeSetup } from '../model/setups'
+import { MAX_NAME_LENGTH, cleanName, displayName, summarizeSetup, toggleExplicit, usesExplicitCache } from '../model/setups'
 import type { CacheId, Effort, Provider, ReasoningMode, Setup } from '../model/types'
 import { Chevron } from './Chevron'
 import { Field } from './Field'
 import { InfoTip } from './InfoTip'
 import { NumberField } from './NumberField'
+import { ReadOnlyField } from './ReadOnlyField'
 import { SeriesKey } from './SeriesKey'
 
 interface Props {
@@ -30,6 +32,8 @@ export function SetupPanel({ setup, expanded, onToggle, onChange, onRemove }: Pr
   const d = DEFAULT_SETUPS.A // fallback for the interruption fields; every default setup shares these
   const set = (patch: Partial<Setup>) => onChange({ ...setup, ...patch })
   const name = displayName(setup)
+  const cacheInfo = CACHE_INFO[setup.cache]
+  const explicit = usesExplicitCache(setup)
 
   // Renaming: the toggle becomes a text input in place. Enter or blur commits through cleanName, Esc cancels,
   // and focus goes back to the edit button (unless a blur moved it to another control on purpose).
@@ -144,11 +148,37 @@ export function SetupPanel({ setup, expanded, onToggle, onChange, onRemove }: Pr
               {modelsOf(setup.provider).map(([k, m]) => <option key={k} value={k}>{m.name}</option>)}
             </select>
           </Field>
-          <Field id={`${uid}-cache`} label="Prompt cache" help={FIELD_HELP.cache}>
-            <select id={`${uid}-cache`} name="cache" value={setup.cache} onChange={(e) => set({ cache: e.target.value as CacheId })}>
-              {model.cache.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-          </Field>
+          {/* One option means a read-only value (no tab stop); several, a select. The note follows the selected option. */}
+          {model.cache.length === 1 ? (
+            <ReadOnlyField id={`${uid}-cache`} label={cacheInfo.label} help={FIELD_HELP.cache} value={cacheInfo.fixedValue} note={cacheInfo.note} />
+          ) : (
+            <Field id={`${uid}-cache`} label={cacheInfo.label} help={FIELD_HELP.cache} note={cacheInfo.note}>
+              <select id={`${uid}-cache`} name="cache" aria-describedby={`${uid}-cache-note`} value={setup.cache} onChange={(e) => set({ cache: e.target.value as CacheId })}>
+                {model.cache.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </select>
+            </Field>
+          )}
+          {model.provider === 'google' && (model.explicitStorage === undefined ? (
+            <p className="field-note field-wide">{EXPLICIT_UNAVAILABLE_NOTE}</p>
+          ) : (
+            <div className="field">
+              <label className="check" htmlFor={`${uid}-explicit`}>
+                <input
+                  id={`${uid}-explicit`} type="checkbox" name="explicit" aria-describedby={`${uid}-explicit-note`}
+                  checked={explicit} onChange={(e) => onChange(toggleExplicit(setup, e.target.checked))}
+                />
+                Explicit cache for prompt + tools
+              </label>
+              <p className="field-note" id={`${uid}-explicit-note`}>{EXPLICIT_CHECKBOX_NOTE}</p>
+            </div>
+          ))}
+          {explicit && (
+            <NumberField
+              label="Session duration (hours)" help={FIELD_HELP.explicitHours} name="explicit-hours" {...EXPLICIT_HOURS_LIMITS}
+              fallback={DEFAULT_EXPLICIT_HOURS} value={setup.explicitHours ?? DEFAULT_EXPLICIT_HOURS} note={EXPLICIT_HOURS_NOTE}
+              onChange={(v) => set({ explicitHours: v })}
+            />
+          )}
           <Field id={`${uid}-effort`} label="Reasoning effort" help={FIELD_HELP.effort}>
             <select id={`${uid}-effort`} name="effort" value={setup.effort} onChange={(e) => set({ effort: e.target.value as Effort })}>
               {model.efforts.map((e) => (
@@ -165,6 +195,7 @@ export function SetupPanel({ setup, expanded, onToggle, onChange, onRemove }: Pr
           </Field>
           <NumberField
             label="Cache breaking interruptions" help={FIELD_HELP.interruptions} name="interruptions" {...INTERRUPTION_LIMITS} step={1}
+            note={`${cacheInfo.breakNote}${explicit ? EXPLICIT_BREAK_NOTE : ''}`}
             fallback={d.interruptions} value={setup.interruptions}
             onChange={(v) => set({ interruptions: Math.round(v) })}
           />

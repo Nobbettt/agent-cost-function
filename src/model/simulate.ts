@@ -22,7 +22,9 @@ export function simulate(setup: Setup, shared: Shared, date?: string): Run {
   const outTokens = shared.visibleOut + reasoningTokens
   const step = shared.growth + (setup.reasoning === 'kept' ? reasoningTokens : 0)
   const points: Point[] = []
-  let totals: Totals = { requests: 0, read: 0, write: 0, rewrite: 0, output: 0, total: 0 }
+  // An explicit cache (Gemini 3.x only) keeps the fixed prompt (the base tokens) cached for `explicitHours`, for an hourly storage fee.
+  const explicit = model.explicitStorage !== undefined && setup.explicitHours !== undefined
+  let totals: Totals = { requests: 0, read: 0, write: 0, rewrite: 0, storage: 0, output: 0, total: 0 }
   let prev = 0
   let nextBreak = 0
 
@@ -33,18 +35,24 @@ export function simulate(setup: Setup, shared: Shared, date?: string): Run {
       nextBreak++
     }
     const r = rates(model, ctx)
-    const read = prev && !miss ? prev * r.in * model.read : 0
+    // After a break the base tokens are still in the explicit cache: read at the cached rate, and only the rest is written again.
+    const kept = explicit && miss ? Math.min(shared.base, prev) : 0
+    const read = (prev && !miss ? prev : kept) * r.in * model.read
     const write = (ctx - prev) * r.in * cache.write
-    const rewrite = miss ? prev * r.in * cache.write : 0
+    const rewrite = miss ? (prev - kept) * r.in * cache.write : 0
     const output = outTokens * r.out
     const cost = read + write + rewrite + output
+    // Storage is committed when the cache is created with the first request, so it sits in the first point's running total
+    // (not in the per-request cost): billed for the whole `explicitHours` on the base tokens.
+    const storage = explicit && prev === 0 ? (shared.base * setup.explicitHours! * model.explicitStorage!) / 1e6 : 0
     totals = {
       requests: totals.requests + 1,
       read: totals.read + read,
       write: totals.write + write,
       rewrite: totals.rewrite + rewrite,
+      storage: totals.storage + storage,
       output: totals.output + output,
-      total: totals.total + cost,
+      total: totals.total + storage + cost,
     }
     points.push({ x: ctx, cum: totals.total, req: cost, miss })
     prev = ctx

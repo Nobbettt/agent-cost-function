@@ -306,3 +306,80 @@ describe('simulate: prices on a date', () => {
     close(simulate(flash, shared, '2027-01-01').totals.total, dec * 2)
   })
 })
+
+describe('simulate: Gemini explicit cache', () => {
+  // Gemini 3.8 Flash ($0.75 in, 0.1 read, 1x write), base 100K, +50K per request, 1K output, no thinking, 300K session.
+  const shared: Shared = { ...DEFAULT_SHARED, session: 300000, base: 100000, growth: 50000, visibleOut: 1000, thinking: { none: 0, low: 0, medium: 0, high: 0, xhigh: 0, max: 0 } }
+  const flash: Setup = { id: 'A', provider: 'google', model: 'gemini-3.8-flash', cache: 'implicit', effort: 'medium', reasoning: 'kept', interruptions: 0 }
+  const close = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThan(1e-9)
+
+  it('off (no explicitHours) changes nothing for Google, and the totals have no storage', () => {
+    const run = simulate({ ...flash, interruptions: 1 }, shared)
+    close(run.totals.total, 0.36375)
+    expect(run.totals.storage).toBe(0)
+  })
+
+  it('storage is base tokens x hours x price: 3.1 Pro, 20K base, 2 h at $4.5 per million per hour is $0.18', () => {
+    const pro: Setup = { ...flash, model: 'gemini-3.1-pro-preview', explicitHours: 2 }
+    const on = simulate(pro, DEFAULT_SHARED)
+    close(on.totals.storage, 0.18)
+    const off = simulate({ ...pro, explicitHours: undefined }, DEFAULT_SHARED)
+    close(on.totals.total - off.totals.total, 0.18)
+    // No breaks: every other term is unchanged.
+    for (const k of ['read', 'write', 'rewrite', 'output'] as const) close(on.totals[k], off.totals[k])
+  })
+
+  it('storage sits in the first point of the running total, not in any per-request cost', () => {
+    const on = simulate({ ...flash, explicitHours: 1 }, shared)
+    const off = simulate(flash, shared)
+    close(on.points[0].cum - off.points[0].cum, 0.05) // 100K x 1 h x $0.5 / 1M
+    on.points.forEach((p, i) => close(p.req, off.points[i].req))
+    close(on.points.at(-1)!.cum, on.totals.total)
+  })
+
+  it('a break with prev = base re-writes nothing: the base is read at the cached rate instead', () => {
+    // One break lands on the 150K request (prev = 100K = base): without it $0.075 re-written, with it $0.0075 read.
+    const on = simulate({ ...flash, interruptions: 1, explicitHours: 1 }, shared)
+    close(on.totals.rewrite, 0)
+    close(on.totals.read, 0.045 + 0.0075)
+    close(on.totals.storage, 0.05)
+    close(on.totals.total, 0.34625)
+  })
+
+  it('a break with prev > base re-writes only what is above the base', () => {
+    // Two breaks (at 100K and 200K): the second lands on the 200K request with prev = 150K, base 100K.
+    const on = simulate({ ...flash, interruptions: 2, explicitHours: 1 }, shared)
+    const off = simulate({ ...flash, interruptions: 2 }, shared)
+    close(off.totals.rewrite, 150000 * 0.75e-6)
+    close(on.totals.rewrite, 50000 * 0.75e-6)
+    close(on.totals.read - off.totals.read, 100000 * 0.75e-6 * 0.1)
+  })
+
+  it('base >= prev: a break on the first requests never goes below zero', () => {
+    const big: Shared = { ...shared, base: 250000, session: 300000 }
+    const on = simulate({ ...flash, interruptions: 1, explicitHours: 1 }, big)
+    expect(on.totals.rewrite).toBe(0)
+    expect(on.totals.read).toBeGreaterThanOrEqual(0)
+  })
+
+  it('the storage price follows the date: 3.8 Flash is $0.5 until 2026-12-31 and $1.0 from 2027-01-01', () => {
+    const s: Setup = { ...flash, explicitHours: 2 }
+    close(simulate(s, DEFAULT_SHARED, '2026-12-31').totals.storage, 20000 * 2 * 0.5 / 1e6)
+    close(simulate(s, DEFAULT_SHARED, '2027-01-01').totals.storage, 20000 * 2 * 1 / 1e6)
+    close(simulate(s, DEFAULT_SHARED).totals.storage, 20000 * 2 * 0.5 / 1e6)
+  })
+
+  it('storage has no long-prompt tier', () => {
+    const pro: Setup = { ...flash, model: 'gemini-3.1-pro-preview', interruptions: 1, explicitHours: 1 }
+    close(simulate(pro, { ...shared, session: 300000, base: 100000 }).totals.storage, 100000 * 1 * 4.5 / 1e6)
+  })
+
+  it('a model without an explicit cache ignores explicitHours', () => {
+    const argon: Setup = { ...flash, model: 'gemini-4-argon', explicitHours: 5 }
+    const run = simulate(argon, shared)
+    expect(run.totals.storage).toBe(0)
+    close(run.totals.total, simulate({ ...argon, explicitHours: undefined }, shared).totals.total)
+    const claude: Setup = { ...PROTOTYPE_SETUPS.A, explicitHours: 5 }
+    expect(simulate(claude, DEFAULT_SHARED).totals.storage).toBe(0)
+  })
+})

@@ -69,6 +69,12 @@ fieldset, .card { background: var(--surface); border: 1px solid var(--border); b
 .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .setup .fields { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 label { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); }
+/* A setting with one possible value: a static box like a filled input (no tab stop), and the short note under a field. */
+.static-value { padding: 6px 8px; color: var(--ink); background: var(--page); border: 1px solid var(--border); border-radius: 6px; }
+.field-note { margin: 0; font-size: 12px; line-height: 1.35; color: var(--ink-2); }
+.field-wide { grid-column: 1 / -1; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); cursor: pointer; }
+.check input { width: auto; flex: none; margin: 0; padding: 0; }
 select, input { font: inherit; color: var(--ink); background: var(--page); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 100%; min-width: 0; }
 .toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
 .toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
