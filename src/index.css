@@ -84,7 +84,7 @@ select, input { font: inherit; color: var(--ink); background: var(--page); borde
 details.card > summary { cursor: pointer; font-weight: 600; }
 details.card[open] > summary { margin-bottom: 12px; }
 .card { margin-top: 16px; }
-.chart-box { position: relative; height: 320px; }
+.chart-box { position: relative; height: 400px; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th, td { padding: 6px 8px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; }
@@ -242,20 +242,21 @@ footer nav { display: inline; }
   main.calc { max-width: none; margin: 0; padding: 0 24px 48px; }
   footer.wide { max-width: none; margin: 0; padding: 0 24px 32px; }
 
-  /* One screen tall below the top bar: the header takes its natural height, the results the rest. */
-  .screen { display: flex; flex-direction: column; height: calc(100dvh - 40px); height: 100cqh; padding-bottom: 16px; }
+  /* At least one screen tall below the top bar: the header takes its natural height, the results the rest, and when the
+     charts need more than that the content column scrolls (one scroll area, no nested one). */
+  .screen { display: flex; flex-direction: column; min-height: calc(100dvh - 40px); min-height: 100cqh; padding-bottom: 16px; }
   .screen + .card { margin-top: 0; }
 
   .page-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 16px; padding: 16px 0 12px; }
   .page-header h1, .page-header .lede { margin: 0; }
 
-  /* overflow-y: if the window is too short for two 260px charts, the results scroll instead of overlapping the tables. */
-  .results { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  /* The charts keep at least 380px of plot and share any extra height of a tall window equally. */
+  .results { flex: 1 0 auto; display: flex; flex-direction: column; gap: 16px; }
   .summary-block { flex: none; }
   .results .summary { margin: 0; }
-  .results .card { margin: 0; flex: 1 1 0; min-height: 260px; display: flex; flex-direction: column; }
+  .results .card { margin: 0; flex: 1 1 0; display: flex; flex-direction: column; }
   .results .card h2, .results .card-head { flex: none; }
-  .results .chart-box { flex: 1; min-height: 0; height: auto; }
+  .results .chart-box { flex: 1 1 0; min-height: 380px; height: auto; }
 }
 
 /* Cache break-even page: the settings card holds the fields and the collapsed Advanced settings. */

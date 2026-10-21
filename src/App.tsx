@@ -21,7 +21,7 @@ import { useCurrency } from './currency/context'
 import { NAV_WIDE_QUERY } from './data/breakpoints'
 import { MAX_SETUPS, SERIES } from './data/series'
 import { useMediaQuery } from './hooks/useMediaQuery'
-import { useReqScale } from './hooks/useReqScale'
+import { CUM_SCALE_STORAGE_KEY, REQ_SCALE_STORAGE_KEY, useChartScale } from './hooks/useChartScale'
 import { useSettingsPanel } from './hooks/useSettingsPanel'
 import { buildShareUrl, useShareUrlSync } from './hooks/useShareUrl'
 import { compare } from './model/compare'
@@ -43,7 +43,9 @@ function Calculator() {
   // From the compact-navbar breakpoint up the currency select lives in the navbar; below it, it is the first field of the settings panel.
   const wide = useMediaQuery(NAV_WIDE_QUERY, true)
   const pendingFocus = useRef<SetupId | null>(null)
-  const [reqScale, setReqScale] = useReqScale()
+  // Each chart remembers its own y scale: the cumulative one linear by default, the per-request one logarithmic.
+  const [cumScale, setCumScale] = useChartScale(CUM_SCALE_STORAGE_KEY, 'linear')
+  const [reqScale, setReqScale] = useChartScale(REQ_SCALE_STORAGE_KEY, 'log')
 
   const effective = useMemo(() => effectiveShared(shared), [shared])
   const runs = useMemo(() => setups.map((s) => simulate(s, effective)), [setups, effective])
@@ -107,14 +109,17 @@ function Calculator() {
                 </div>
 
                 <section className="card">
-                  <h2>Cumulative cost vs context size</h2>
-                  <CostChart series={series} metric="cum" xMax={effective.session} endLabels label="Cumulative cost per setup as context grows" format={format} currency={displayCurrency} rate={rate} />
+                  <div className="card-head">
+                    <h2>Cumulative cost vs context size</h2>
+                    <ScaleToggle value={cumScale} onChange={setCumScale} label="Cumulative chart y axis scale" />
+                  </div>
+                  <CostChart series={series} metric="cum" scale={cumScale} xMax={effective.session} endLabels label="Cumulative cost per setup as context grows" format={format} currency={displayCurrency} rate={rate} />
                 </section>
 
                 <section className="card">
                   <div className="card-head">
                     <h2>Cost per request vs context size</h2>
-                    <ScaleToggle value={reqScale} onChange={setReqScale} />
+                    <ScaleToggle value={reqScale} onChange={setReqScale} label="Per-request chart y axis scale" />
                   </div>
                   <CostChart series={series} metric="req" scale={reqScale} xMax={effective.session} label="Cost of each request per setup as context grows" format={format} currency={displayCurrency} rate={rate} />
                 </section>
