@@ -112,7 +112,7 @@ footer nav { display: inline; }
 /* Field label row: label text and "?" tip on one line, the control below. */
 .field { display: grid; gap: 4px; align-content: start; min-width: 0; }
 .field-head { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.field-head label, .field-label { display: block; min-width: 0; font-size: 13px; color: var(--ink-2); }
+.field-head label, .field-label { display: block; min-width: 0; font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .provider-field { margin-bottom: 12px; }
 .provider-field .toggle { margin-bottom: 0; }
 .provider-field .field-head { margin-bottom: 4px; }
@@ -134,7 +134,7 @@ footer nav { display: inline; }
 
 /* Settings panel. Below 1024px: an off-canvas drawer sliding in from the right. */
 .controls {
-  position: fixed; top: 40px; right: 0; bottom: 0; z-index: 20; width: min(380px, 92vw);
+  position: fixed; top: 40px; right: 0; bottom: 0; z-index: 20; width: min(480px, 100vw);
   overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 12px;
   background: var(--surface); border-left: 1px solid var(--border); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
   transform: translateX(100%); visibility: hidden;
@@ -147,16 +147,20 @@ footer nav { display: inline; }
 .backdrop { position: fixed; top: 40px; right: 0; bottom: 0; left: 0; z-index: 15; background: rgba(0, 0, 0, 0.4); }
 .controls > * { flex: none; margin: 0; }
 .controls .setups { grid-template-columns: 1fr; }
-.controls .fields, .controls .setup .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (max-width: 359px) {
-  .controls .fields, .controls .setup .fields { grid-template-columns: 1fr; }
+/* One column by default; two only when the panel is wide enough for each column to hold the longest label. */
+.controls { container: controls / inline-size; }
+.controls .fields, .controls .setup .fields { grid-template-columns: minmax(0, 1fr); }
+/* Longest label ("System prompt + tools (tokens)" + its tip) is about 209px: two columns need ~430px inside the card
+   (+34px card padding) = 464px of panel content. The drawer (max 480px, 456px of content) therefore stays at one column. */
+@container controls (min-width: 470px) {
+  .controls .fields, .controls .setup .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* Large screens: results fill the first screen on the left, the settings are a docked sidebar pinned
    under the top bar on the right. The sidebar can be toggled away; the left column then takes the full width.
    Scoped to main.calc / footer.wide so the sub pages keep their 1100px column. */
 @media (min-width: 1024px) {
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 26vw, 440px); align-items: start; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(510px, 30vw, 560px); align-items: start; }
   .layout[data-open="false"] { grid-template-columns: minmax(0, 1fr); }
   .layout[data-open="false"] .controls { display: none; }
   .backdrop { display: none; }

@@ -14,11 +14,11 @@ type ScalarKey = 'session' | 'base' | 'growth' | 'visibleOut'
 const SCALARS: { key: ScalarKey; label: string; min: number; max: number; step: number }[] = [
   { key: 'session', label: 'Session length (tokens)', min: 10000, max: 1000000, step: 10000 },
   { key: 'base', label: 'System prompt + tools (tokens)', min: 0, max: 200000, step: 1000 },
-  { key: 'growth', label: 'New context per request, excl. reasoning (tokens)', min: 500, max: 200000, step: 500 },
-  { key: 'visibleOut', label: 'Visible output per request (tokens)', min: 0, max: 64000, step: 100 },
+  { key: 'growth', label: 'Added per request (tokens)', min: 500, max: 200000, step: 500 },
+  { key: 'visibleOut', label: 'Output per request (tokens)', min: 0, max: 64000, step: 100 },
 ]
 
-const thinkingLabel = (e: Effort) => (e === 'none' ? 'Reasoning per request: none' : `Reasoning: ${e}`)
+const thinkingLabel = (e: Effort) => `Reasoning tokens: ${e}`
 
 export function SharedAssumptions({ shared, onChange }: Props) {
   return (

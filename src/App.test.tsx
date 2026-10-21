@@ -159,7 +159,7 @@ describe('App', () => {
     render(<App />)
     const pause = setupBox('B').getByLabelText('Pause per interruption (min)')
     expect([pause.getAttribute('min'), pause.getAttribute('max'), pause.getAttribute('step')]).toEqual(['0', '1440', '1'])
-    const growth = screen.getByLabelText('New context per request, excl. reasoning (tokens)')
+    const growth = screen.getByLabelText('Added per request (tokens)')
     expect([growth.getAttribute('min'), growth.getAttribute('max'), growth.getAttribute('step')]).toEqual(['500', '200000', '500'])
   })
 

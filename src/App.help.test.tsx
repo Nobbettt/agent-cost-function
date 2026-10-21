@@ -20,10 +20,9 @@ const SETUP_HELP: [string, string][] = [
 const SHARED_HELP: [string, string][] = [
   ['Session length (tokens)', FIELD_HELP.session],
   ['System prompt + tools (tokens)', FIELD_HELP.base],
-  ['New context per request, excl. reasoning (tokens)', FIELD_HELP.growth],
-  ['Visible output per request (tokens)', FIELD_HELP.visibleOut],
-  ['Reasoning per request: none', thinkingHelp('none')],
-  ...ALL_EFFORTS.filter((e) => e !== 'none').map((e): [string, string] => [`Reasoning: ${e}`, thinkingHelp(e)]),
+  ['Added per request (tokens)', FIELD_HELP.growth],
+  ['Output per request (tokens)', FIELD_HELP.visibleOut],
+  ...ALL_EFFORTS.map((e): [string, string] => [`Reasoning tokens: ${e}`, thinkingHelp(e)]),
 ]
 
 const tipText = (btn: HTMLElement) => document.getElementById(btn.getAttribute('aria-describedby')!)?.textContent
