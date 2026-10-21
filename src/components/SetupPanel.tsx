@@ -104,14 +104,9 @@ export function SetupPanel({ setup, expanded, onToggle, onChange, onRemove }: Pr
             </select>
           </Field>
           <NumberField
-            label="Interruptions" help={FIELD_HELP.interruptions} name="interruptions" min={0} max={50} step={1}
+            label="Cache breaking interruptions" help={FIELD_HELP.interruptions} name="interruptions" min={0} max={50} step={1}
             fallback={d.interruptions} value={setup.interruptions}
             onChange={(v) => set({ interruptions: Math.round(v) })}
-          />
-          <NumberField
-            label="Pause per interruption (min)" help={FIELD_HELP.pause} name="pause" min={0} max={1440} step={1}
-            fallback={d.pause} value={setup.pause}
-            onChange={(v) => set({ pause: v })}
           />
         </div>
       </div>

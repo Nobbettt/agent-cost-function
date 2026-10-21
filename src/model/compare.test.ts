@@ -7,7 +7,7 @@ import { simulate } from './simulate'
 import type { Run, SetupId } from './types'
 
 const run = (cums: number[], end = 100): Run => ({
-  points: cums.map((cum, i) => ({ x: (i + 1) * 10, cum, req: 0, paused: false, miss: false })),
+  points: cums.map((cum, i) => ({ x: (i + 1) * 10, cum, req: 0, miss: false })),
   totals: { requests: cums.length, read: 0, write: 0, rewrite: 0, output: 0, total: cums.at(-1) ?? 0 },
   end,
 })
@@ -32,13 +32,13 @@ describe('compare: parity with the prototype defaults (two runs)', () => {
     expect(c.capped).toBe(true)
   })
 
-  it('the new defaults: B (1h cache) is 32% cheaper than A, neither capped', () => {
+  it('the new defaults: A (5m cache) is 24% cheaper than B (1h cache), neither capped', () => {
     const c = compare([
       { id: 'A', run: simulate(DEFAULT_SETUPS.A, DEFAULT_SHARED) },
       { id: 'B', run: simulate(DEFAULT_SETUPS.B, DEFAULT_SHARED) },
     ])
-    expect(c).toMatchObject({ common: 995000, cheapest: 'B', mostExpensive: 'A', percent: 32, capped: false })
-    expect(c.saving.toFixed(2)).toBe('13.63')
+    expect(c).toMatchObject({ common: 995000, cheapest: 'A', mostExpensive: 'B', percent: 24, capped: false })
+    expect(c.saving.toFixed(2)).toBe('13.37')
   })
 })
 

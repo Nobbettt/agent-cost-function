@@ -2,7 +2,7 @@ import { MODELS } from '../data/pricing'
 import { signedMoney } from '../format'
 import type { Run, Setup } from '../model/types'
 
-const COLS = ['Setup', 'Requests', 'Cache reads', 'Cache writes', 'Re-writes after pauses', 'Output + reasoning', 'Total', 'vs cheapest']
+const COLS = ['Setup', 'Requests', 'Cache reads', 'Cache writes', 'Re-writes after cache breaks', 'Output + reasoning', 'Total', 'vs cheapest']
 
 const setupName = (s: Setup) => `${s.id}: ${MODELS[s.model].name}, ${s.cache}, ${s.effort}, reasoning ${s.reasoning}`
 

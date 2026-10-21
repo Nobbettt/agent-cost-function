@@ -46,7 +46,6 @@ export interface Setup {
   effort: Effort
   reasoning: ReasoningMode
   interruptions: number
-  pause: number
 }
 
 export interface Shared {
@@ -61,7 +60,6 @@ export interface Point {
   x: number
   cum: number
   req: number
-  paused: boolean
   miss: boolean
 }
 

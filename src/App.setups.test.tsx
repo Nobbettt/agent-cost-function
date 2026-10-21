@@ -27,13 +27,13 @@ describe('adding setups', () => {
   it('the new setup is a copy of the last one, with the next free letter, expanded and focused', () => {
     render(<App />)
     fireEvent.change(box('B').getByLabelText('Reasoning effort'), { target: { value: 'low' } })
-    fireEvent.change(box('B').getByLabelText('Interruptions'), { target: { value: '2' } })
+    fireEvent.change(box('B').getByLabelText('Cache breaking interruptions'), { target: { value: '2' } })
     add()
     expect(groups()).toEqual(['A', 'B', 'C'])
     const c = box('C')
     expect((c.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe('1h')
     expect((c.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('low')
-    expect((c.getByLabelText('Interruptions') as HTMLInputElement).value).toBe('2')
+    expect((c.getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('2')
     expect(toggle('C').getAttribute('aria-expanded')).toBe('true')
     expect(body('C').hidden).toBe(false)
     expect(document.activeElement).toBe(toggle('C'))
@@ -53,9 +53,10 @@ describe('adding setups', () => {
   it('editing a setup changes only that setup', () => {
     render(<App />)
     add()
-    fireEvent.change(box('C').getByLabelText('Pause per interruption (min)'), { target: { value: '45' } })
-    expect((box('B').getByLabelText('Pause per interruption (min)') as HTMLInputElement).value).toBe('6')
-    expect((box('A').getByLabelText('Pause per interruption (min)') as HTMLInputElement).value).toBe('6')
+    fireEvent.change(box('C').getByLabelText('Cache breaking interruptions'), { target: { value: '3' } })
+    expect((box('C').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('3')
+    expect((box('B').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('7')
+    expect((box('A').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('7')
   })
 })
 
@@ -117,7 +118,7 @@ describe('collapsing setups', () => {
     fireEvent.click(t)
     expect(t.getAttribute('aria-expanded')).toBe('false')
     expect(body('A').hidden).toBe(true)
-    expect(t.querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 7 × 6 min')
+    expect(t.querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 7 cache breaks')
     // Other setups are untouched.
     expect(toggle('B').getAttribute('aria-expanded')).toBe('true')
     expect(body('B').hidden).toBe(false)
@@ -127,11 +128,11 @@ describe('collapsing setups', () => {
     expect(t.querySelector('.setup-summary')).toBeNull()
   })
 
-  it('the collapsed summary follows the values and says "no interruptions" for 0', () => {
+  it('the collapsed summary follows the values and says "no cache breaks" for 0', () => {
     render(<App />)
-    fireEvent.change(box('B').getByLabelText('Interruptions'), { target: { value: '0' } })
+    fireEvent.change(box('B').getByLabelText('Cache breaking interruptions'), { target: { value: '0' } })
     fireEvent.click(toggle('B'))
-    expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · no interruptions')
+    expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · no cache breaks')
   })
 
   it('the toggle contains no interactive content, and the remove button sits outside it', () => {
@@ -173,9 +174,9 @@ describe('everything follows the number of setups', () => {
     render(<App />)
     add()
     expect(document.querySelector('.summary')!.getAttribute('data-count')).toBe('5')
-    expect(stat('Setup C')).toEqual({ value: '$28.92', sub: 'Claude Opus 5.5 · 1 hour cache' })
-    // C is a copy of B, so B and C tie for cheapest; the first of them is named.
-    expect(stat('Cheapest')).toEqual({ value: 'Setup B', sub: 'saves $13.63 (32%) vs Setup A' })
+    expect(stat('Setup C')).toEqual({ value: '$55.93', sub: 'Claude Opus 5.5 · 1 hour cache' })
+    // C is a copy of B, so B and C tie for most expensive; the first of them is named.
+    expect(stat('Cheapest')).toEqual({ value: 'Setup A', sub: 'saves $13.37 (24%) vs Setup B' })
     expect(stat('Compared at').value).toBe('995K tokens')
   })
 
@@ -184,7 +185,7 @@ describe('everything follows the number of setups', () => {
     add()
     fireEvent.change(box('C').getByLabelText('Model'), { target: { value: 'claude-haiku-5-5' } })
     expect(stat('Cheapest').value).toBe('Setup C')
-    expect(stat('Cheapest').sub).toMatch(/^saves \$\d+\.\d\d \(\d+%\) vs Setup A$/)
+    expect(stat('Cheapest').sub).toMatch(/^saves \$\d+\.\d\d \(\d+%\) vs Setup B$/)
   })
 
   it('the breakdown has a row per setup and a "vs cheapest" column; the steps table a column per setup', () => {
@@ -192,7 +193,7 @@ describe('everything follows the number of setups', () => {
     add()
     const rows = [...document.querySelectorAll('table')[0].querySelectorAll('tbody tr')]
     expect(rows).toHaveLength(3)
-    expect(rows.map((r) => r.lastElementChild!.textContent)).toEqual(['+$13.63', 'cheapest', 'cheapest'])
+    expect(rows.map((r) => r.lastElementChild!.textContent)).toEqual(['cheapest', '+$13.37', '+$13.37'])
     const heads = [...document.querySelectorAll('table')[1].querySelectorAll('thead th')].map((h) => h.textContent)
     expect(heads).toEqual(['Context', 'Setup A', 'Setup B', 'Setup C'])
     expect(document.querySelectorAll('table')[1].querySelectorAll('tbody tr:first-child td')).toHaveLength(4)
@@ -210,7 +211,7 @@ describe('everything follows the number of setups', () => {
     render(<App />)
     add()
     fireEvent.click(removeBtn('B')!)
-    expect(stat('Cheapest')).toEqual({ value: 'Setup C', sub: 'saves $13.63 (32%) vs Setup A' })
+    expect(stat('Cheapest')).toEqual({ value: 'Setup A', sub: 'saves $13.37 (24%) vs Setup C' })
     const rows = [...document.querySelectorAll('table')[0].querySelectorAll('tbody tr')]
     expect(rows.map((r) => r.firstElementChild!.textContent!.slice(0, 2))).toEqual(['A:', 'C:'])
   })

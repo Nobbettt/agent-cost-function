@@ -1,9 +1,9 @@
 import type { Setup, Shared } from '../model/types'
 
-// The default comparison is the cache TTL trade-off: a 6 minute pause outlives the 5 minute cache but not the 1 hour one.
+// The default comparison: the same session on a 5 minute and a 1 hour cache, with 7 cache breaking interruptions each.
 export const DEFAULT_SETUPS: Readonly<Record<'A' | 'B', Setup>> = {
-  A: { id: 'A', provider: 'claude', model: 'claude-opus-5-5', cache: '5m', effort: 'high', reasoning: 'kept', interruptions: 7, pause: 6 },
-  B: { id: 'B', provider: 'claude', model: 'claude-opus-5-5', cache: '1h', effort: 'high', reasoning: 'kept', interruptions: 7, pause: 6 },
+  A: { id: 'A', provider: 'claude', model: 'claude-opus-5-5', cache: '5m', effort: 'high', reasoning: 'kept', interruptions: 7 },
+  B: { id: 'B', provider: 'claude', model: 'claude-opus-5-5', cache: '1h', effort: 'high', reasoning: 'kept', interruptions: 7 },
 }
 
 /** The setups the page starts with, in order. */

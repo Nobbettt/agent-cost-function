@@ -12,17 +12,21 @@ const ids = (list: readonly Setup[]) => list.map((s) => s.id)
 
 describe('summarizeSetup', () => {
   it('summarises a Claude setup', () => {
-    expect(summarizeSetup(A)).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 7 × 6 min')
-    expect(summarizeSetup(B)).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · 7 × 6 min')
+    expect(summarizeSetup(A)).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 7 cache breaks')
+    expect(summarizeSetup(B)).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · 7 cache breaks')
   })
 
   it('summarises an OpenAI setup', () => {
-    const s: Setup = { id: 'C', provider: 'openai', model: 'gpt-5.6-sol', cache: '30m', effort: 'medium', reasoning: 'dropped', interruptions: 3, pause: 20 }
-    expect(summarizeSetup(s)).toBe('GPT-5.6 Sol · 30 min cache · medium · reasoning dropped · 3 × 20 min')
+    const s: Setup = { id: 'C', provider: 'openai', model: 'gpt-5.6-sol', cache: '30m', effort: 'medium', reasoning: 'dropped', interruptions: 3 }
+    expect(summarizeSetup(s)).toBe('GPT-5.6 Sol · 30 min cache · medium · reasoning dropped · 3 cache breaks')
   })
 
-  it('says "no interruptions" for 0', () => {
-    expect(summarizeSetup({ ...A, interruptions: 0, pause: 20 })).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · no interruptions')
+  it('says "1 cache break" for exactly one', () => {
+    expect(summarizeSetup({ ...A, interruptions: 1 })).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 1 cache break')
+  })
+
+  it('says "no cache breaks" for 0', () => {
+    expect(summarizeSetup({ ...A, interruptions: 0 })).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · no cache breaks')
   })
 
   it.each([['5m', '5 min'], ['1h', '1 hour'], ['30m', '30 min'], ['24h', '24h'], ['in_memory', 'in_memory']] as const)(

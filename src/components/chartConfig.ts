@@ -115,11 +115,10 @@ export interface ChartSeries {
 export function makeDataset(id: SetupId) {
   return {
     label: `Setup ${id}`, data: [] as ChartPoint[], borderWidth: 2, tension: 0,
-    pointRadius: (c: { raw: unknown }) => (raw(c)?.paused ? 4 : 0),
-    pointBackgroundColor: (c: { raw: unknown; dataset: { borderColor?: unknown } }) =>
-      raw(c)?.miss ? (c.dataset.borderColor as string) : css('--surface'),
-    pointBorderColor: (c: { raw: unknown; dataset: { borderColor?: unknown } }) =>
-      raw(c)?.miss ? css('--surface') : (c.dataset.borderColor as string),
+    pointRadius: (c: { raw: unknown }) => (raw(c)?.miss ? 4 : 0),
+    // Every marker is a cache re-write: filled with the series colour, ringed with the surface colour.
+    pointBackgroundColor: (c: { dataset: { borderColor?: unknown } }) => c.dataset.borderColor as string,
+    pointBorderColor: () => css('--surface'),
     pointBorderWidth: 2, pointHoverRadius: 4, pointHitRadius: 12,
   }
 }
@@ -145,8 +144,7 @@ export function lineConfig(showEndLabels: boolean, getFormat: () => (usd: number
           callbacks: {
             title: (items) => `${fmtTokens(items[0].parsed.x as number)} tokens in context`,
             label: (it) => `${getFormat()(it.parsed.y as number)}  ${it.dataset.label}`,
-            afterLabel: (it) => (it.raw as ChartPoint).miss ? '  pause outlived the cache: full re-write'
-                              : (it.raw as ChartPoint).paused ? '  pause within cache lifetime: cache kept' : '',
+            afterLabel: (it) => ((it.raw as ChartPoint).miss ? '  cache expired: full re-write' : ''),
             labelColor: (it) => ({ borderColor: it.dataset.borderColor as string, backgroundColor: it.dataset.borderColor as string }),
           },
           boxHeight: 2, boxWidth: 12,

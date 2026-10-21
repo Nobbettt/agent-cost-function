@@ -69,7 +69,7 @@ describe('switchModel', () => {
 
 describe('switchProvider', () => {
   it("selects the provider's default model and resets to its defaults", () => {
-    const s: Setup = { ...A, cache: '1h', effort: 'low', reasoning: 'dropped', interruptions: 7, pause: 9 }
+    const s: Setup = { ...A, cache: '1h', effort: 'low', reasoning: 'dropped', interruptions: 7 }
     expect(switchProvider(s, 'openai')).toEqual({
       ...s, provider: 'openai', model: 'gpt-5.6-sol', cache: '30m', effort: 'medium', reasoning: 'kept',
     })

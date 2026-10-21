@@ -1,6 +1,6 @@
 # Agent cost function
 
-Models what one long-running LLM agent session costs as its context grows to 1M tokens. Two setups (Claude or OpenAI, each with model, prompt cache, reasoning effort, interruptions and pause length) are compared side by side on cumulative cost and cost per request.
+Models what one long-running LLM agent session costs as its context grows to 1M tokens. Two setups (Claude or OpenAI, each with model, prompt cache, reasoning effort, and cache breaking interruptions) are compared side by side on cumulative cost and cost per request.
 
 Live: https://agent-cost-function.norbertlaszlo.com
 

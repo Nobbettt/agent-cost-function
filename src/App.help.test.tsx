@@ -14,8 +14,7 @@ const SETUP_HELP: [string, string][] = [
   ['Prompt cache', FIELD_HELP.cache],
   ['Reasoning effort', FIELD_HELP.effort],
   ['Earlier reasoning in context', FIELD_HELP.reasoning],
-  ['Interruptions', FIELD_HELP.interruptions],
-  ['Pause per interruption (min)', FIELD_HELP.pause],
+  ['Cache breaking interruptions', FIELD_HELP.interruptions],
 ]
 const ADVANCED_HELP: [string, string][] = [
   ['Session length (tokens)', FIELD_HELP.session],
@@ -41,6 +40,12 @@ describe('field help tips', () => {
     const advanced = document.getElementById('advanced')!
     for (const [label, text] of ADVANCED_HELP) expect(tipText(within(advanced).getByRole('button', { name: `About ${label}` }))).toBe(text)
     expect(ADVANCED_HELP).toHaveLength(10)
+  })
+
+  it('the interruption and cache tips say every interruption breaks the cache', () => {
+    expect(FIELD_HELP.interruptions).toBe('How many times the session pauses for longer than the cache lifetime. The pauses are spread evenly over the session, and each one makes the next request write the whole context to the cache again.')
+    expect(FIELD_HELP.cache).toBe('How long the provider keeps the cached context, and what writing to the cache costs compared with normal input. Every cache breaking interruption means the whole context is written again.')
+    expect('pause' in FIELD_HELP).toBe(false)
   })
 
   it('the currency select has its tip in the navbar', () => {

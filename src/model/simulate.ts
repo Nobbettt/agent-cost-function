@@ -13,23 +13,22 @@ export function simulate(setup: Setup, shared: Shared): Run {
   if (!model) throw new Error(`Unknown model: ${setup.model}`)
   const cache = model.cache.find((c) => c.id === setup.cache) ?? model.cache[0]
   const end = Math.min(shared.session, model.maxInput)
-  const pauseExpires = setup.pause > cache.minutes
-  const pauses = Array.from({ length: setup.interruptions }, (_, k) => (end * (k + 1)) / (setup.interruptions + 1))
+  // Every interruption outlasts the cache lifetime: the request after it re-writes the whole context.
+  const breaks = Array.from({ length: setup.interruptions }, (_, k) => (end * (k + 1)) / (setup.interruptions + 1))
   const reasoningTokens = shared.thinking[setup.effort]
   const outTokens = shared.visibleOut + reasoningTokens
   const step = shared.growth + (setup.reasoning === 'kept' ? reasoningTokens : 0)
   const points: Point[] = []
   let totals: Totals = { requests: 0, read: 0, write: 0, rewrite: 0, output: 0, total: 0 }
   let prev = 0
-  let nextPause = 0
+  let nextBreak = 0
 
   for (let ctx = shared.base; ctx <= end; ctx += step) {
-    let paused = false
-    while (nextPause < pauses.length && ctx >= pauses[nextPause]) {
-      paused = true
-      nextPause++
+    let miss = false
+    while (nextBreak < breaks.length && ctx >= breaks[nextBreak]) {
+      miss = true
+      nextBreak++
     }
-    const miss = paused && pauseExpires
     const r = rates(model, ctx)
     const read = prev && !miss ? prev * r.in * model.read : 0
     const write = (ctx - prev) * r.in * cache.write
@@ -44,7 +43,7 @@ export function simulate(setup: Setup, shared: Shared): Run {
       output: totals.output + output,
       total: totals.total + cost,
     }
-    points.push({ x: ctx, cum: totals.total, req: cost, paused, miss })
+    points.push({ x: ctx, cum: totals.total, req: cost, miss })
     prev = ctx
   }
   return { points, totals, end }

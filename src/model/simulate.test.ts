@@ -12,7 +12,7 @@ describe('simulate: known answer', () => {
   it('Sonnet 5.5, 10K base, 10K growth, 30K session, no output costs 0.078', () => {
     const shared: Shared = { ...DEFAULT_SHARED, session: 30000, base: 10000, growth: 10000, visibleOut: 0 }
     const run = simulate(
-      setupOf({ model: 'claude-sonnet-5-5', cache: '5m', effort: 'none', reasoning: 'dropped', interruptions: 0, pause: 0 }),
+      setupOf({ model: 'claude-sonnet-5-5', cache: '5m', effort: 'none', reasoning: 'dropped', interruptions: 0 }),
       shared,
     )
     expect(run.totals.requests).toBe(3)
@@ -43,30 +43,46 @@ describe('simulate: parity with the prototype defaults', () => {
     expect(usd(run.totals.total)).toBe('60.64')
   })
 
-  it('marks the three expired pauses of A as misses and none for B', () => {
+  it('marks the three interruptions of A as misses and B (no interruptions) has none', () => {
     const a = simulate(PROTOTYPE_SETUPS.A, DEFAULT_SHARED)
     const b = simulate(PROTOTYPE_SETUPS.B, DEFAULT_SHARED)
-    expect(a.points.filter((p) => p.paused)).toHaveLength(3)
     expect(a.points.filter((p) => p.miss)).toHaveLength(3)
-    expect(b.points.filter((p) => p.paused)).toHaveLength(3)
     expect(b.points.filter((p) => p.miss)).toHaveLength(0)
   })
 })
 
-describe('simulate: cache lifetime', () => {
-  it('a pause shorter than the TTL keeps the cache (no re-write)', () => {
-    const run = simulate(setupOf({ pause: 3 }), DEFAULT_SHARED)
-    expect(run.totals.rewrite).toBe(0)
-    expect(run.points.filter((p) => p.paused)).toHaveLength(3)
-    expect(run.points.some((p) => p.miss)).toBe(false)
+describe('simulate: every interruption breaks the cache', () => {
+  it.each([
+    ['claude-opus-5-5', '5m'],
+    ['claude-opus-5-5', '1h'],
+    ['gpt-5.6-sol', '30m'],
+    ['gpt-5.5', '24h'],
+    ['gpt-5.4', 'in_memory'],
+  ] as const)('%s on the %s cache: each interruption is a miss, whatever the cache lifetime', (model, cache) => {
+    const run = simulate(setupOf({ model, cache, interruptions: 4, effort: model.startsWith('claude') ? 'high' : 'medium', reasoning: 'dropped' }), DEFAULT_SHARED)
+    expect(run.points.filter((p) => p.miss)).toHaveLength(4)
+    expect(run.totals.rewrite).toBeGreaterThan(0)
   })
 
-  it('a pause equal to the TTL does not expire it', () => {
-    expect(simulate(setupOf({ pause: 5 }), DEFAULT_SHARED).totals.rewrite).toBe(0)
+  it('no interruptions means no misses and no re-writes', () => {
+    for (const cache of ['5m', '1h'] as const) {
+      const run = simulate(setupOf({ cache, interruptions: 0 }), DEFAULT_SHARED)
+      expect(run.points.some((p) => p.miss)).toBe(false)
+      expect(run.totals.rewrite).toBe(0)
+    }
   })
 
-  it('a pause longer than the TTL re-writes the whole previous context', () => {
-    expect(simulate(setupOf({ pause: 6 }), DEFAULT_SHARED).totals.rewrite).toBeGreaterThan(0)
+  it('points carry one flag for it: miss (there is no separate paused flag)', () => {
+    const run = simulate(setupOf({ interruptions: 2 }), DEFAULT_SHARED)
+    expect(Object.keys(run.points[0]).sort()).toEqual(['cum', 'miss', 'req', 'x'])
+  })
+
+  it('a miss replaces the cache read of that request by a re-write at the cache write multiplier', () => {
+    const a = simulate(setupOf({ cache: '5m', interruptions: 1 }), DEFAULT_SHARED)
+    const b = simulate(setupOf({ cache: '1h', interruptions: 1 }), DEFAULT_SHARED)
+    // Same requests, same reads skipped; the 1h cache re-writes at 2x against 1.25x.
+    expect(b.totals.rewrite).toBeCloseTo(a.totals.rewrite * (2 / 1.25), 9)
+    expect(b.totals.read).toBeCloseTo(a.totals.read, 9)
   })
 
   it('falls back to the first cache option when the setup names one the model lacks', () => {

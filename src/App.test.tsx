@@ -9,14 +9,14 @@ import type { SetupId } from './model/types'
 vi.mock('./components/CostChart', async () => ({ CostChart: (await import('./test-chart-mock')).CostChartMock }))
 
 const setupBox = (id: SetupId) => within(screen.getByRole('group', { name: `Setup ${id}` }))
-const DEFAULT_SUMMARY = 'Setup A$42.55Claude Opus 5.5 · 5 min cacheSetup B$28.92Claude Opus 5.5 · 1 hour cacheCheapestSetup Bsaves $13.63 (32%) vs Setup ACompared at995K tokenscontext size'
+const DEFAULT_SUMMARY = 'Setup A$42.55Claude Opus 5.5 · 5 min cacheSetup B$55.93Claude Opus 5.5 · 1 hour cacheCheapestSetup Asaves $13.37 (24%) vs Setup BCompared at995K tokenscontext size'
 
 describe('App', () => {
   it('renders the default summary cards', () => {
     render(<App />)
     expect(stat('Setup A')).toEqual({ value: '$42.55', sub: 'Claude Opus 5.5 · 5 min cache' })
-    expect(stat('Setup B')).toEqual({ value: '$28.92', sub: 'Claude Opus 5.5 · 1 hour cache' })
-    expect(stat('Cheapest')).toEqual({ value: 'Setup B', sub: 'saves $13.63 (32%) vs Setup A' })
+    expect(stat('Setup B')).toEqual({ value: '$55.93', sub: 'Claude Opus 5.5 · 1 hour cache' })
+    expect(stat('Cheapest')).toEqual({ value: 'Setup A', sub: 'saves $13.37 (24%) vs Setup B' })
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
     expect(summaryText().replace(/ /g, '')).toBe(DEFAULT_SUMMARY.replace(/ /g, ''))
   })
@@ -99,7 +99,7 @@ describe('App', () => {
     expect((setupBox('B').getByLabelText('OpenAI') as HTMLInputElement).checked).toBe(false)
   })
 
-  it('starts with the cache TTL comparison: Opus 5.5 on a 5 min and a 1 hour cache, 7 pauses of 6 min', () => {
+  it('starts with Opus 5.5 on a 5 min and a 1 hour cache, 7 cache breaking interruptions each', () => {
     render(<App />)
     for (const [id, cache] of [['A', '5m'], ['B', '1h']] as const) {
       const box = setupBox(id)
@@ -107,8 +107,8 @@ describe('App', () => {
       expect((box.getByLabelText('Prompt cache') as HTMLSelectElement).value).toBe(cache)
       expect((box.getByLabelText('Reasoning effort') as HTMLSelectElement).value).toBe('high')
       expect((box.getByLabelText('Earlier reasoning in context') as HTMLSelectElement).value).toBe('kept')
-      expect((box.getByLabelText('Interruptions') as HTMLInputElement).value).toBe('7')
-      expect((box.getByLabelText('Pause per interruption (min)') as HTMLInputElement).value).toBe('6')
+      expect((box.getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('7')
+      expect(box.queryByLabelText('Pause per interruption (min)')).toBeNull()
     }
   })
 
@@ -162,7 +162,7 @@ describe('App', () => {
 
   it('falls back to the default when a number field is emptied', () => {
     render(<App />)
-    const interruptions = setupBox('A').getByLabelText('Interruptions') as HTMLInputElement
+    const interruptions = setupBox('A').getByLabelText('Cache breaking interruptions') as HTMLInputElement
     const before = summaryText()
     fireEvent.change(interruptions, { target: { value: '0' } })
     expect(summaryText()).not.toBe(before)
@@ -172,8 +172,8 @@ describe('App', () => {
 
   it('keeps the min, max and step attributes of the prototype', () => {
     render(<App />)
-    const pause = setupBox('B').getByLabelText('Pause per interruption (min)')
-    expect([pause.getAttribute('min'), pause.getAttribute('max'), pause.getAttribute('step')]).toEqual(['0', '1440', '1'])
+    const breaks = setupBox('B').getByLabelText('Cache breaking interruptions')
+    expect([breaks.getAttribute('min'), breaks.getAttribute('max'), breaks.getAttribute('step')]).toEqual(['0', '50', '1'])
     const growth = screen.getByLabelText('Added per request (tokens)')
     expect([growth.getAttribute('min'), growth.getAttribute('max'), growth.getAttribute('step')]).toEqual(['500', '200000', '500'])
   })
@@ -183,8 +183,8 @@ describe('App', () => {
     expect(screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept')).toBeTruthy()
     expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
     expect(screen.getByText('vs cheapest')).toBeTruthy()
-    expect(screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept').closest('tr')!.lastElementChild!.textContent).toBe('+$13.63')
-    expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept').closest('tr')!.lastElementChild!.textContent).toBe('cheapest')
+    expect(screen.getByText('A: Claude Opus 5.5, 5m, high, reasoning kept').closest('tr')!.lastElementChild!.textContent).toBe('cheapest')
+    expect(screen.getByText('B: Claude Opus 5.5, 1h, high, reasoning kept').closest('tr')!.lastElementChild!.textContent).toBe('+$13.37')
     // No run is capped by default, so every step has a cost.
     expect(screen.queryAllByText('—')).toHaveLength(0)
     // GPT-5.6 Sol stops at 922K, so the 1M step shows a dash for that setup.

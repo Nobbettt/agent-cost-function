@@ -12,8 +12,8 @@ export const modelAndCache = (s: Setup): string => `${MODELS[s.model].name} · $
 
 /** One compact line with every selected value, for a collapsed setup. */
 export function summarizeSetup(s: Setup): string {
-  const pauses = s.interruptions === 0 ? 'no interruptions' : `${s.interruptions} × ${s.pause} min`
-  return `${modelAndCache(s)} · ${s.effort} · reasoning ${s.reasoning} · ${pauses}`
+  const breaks = s.interruptions === 0 ? 'no cache breaks' : `${s.interruptions} cache break${s.interruptions === 1 ? '' : 's'}`
+  return `${modelAndCache(s)} · ${s.effort} · reasoning ${s.reasoning} · ${breaks}`
 }
 
 export const canAddSetup = (setups: readonly Setup[]): boolean => setups.length < MAX_SETUPS
