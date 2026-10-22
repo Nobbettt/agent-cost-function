@@ -14,7 +14,7 @@ interface StatProps {
 
 export function Stat({ label, value, sub, series }: StatProps) {
   return (
-    <div className="stat">
+    <div className="stat" data-series={series}>
       <dt>
         {series && <SeriesKey id={series} />}
         <span className="stat-label" title={label}>{label}</span>

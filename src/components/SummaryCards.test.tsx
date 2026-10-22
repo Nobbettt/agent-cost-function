@@ -82,6 +82,14 @@ describe('SummaryCards: two setups', () => {
   })
 })
 
+describe('SummaryCards: series tint', () => {
+  it('setup cards carry their series id; Cheapest and Compared at carry none', () => {
+    const { container } = show(three, [...setups, C])
+    const ids = [...container.querySelectorAll('dl > .stat')].map((e) => e.getAttribute('data-series'))
+    expect(ids).toEqual(['A', 'B', 'C', null, null])
+  })
+})
+
 describe('SummaryCards: three and four setups', () => {
   it('three setups: one card each, Cheapest measured against the most expensive', () => {
     const { container } = show(three, [...setups, C])

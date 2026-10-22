@@ -139,6 +139,11 @@ footer nav { display: inline; }
 .summary { container-type: inline-size; margin-top: 16px; }
 .summary dl { --n: 4; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 12px; margin: 0; }
 .stat { min-width: 0; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+/* A setup's card is tinted with its series colour (by id, like .setup); Cheapest and Compared at stay neutral. */
+.stat[data-series] { --series: var(--series-a); background: color-mix(in srgb, var(--series) 13%, var(--surface)); border-color: color-mix(in srgb, var(--series) 35%, var(--border)); }
+.stat[data-series="B"] { --series: var(--series-b); }
+.stat[data-series="C"] { --series: var(--series-c); }
+.stat[data-series="D"] { --series: var(--series-d); }
 .stat dt { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
 .stat-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stat dd { margin: 0; }
