@@ -18,7 +18,7 @@ export function toggleExplicit(s: Setup, on: boolean): Setup {
   return on ? { ...rest, explicitHours: explicitHours ?? DEFAULT_EXPLICIT_HOURS } : rest
 }
 
-/** "Claude Opus 5.5 · 5 min cache": the model and its cache; "· implicit + explicit cache (2 h)" with an explicit cache. */
+/** "Opus 5.5 · 5 min cache": the model and its cache; "· implicit + explicit cache (2 h)" with an explicit cache. */
 export const modelAndCache = (s: Setup): string =>
   `${MODELS[s.model].name} · ${usesExplicitCache(s) ? `${CACHE_LABEL[s.cache]} + explicit` : CACHE_LABEL[s.cache]} cache${usesExplicitCache(s) ? ` (${s.explicitHours} h)` : ''}`
 
@@ -26,7 +26,7 @@ export const modelAndCache = (s: Setup): string =>
 export const cacheBreaks = (s: Pick<Setup, 'interruptions'>): string =>
   s.interruptions === 0 ? 'no cache breaks' : `${s.interruptions} cache break${s.interruptions === 1 ? '' : 's'}`
 
-/** The setup card's sub-line: "Claude Opus 5.5 · 5 min cache · 6 cache breaks". */
+/** The setup card's sub-line: "Opus 5.5 · 5 min cache · 6 cache breaks". */
 export const cardSubline = (s: Setup): string => `${modelAndCache(s)} · ${cacheBreaks(s)}`
 
 /** One compact line with every selected value, for a collapsed setup. */

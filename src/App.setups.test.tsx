@@ -195,10 +195,10 @@ describe('the settings panel is an accordion', () => {
   it('the summary line shows only on collapsed setups', () => {
     renderTwo()
     expect(toggle('A').querySelector('.setup-summary')).toBeNull()
-    expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · 1 cache break')
+    expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Opus 5.5 · 1 hour cache · high · reasoning kept · 1 cache break')
     fireEvent.click(toggle('B'))
     expect(toggle('B').querySelector('.setup-summary')).toBeNull()
-    expect(toggle('A').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 6 cache breaks')
+    expect(toggle('A').querySelector('.setup-summary')!.textContent).toBe('Opus 5.5 · 5 min cache · high · reasoning kept · 6 cache breaks')
     // Advanced settings has just its title.
     expect(advToggle().querySelector('.setup-summary')).toBeNull()
   })
@@ -206,7 +206,7 @@ describe('the settings panel is an accordion', () => {
   it('the collapsed summary follows the values and says "no cache breaks" for 0', () => {
     renderTwo()
     fireEvent.change(box('B').getByLabelText('Cache breaking interruptions'), { target: { value: '0' } })
-    expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · no cache breaks')
+    expect(toggle('B').querySelector('.setup-summary')!.textContent).toBe('Opus 5.5 · 1 hour cache · high · reasoning kept · no cache breaks')
   })
 
   it('adding a setup expands only the new one, collapsing whatever was open', () => {
@@ -267,7 +267,7 @@ describe('everything follows the number of setups', () => {
     renderTwo()
     add()
     expect(document.querySelector('.summary')!.getAttribute('data-count')).toBe('5')
-    expect(stat('Setup C')).toEqual({ value: '$32.76', sub: 'Claude Opus 5.5 · 1 hour cache · 1 cache break' })
+    expect(stat('Setup C')).toEqual({ value: '$32.76', sub: 'Opus 5.5 · 1 hour cache · 1 cache break' })
     // C is a copy of B, so B and C tie for cheapest; the first of them is named.
     expect(stat('Cheapest')).toEqual({ value: 'Setup B', sub: 'saves $7.47 (19%) vs Setup A' })
     expect(stat('Compared at').value).toBe('995K tokens')

@@ -83,15 +83,15 @@ const KD: readonly ReasoningMode[] = ['kept', 'dropped']
 const DROPPED: readonly ReasoningMode[] = ['dropped']
 
 export const MODELS: Readonly<Record<ModelId, ModelSpec>> = {
-  'claude-fable-5-1':  { provider: 'claude', name: 'Claude Fable 5.1',  in: 10,   out: 50,  read: 0.025, maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: KD },
-  'claude-opus-5-5':   { provider: 'claude', name: 'Claude Opus 5.5',   in: 4,    out: 20,  read: 0.05,  maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'medium', cache: CLAUDE_CACHE, reasoning: KD },
-  'claude-sonnet-5-5': { provider: 'claude', name: 'Claude Sonnet 5.5', in: 2,    out: 10,  read: 0.05,  maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: KD },
-  'claude-haiku-5-5':  { provider: 'claude', name: 'Claude Haiku 5.5',  in: 0.1,  out: 0.5, read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'medium', cache: CLAUDE_CACHE, reasoning: KD,
+  'claude-fable-5-1':  { provider: 'claude', name: 'Fable 5.1',  in: 10,   out: 50,  read: 0.025, maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: KD },
+  'claude-opus-5-5':   { provider: 'claude', name: 'Opus 5.5',   in: 4,    out: 20,  read: 0.05,  maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'medium', cache: CLAUDE_CACHE, reasoning: KD },
+  'claude-sonnet-5-5': { provider: 'claude', name: 'Sonnet 5.5', in: 2,    out: 10,  read: 0.05,  maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: KD },
+  'claude-haiku-5-5':  { provider: 'claude', name: 'Haiku 5.5',  in: 0.1,  out: 0.5, read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'medium', cache: CLAUDE_CACHE, reasoning: KD,
                          longPrompt: { above: 100000, inMult: 5, outMult: 5 } },
-  'claude-opus-5':     { provider: 'claude', name: 'Claude Opus 5',     in: 5,    out: 25,  read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: KD },
-  'claude-opus-4-8':   { provider: 'claude', name: 'Claude Opus 4.8',   in: 5,    out: 25,  read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: KD },
-  'claude-sonnet-5':   { provider: 'claude', name: 'Claude Sonnet 5',   in: 2,    out: 10,  read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: KD },
-  'claude-sonnet-4-6': { provider: 'claude', name: 'Claude Sonnet 4.6', in: 3,    out: 15,  read: 0.1,   maxInput: 1e6, efforts: ['low', 'medium', 'high', 'max'], defaultEffort: 'high', cache: CLAUDE_CACHE, reasoning: KD },
+  'claude-opus-5':     { provider: 'claude', name: 'Opus 5',     in: 5,    out: 25,  read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: KD },
+  'claude-opus-4-8':   { provider: 'claude', name: 'Opus 4.8',   in: 5,    out: 25,  read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: KD },
+  'claude-sonnet-5':   { provider: 'claude', name: 'Sonnet 5',   in: 2,    out: 10,  read: 0.1,   maxInput: 1e6, efforts: LOW_TO_MAX, defaultEffort: 'high',   cache: CLAUDE_CACHE, reasoning: KD },
+  'claude-sonnet-4-6': { provider: 'claude', name: 'Sonnet 4.6', in: 3,    out: 15,  read: 0.1,   maxInput: 1e6, efforts: ['low', 'medium', 'high', 'max'], defaultEffort: 'high', cache: CLAUDE_CACHE, reasoning: KD },
   'gpt-6-astra':       { provider: 'openai', name: 'GPT-6 Astra',       in: 10,   out: 50,  read: 0.1,   maxInput: 922000,  efforts: LOW_TO_MAX,    defaultEffort: null,     cache: [OPENAI_30M], reasoning: DROPPED, longPrompt: OPENAI_LONG },
   'gpt-6.1-sol':       { provider: 'openai', name: 'GPT-6.1 Sol',       in: 2,    out: 10,  read: 0.05,  maxInput: 922000,  efforts: LOW_TO_MAX,    defaultEffort: 'medium', cache: [OPENAI_30M], reasoning: [null, 'kept', 'dropped'], longPrompt: OPENAI_LONG },
   'gpt-6-sol':         { provider: 'openai', name: 'GPT-6 Sol',         in: 2,    out: 10,  read: 0.1,   maxInput: 1050000, efforts: NONE_TO_MAX,   defaultEffort: 'medium', cache: [OPENAI_30M], reasoning: DROPPED, longPrompt: OPENAI_LONG },

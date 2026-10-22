@@ -12,14 +12,14 @@ import type { SetupId } from './model/types'
 vi.mock('./components/CostChart', async () => ({ CostChart: (await import('./test-chart-mock')).CostChartMock }))
 
 const setupBox = (id: SetupId) => within(screen.getByRole('group', { name: `Setup ${id}` }))
-const DEFAULT_SUMMARY = 'Setup A$40.22Claude Opus 5.5 · 5 min cache · 6 cache breaksSetup B$32.76Claude Opus 5.5 · 1 hour cache · 1 cache breakSetup C$25.93Claude Opus 5.5 · 5 min cache · no cache breaksCheapestSetup Csaves $14.29 (36%) vs Setup ACompared at995K tokenscontext size'
+const DEFAULT_SUMMARY = 'Setup A$40.22Opus 5.5 · 5 min cache · 6 cache breaksSetup B$32.76Opus 5.5 · 1 hour cache · 1 cache breakSetup C$25.93Opus 5.5 · 5 min cache · no cache breaksCheapestSetup Csaves $14.29 (36%) vs Setup ACompared at995K tokenscontext size'
 
 describe('App', () => {
   it('renders the default summary cards', () => {
     render(<App />)
-    expect(stat('Setup A')).toEqual({ value: '$40.22', sub: 'Claude Opus 5.5 · 5 min cache · 6 cache breaks' })
-    expect(stat('Setup B')).toEqual({ value: '$32.76', sub: 'Claude Opus 5.5 · 1 hour cache · 1 cache break' })
-    expect(stat('Setup C')).toEqual({ value: '$25.93', sub: 'Claude Opus 5.5 · 5 min cache · no cache breaks' })
+    expect(stat('Setup A')).toEqual({ value: '$40.22', sub: 'Opus 5.5 · 5 min cache · 6 cache breaks' })
+    expect(stat('Setup B')).toEqual({ value: '$32.76', sub: 'Opus 5.5 · 1 hour cache · 1 cache break' })
+    expect(stat('Setup C')).toEqual({ value: '$25.93', sub: 'Opus 5.5 · 5 min cache · no cache breaks' })
     expect(stat('Cheapest')).toEqual({ value: 'Setup C', sub: 'saves $14.29 (36%) vs Setup A' })
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
     expect(summaryText().replace(/ /g, '')).toBe(DEFAULT_SUMMARY.replace(/ /g, ''))
@@ -163,7 +163,7 @@ describe('App', () => {
     fireEvent.click(c.getByLabelText('Claude'))
     expect((c.getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
     expect((c.getByLabelText('Cache lifetime') as HTMLSelectElement).value).toBe('5m')
-    expect(stat('Setup C').sub).toBe('Claude Opus 5.5 · 5 min cache · no cache breaks')
+    expect(stat('Setup C').sub).toBe('Opus 5.5 · 5 min cache · no cache breaks')
   })
 
   it('switching a setup to Google selects Gemini 3.8 Flash with the implicit cache, medium effort and kept reasoning, and the card says so', () => {
@@ -181,7 +181,7 @@ describe('App', () => {
     expect(stat('Setup C').sub).toBe('Gemini 3.8 Flash · implicit cache · no cache breaks')
     fireEvent.click(c.getByLabelText('Claude'))
     expect((c.getByLabelText('Model') as HTMLSelectElement).value).toBe('claude-opus-5-5')
-    expect(stat('Setup C').sub).toBe('Claude Opus 5.5 · 5 min cache · no cache breaks')
+    expect(stat('Setup C').sub).toBe('Opus 5.5 · 5 min cache · no cache breaks')
   })
 
   it('Gemini 3.5 Flash-Lite has no default effort marked and falls back to low; 3.1 Pro defaults to high', () => {
@@ -327,13 +327,13 @@ describe('App', () => {
 
   it('shows the breakdown and steps tables', () => {
     render(<App />)
-    expect(screen.getByText('Setup A: Claude Opus 5.5, 5m, high, reasoning kept')).toBeTruthy()
-    expect(screen.getByText('Setup B: Claude Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
+    expect(screen.getByText('Setup A: Opus 5.5, 5m, high, reasoning kept')).toBeTruthy()
+    expect(screen.getByText('Setup B: Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
     expect(screen.getByText('vs cheapest')).toBeTruthy()
     const vs = (label: string) => screen.getByText(label).closest('tr')!.lastElementChild!.textContent
-    expect(vs('Setup A: Claude Opus 5.5, 5m, high, reasoning kept')).toBe('+$14.29')
-    expect(vs('Setup B: Claude Opus 5.5, 1h, high, reasoning kept')).toBe('+$6.83')
-    expect(vs('Setup C: Claude Opus 5.5, 5m, high, reasoning kept')).toBe('cheapest')
+    expect(vs('Setup A: Opus 5.5, 5m, high, reasoning kept')).toBe('+$14.29')
+    expect(vs('Setup B: Opus 5.5, 1h, high, reasoning kept')).toBe('+$6.83')
+    expect(vs('Setup C: Opus 5.5, 5m, high, reasoning kept')).toBe('cheapest')
     // No run is capped by default, so every step has a cost.
     expect(screen.queryAllByText('—')).toHaveLength(0)
     // GPT-5.6 Sol stops at 922K, so the 1M step shows a dash for that setup.

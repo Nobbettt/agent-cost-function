@@ -27,8 +27,8 @@ const three: Partial<Comparison> = {
 describe('SummaryCards: two setups', () => {
   it('shows each setup, the cheapest and the compared-at size', () => {
     show()
-    expect(stat('Setup A')).toEqual({ value: '$42.55', sub: 'Claude Opus 5.5 · 5 min cache · 6 cache breaks' })
-    expect(stat('Setup B')).toEqual({ value: '$28.92', sub: 'Claude Opus 5.5 · 1 hour cache · 1 cache break' })
+    expect(stat('Setup A')).toEqual({ value: '$42.55', sub: 'Opus 5.5 · 5 min cache · 6 cache breaks' })
+    expect(stat('Setup B')).toEqual({ value: '$28.92', sub: 'Opus 5.5 · 1 hour cache · 1 cache break' })
     expect(stat('Cheapest')).toEqual({ value: 'Setup B', sub: 'saves $13.63 (32%) vs Setup A' })
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
   })
@@ -58,7 +58,7 @@ describe('SummaryCards: two setups', () => {
     'labels the %s cache as "%s"',
     (cache, label) => {
       show({}, [{ ...DEFAULT_SETUPS.A, cache }, DEFAULT_SETUPS.B])
-      expect(stat('Setup A').sub).toBe(`Claude Opus 5.5 · ${label} cache · 6 cache breaks`)
+      expect(stat('Setup A').sub).toBe(`Opus 5.5 · ${label} cache · 6 cache breaks`)
     },
   )
 
@@ -66,7 +66,7 @@ describe('SummaryCards: two setups', () => {
     'says "%s" interruptions as "%s" on the setup card only',
     (interruptions, words) => {
       show({}, [{ ...DEFAULT_SETUPS.A, interruptions }, DEFAULT_SETUPS.B])
-      expect(stat('Setup A').sub).toBe(`Claude Opus 5.5 · 5 min cache · ${words}`)
+      expect(stat('Setup A').sub).toBe(`Opus 5.5 · 5 min cache · ${words}`)
       expect(stat('Cheapest').sub).not.toMatch(/cache break/)
       expect(stat('Compared at').sub).not.toMatch(/cache break/)
     },
@@ -106,7 +106,7 @@ describe('SummaryCards: three and four setups', () => {
     )
     expect(container.querySelector('section.summary')!.getAttribute('data-count')).toBe('6')
     expect(container.querySelectorAll('dl > .stat')).toHaveLength(6)
-    expect(stat('Setup D')).toEqual({ value: '$50.00', sub: 'Claude Opus 5.5 · 24h cache · 1 cache break' })
+    expect(stat('Setup D')).toEqual({ value: '$50.00', sub: 'Opus 5.5 · 24h cache · 1 cache break' })
   })
 
   it('draws each setup\'s key with its own colour variable; C and D are dashed, A and B solid', () => {

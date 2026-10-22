@@ -21,7 +21,7 @@ describe('simulate: known answer', () => {
 })
 
 describe('simulate: parity with the prototype defaults', () => {
-  it('setup A: Claude Opus 5.5, 5m cache', () => {
+  it('setup A: Opus 5.5, 5m cache', () => {
     const { totals } = simulate(PROTOTYPE_SETUPS.A, DEFAULT_SHARED)
     expect(totals.requests).toBe(131)
     expect(usd(totals.read)).toBe('12.80')
@@ -100,7 +100,7 @@ describe('rates: long prompt multipliers', () => {
     expect(long.out).toBeCloseTo(30 / 1e6, 15)
   })
 
-  it('Claude Haiku 5.5 bills 5x above 100K', () => {
+  it('Haiku 5.5 bills 5x above 100K', () => {
     const haiku = MODELS['claude-haiku-5-5']
     expect(rates(haiku, 100000)).toEqual({ in: 0.1 / 1e6, out: 0.5 / 1e6 })
     const long = rates(haiku, 100001)

@@ -172,11 +172,11 @@ describe('renaming a setup: the name is used everywhere', () => {
   it('shows in the stat card, Cheapest card, breakdown, steps header, chart series, and aria labels', () => {
     render(<App />)
     rename('Setup B', 'B', 'Fast cache')
-    expect(stat('Fast cache').sub).toBe('Claude Opus 5.5 · 1 hour cache · 1 cache break')
+    expect(stat('Fast cache').sub).toBe('Opus 5.5 · 1 hour cache · 1 cache break')
     expect(screen.queryByText('Setup B', { selector: '.summary dt' })).toBeNull()
     expect(stat('Cheapest')).toMatchObject({ value: 'Setup C' })
     expect(stat('Cheapest').sub).toBe('saves $14.29 (36%) vs Setup A')
-    expect(screen.getByText('Fast cache: Claude Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
+    expect(screen.getByText('Fast cache: Opus 5.5, 1h, high, reasoning kept')).toBeTruthy()
     const steps = [...document.querySelectorAll('details table th')].map((th) => th.textContent)
     expect(steps).toEqual(['Context', 'Setup A', 'Fast cache', 'Setup C'])
     expect(screen.getByTestId('chart-cum').getAttribute('data-names')).toBe('Setup A|Fast cache|Setup C')

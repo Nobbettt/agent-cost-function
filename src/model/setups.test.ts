@@ -12,8 +12,8 @@ const ids = (list: readonly Setup[]) => list.map((s) => s.id)
 
 describe('summarizeSetup', () => {
   it('summarises a Claude setup', () => {
-    expect(summarizeSetup(A)).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 6 cache breaks')
-    expect(summarizeSetup(B)).toBe('Claude Opus 5.5 · 1 hour cache · high · reasoning kept · 1 cache break')
+    expect(summarizeSetup(A)).toBe('Opus 5.5 · 5 min cache · high · reasoning kept · 6 cache breaks')
+    expect(summarizeSetup(B)).toBe('Opus 5.5 · 1 hour cache · high · reasoning kept · 1 cache break')
   })
 
   it('summarises an OpenAI setup', () => {
@@ -22,17 +22,17 @@ describe('summarizeSetup', () => {
   })
 
   it('says "1 cache break" for exactly one', () => {
-    expect(summarizeSetup({ ...A, interruptions: 1 })).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · 1 cache break')
+    expect(summarizeSetup({ ...A, interruptions: 1 })).toBe('Opus 5.5 · 5 min cache · high · reasoning kept · 1 cache break')
   })
 
   it('says "no cache breaks" for 0', () => {
-    expect(summarizeSetup({ ...A, interruptions: 0 })).toBe('Claude Opus 5.5 · 5 min cache · high · reasoning kept · no cache breaks')
+    expect(summarizeSetup({ ...A, interruptions: 0 })).toBe('Opus 5.5 · 5 min cache · high · reasoning kept · no cache breaks')
   })
 
   it.each([['5m', '5 min'], ['1h', '1 hour'], ['30m', '30 min'], ['24h', '24h'], ['in_memory', 'in_memory']] as const)(
     'uses the short cache label for %s',
     (cache, label) => {
-      expect(modelAndCache({ ...A, cache })).toBe(`Claude Opus 5.5 · ${label} cache`)
+      expect(modelAndCache({ ...A, cache })).toBe(`Opus 5.5 · ${label} cache`)
     },
   )
 })
@@ -187,9 +187,9 @@ describe('cacheBreaks and cardSubline', () => {
   })
 
   it('build the card sub-line from the model, the cache and the breaks, and the summary uses the same wording', () => {
-    expect(cardSubline(A)).toBe('Claude Opus 5.5 · 5 min cache · 6 cache breaks')
-    expect(cardSubline(B)).toBe('Claude Opus 5.5 · 1 hour cache · 1 cache break')
-    expect(cardSubline({ ...A, interruptions: 0 })).toBe('Claude Opus 5.5 · 5 min cache · no cache breaks')
+    expect(cardSubline(A)).toBe('Opus 5.5 · 5 min cache · 6 cache breaks')
+    expect(cardSubline(B)).toBe('Opus 5.5 · 1 hour cache · 1 cache break')
+    expect(cardSubline({ ...A, interruptions: 0 })).toBe('Opus 5.5 · 5 min cache · no cache breaks')
     expect(summarizeSetup(B).endsWith(cacheBreaks(B))).toBe(true)
   })
 })

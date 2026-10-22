@@ -10,7 +10,7 @@ const c = simulate(DEFAULT_SETUPS.C, DEFAULT_SHARED)
 const usd = (v: number) => v.toFixed(2)
 
 describe('default setups: 5 minute and 1 hour cache with breaks, and the 5 minute cache without', () => {
-  it('are both Claude Opus 5.5, differing only in the cache and the interruptions (6 and 1)', () => {
+  it('are both Opus 5.5, differing only in the cache and the interruptions (6 and 1)', () => {
     expect(DEFAULT_SETUPS.A).toEqual({ ...DEFAULT_SETUPS.B, id: 'A', cache: '5m', interruptions: 6 })
     expect(DEFAULT_SETUPS.B.cache).toBe('1h')
     expect([DEFAULT_SETUPS.A.interruptions, DEFAULT_SETUPS.B.interruptions, DEFAULT_SETUPS.C.interruptions]).toEqual([6, 1, 0])
