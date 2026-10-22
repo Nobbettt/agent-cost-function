@@ -81,3 +81,106 @@ describe('NumberField in thousands (scale 1000)', () => {
     expect(onChange).toHaveBeenLastCalledWith(3700)
   })
 })
+
+describe('NumberField minus and plus buttons', () => {
+  const inc = () => screen.getByRole('button', { name: 'Increase Amount' }) as HTMLButtonElement
+  const dec = () => screen.getByRole('button', { name: 'Decrease Amount' }) as HTMLButtonElement
+  const BIG = { ...K, min: 10000, max: 1000000, step: 10000, clickStep: 50000, value: 995000 }
+
+  it('has two type=button controls labelled with the field, showing the minus sign and plus', () => {
+    setup()
+    expect([inc().type, dec().type, inc().textContent, dec().textContent]).toEqual(['button', 'button', '+', '\u2212'])
+  })
+
+  it('without clickStep it moves by step, snapped to its grid', () => {
+    const { onChange, input } = setup({ value: 700 })
+    fireEvent.click(inc())
+    expect(onChange).toHaveBeenLastCalledWith(1000)
+    expect(input.value).toBe('1000')
+  })
+
+  it('snaps up to the next multiple of the click step, and down to the one below', () => {
+    const { onChange, input } = setup({ ...K, min: 0, step: 100, clickStep: 500, value: 300 })
+    fireEvent.click(inc())
+    expect(onChange).toHaveBeenLastCalledWith(500)
+    expect(input.value).toBe('0.5')
+  })
+
+  it('snaps down from off-grid and from on-grid values', () => {
+    const { onChange } = setup({ ...K, min: 0, step: 100, clickStep: 500, value: 700 })
+    fireEvent.click(dec())
+    expect(onChange).toHaveBeenLastCalledWith(500)
+  })
+
+  it('moves by one grid step from a value on the grid (1000K minus is 950K, shown in K)', () => {
+    const { onChange, input } = setup({ ...BIG, value: 1000000 })
+    fireEvent.click(dec())
+    expect(onChange).toHaveBeenLastCalledWith(950000)
+    expect(input.value).toBe('950')
+  })
+
+  it('clamps to min and max (50K minus lands on the 10K minimum)', () => {
+    const { onChange, input } = setup({ ...BIG, value: 50000 })
+    fireEvent.click(dec())
+    expect(onChange).toHaveBeenLastCalledWith(10000)
+    expect(input.value).toBe('10')
+  })
+
+  it('clamps up to max too', () => {
+    const { onChange } = setup({ ...BIG, value: 980000 })
+    fireEvent.click(inc())
+    expect(onChange).toHaveBeenLastCalledWith(1000000)
+  })
+
+  it('carries no float noise with 0.1K steps', () => {
+    const { onChange, input } = setup({ ...K, min: 0, step: 100, clickStep: 100, value: 300 })
+    fireEvent.click(inc())
+    expect(onChange).toHaveBeenLastCalledWith(400)
+    expect(input.value).toBe('0.4')
+  })
+
+  it('moves a half-hour field up by 0.5 from the 0.25 minimum, and down from 2', () => {
+    const hours = { min: 0.25, max: 168, step: 0.25, clickStep: 0.5, fallback: 2 }
+    const { onChange, input } = setup({ ...hours, value: 0.25 })
+    fireEvent.click(inc())
+    expect(onChange).toHaveBeenLastCalledWith(0.5)
+    expect(input.value).toBe('0.5')
+  })
+
+  it('moves a half-hour field down by 0.5 from 2', () => {
+    const { onChange, input } = setup({ min: 0.25, max: 168, step: 0.25, clickStep: 0.5, fallback: 2, value: 2 })
+    fireEvent.click(dec())
+    expect(onChange).toHaveBeenLastCalledWith(1.5)
+    expect(input.value).toBe('1.5')
+  })
+
+  it('moves a half-hour field off the grid: 2.25 up is 2.5, down is 2', () => {
+    const hours = { min: 0.25, max: 168, step: 0.25, clickStep: 0.5, fallback: 2 }
+    const { onChange } = setup({ ...hours, value: 2.25 })
+    fireEvent.click(inc())
+    expect(onChange).toHaveBeenLastCalledWith(2.5)
+    fireEvent.click(dec())
+    expect(onChange).toHaveBeenLastCalledWith(2)
+  })
+
+  it('disables minus at the minimum and plus at the maximum', () => {
+    setup({ value: 500 })
+    expect([dec().disabled, inc().disabled]).toEqual([true, false])
+  })
+
+  it('disables plus at the maximum', () => {
+    setup({ value: 200000 })
+    expect([dec().disabled, inc().disabled]).toEqual([false, true])
+  })
+
+  it('typing still works after clicking, and an empty input falls back', () => {
+    const { onChange, input } = setup()
+    fireEvent.click(inc())
+    expect(input.value).toBe('5500')
+    fireEvent.change(input, { target: { value: '700' } })
+    expect(onChange).toHaveBeenLastCalledWith(700)
+    expect(input.value).toBe('700')
+    fireEvent.change(input, { target: { value: '' } })
+    expect(onChange).toHaveBeenLastCalledWith(5000)
+  })
+})

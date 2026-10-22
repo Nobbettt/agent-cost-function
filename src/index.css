@@ -83,6 +83,16 @@ label { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); }
 .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); cursor: pointer; }
 .check input { width: auto; flex: none; margin: 0; padding: 0; }
 select, input { font: inherit; color: var(--ink); background: var(--page); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 100%; min-width: 0; }
+/* Number input with its "-" and "+" buttons, one joined control; the native spinners are hidden so there is one set. */
+.stepper { display: flex; align-items: stretch; min-width: 0; }
+.stepper input { flex: 1; border-radius: 0; text-align: center; appearance: textfield; -moz-appearance: textfield; }
+.stepper input::-webkit-inner-spin-button, .stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.step-btn { flex: none; width: 32px; min-height: 28px; padding: 0; font: inherit; font-size: 16px; line-height: 1; color: var(--ink); background: var(--surface); border: 1px solid var(--border); cursor: pointer; }
+.step-btn:first-child { border-radius: 6px 0 0 6px; border-right: 0; }
+.step-btn:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
+.step-btn:hover:not(:disabled) { background: var(--grid); }
+.step-btn:disabled { color: var(--muted); cursor: not-allowed; opacity: 0.6; }
+.step-btn:focus-visible { position: relative; outline: 2px solid var(--series-a); outline-offset: -2px; }
 .toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
 .toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .toggle label { display: block; padding: 6px 14px; cursor: pointer; color: var(--ink-2); }

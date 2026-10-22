@@ -119,6 +119,17 @@ describe('App', () => {
     }
   })
 
+  it('the + button on Cache breaking interruptions adds one and the summary follows', () => {
+    render(<App />)
+    const a = setupBox('A')
+    fireEvent.click(a.getByRole('button', { name: 'Increase Cache breaking interruptions' }))
+    expect((a.getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('7')
+    expect(stat('Setup A').sub).toBe('Opus 5.5 · 5 min cache · 7 cache breaks')
+    fireEvent.click(a.getByRole('button', { name: 'Decrease Cache breaking interruptions' }))
+    fireEvent.click(a.getByRole('button', { name: 'Decrease Cache breaking interruptions' }))
+    expect(stat('Setup A').sub).toBe('Opus 5.5 · 5 min cache · 5 cache breaks')
+  })
+
   it('switching provider selects its default model and resets cache, effort and reasoning', () => {
     render(<App />)
     const a = setupBox('A')
