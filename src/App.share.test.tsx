@@ -100,7 +100,7 @@ describe('loading from a link', () => {
     at('/?v=9&a=claude-opus-5-5,1h,low,kept,2&b=gpt-5.5,24h,low,dropped,1&cur=SEK')
     render(<App />)
     expect(screen.getByText('This link was made with a newer version of the calculator; showing the defaults.').getAttribute('role')).toBe('status')
-    expect(groups()).toEqual(['A', 'B', 'C'])
+    expect(groups()).toEqual(['A', 'B', 'C', 'D'])
     expect(stat('Setup A').sub).toBe('Opus 5.5 · 5 min cache · 6 cache breaks')
     expect((screen.getByLabelText('Currency') as HTMLSelectElement).value).toBe('USD')
   })
@@ -136,12 +136,13 @@ describe('the address bar follows the state', () => {
     expect(spy).not.toHaveBeenCalled()
     act(() => { vi.advanceTimersByTime(1) })
     expect(spy).toHaveBeenCalledTimes(1)
-    expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,2&c=claude-opus-5-5,5m,high,kept,0')
+    expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,2&c=claude-opus-5-5,5m,high,kept,0&d=claude-opus-5-5,1h,high,kept,0')
     expect(window.history.length).toBe(length)
   })
 
   it('adding a setup, changing shared numbers and the currency all show up, and undoing it all is clean again', () => {
     render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Setup D' }))
     fireEvent.click(screen.getByRole('button', { name: '+ Add setup' }))
     fireEvent.change(screen.getByLabelText('Added per request (K tokens)'), { target: { value: '7' } })
     act(() => { vi.advanceTimersByTime(300) })
@@ -151,17 +152,18 @@ describe('the address bar follows the state', () => {
     expect(query.get('d')).toBe('claude-opus-5-5,5m,high,kept,0')
     // The link stays in raw tokens: 7 (K) typed is 7000 tokens.
     expect(query.get('adv')).toBe('1000000,20000,7000,500,0,300,1000,2500,5000,10000')
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Setup D' }))
+    // Back to the default four: the new D is a copy of C, so put it on the 1 hour cache again.
+    fireEvent.change(box('D').getByLabelText('Cache lifetime'), { target: { value: '1h' } })
     fireEvent.change(screen.getByLabelText('Added per request (K tokens)'), { target: { value: '5' } })
     act(() => { vi.advanceTimersByTime(300) })
     expect(window.location.search).toBe('')
   })
 
-  it('removing a default setup leaves a link that decodes to exactly the two that remain', () => {
+  it('removing a default setup leaves a link that decodes to exactly the three that remain', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Remove Setup C' }))
     act(() => { vi.advanceTimersByTime(300) })
-    expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,1')
+    expect(window.location.search).toBe('?v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,1&d=claude-opus-5-5,1h,high,kept,0')
   })
 
   it('the share button copies the same link as the address bar', async () => {

@@ -34,7 +34,7 @@ describe('encodeState', () => {
     expect(roundTrip(state([A, B])).setups).toEqual([A, B])
   })
 
-  it('the three default setups encode to nothing, and removing or changing one does not', () => {
+  it('the four default setups encode to nothing, and removing or changing one does not', () => {
     expect(encodeState(state(DEFAULT_SETUP_LIST))).toBe('')
     expect(encodeState(state([A, B, { ...DEFAULT_SETUPS.C, interruptions: 1 }]))).not.toBe('')
     expect(encodeState(state([B, DEFAULT_SETUPS.C]))).not.toBe('')
@@ -47,7 +47,7 @@ describe('encodeState', () => {
   it('adds adv only when the shared numbers differ, in the documented order', () => {
     const shared: Shared = { ...DEFAULT_SHARED, growth: 7000, thinking: { ...DEFAULT_SHARED.thinking, max: 12000 } }
     expect(encodeState(state(DEFAULT_SETUP_LIST, { shared }))).toBe(
-      'v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,1&c=claude-opus-5-5,5m,high,kept,0&adv=1000000,20000,7000,500,0,300,1000,2500,5000,12000',
+      'v=1&a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,1&c=claude-opus-5-5,5m,high,kept,0&d=claude-opus-5-5,1h,high,kept,0&adv=1000000,20000,7000,500,0,300,1000,2500,5000,12000',
     )
   })
 
@@ -63,6 +63,45 @@ describe('encodeState', () => {
     expect(q).toContain('adv=1000000,20000,5000,700,')
     // A value that rounds to the default is not a difference at all.
     expect(encodeState(state(DEFAULT_SETUP_LIST, { shared: { ...DEFAULT_SHARED, visibleOut: 500.4 } }))).toBe('')
+  })
+})
+
+describe('links made before the fourth default setup (D) existed', () => {
+  // Links encoded by the previous app, when the defaults were A, B and C. Every one of them spells its setups out
+  // (only the bare "/" was ever empty), so a fourth default must not appear in them.
+  const OLD_ABC = 'a=claude-opus-5-5,5m,high,kept,6&b=claude-opus-5-5,1h,high,kept,1&c=claude-opus-5-5,5m,high,kept,0'
+  const OLD_DEFAULTS = [A, B, DEFAULT_SETUPS.C]
+
+  it('the old default three with another currency decode to exactly A, B and C, and encode back unchanged', () => {
+    const link = `v=1&${OLD_ABC}&cur=SEK`
+    const d = decodeState(`?${link}`)
+    expect(d.setups).toEqual(OLD_DEFAULTS)
+    expect(d.currency).toBe('SEK')
+    expect(encodeState({ setups: d.setups, shared: d.shared, currency: 'SEK' })).toBe(link)
+  })
+
+  it('the old default three with changed shared numbers decode to three setups and round-trip', () => {
+    const link = `v=1&${OLD_ABC}&adv=1000000,20000,7000,500,0,300,1000,2500,5000,12000`
+    const d = decodeState(`?${link}`)
+    expect(d.setups).toEqual(OLD_DEFAULTS)
+    expect(d.shared.growth).toBe(7000)
+    expect(encodeState({ setups: d.setups, shared: d.shared, currency: 'USD' })).toBe(link)
+  })
+
+  it('a custom two-setup link keeps exactly its setups', () => {
+    const link = 'v=1&a=claude-opus-5-5,5m,high,kept,6&c=gpt-5.6-sol,30m,medium,dropped,3'
+    const d = decodeState(`?${link}`)
+    expect(d.setups.map((x) => x.id)).toEqual(['A', 'C'])
+    expect(encodeState({ setups: d.setups, shared: d.shared, currency: 'USD' })).toBe(link)
+  })
+
+  it('a link with one valid setup is still padded with the first free default, B, not with D', () => {
+    expect(decodeState('?v=1&a=claude-opus-5-5,5m,high,kept,6').setups.map((x) => x.id)).toEqual(['A', 'B'])
+    expect(decodeState('?v=1&d=claude-opus-5-5,5m,high,kept,6').setups.map((x) => x.id)).toEqual(['A', 'D'])
+  })
+
+  it('the three old defaults are not the default state any more, so a state of exactly them is written out', () => {
+    expect(encodeState(state(OLD_DEFAULTS))).toBe(`v=1&${OLD_ABC}`)
   })
 })
 

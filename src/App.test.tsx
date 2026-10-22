@@ -12,7 +12,7 @@ import type { SetupId } from './model/types'
 vi.mock('./components/CostChart', async () => ({ CostChart: (await import('./test-chart-mock')).CostChartMock }))
 
 const setupBox = (id: SetupId) => within(screen.getByRole('group', { name: `Setup ${id}` }))
-const DEFAULT_SUMMARY = 'Setup A$40.22Opus 5.5 · 5 min cache · 6 cache breaksSetup B$32.76Opus 5.5 · 1 hour cache · 1 cache breakSetup C$25.93Opus 5.5 · 5 min cache · no cache breaksCheapestSetup Csaves $14.29 (36%) vs Setup ACompared at995K tokenscontext size'
+const DEFAULT_SUMMARY = 'Setup A$40.22Opus 5.5 · 5 min cache · 6 cache breaksSetup B$32.76Opus 5.5 · 1 hour cache · 1 cache breakSetup C$25.93Opus 5.5 · 5 min cache · no cache breaksSetup D$28.92Opus 5.5 · 1 hour cache · no cache breaksCheapestSetup Csaves $14.29 (36%) vs Setup ACompared at995K tokenscontext size'
 
 describe('App', () => {
   it('renders the default summary cards', () => {
@@ -20,18 +20,19 @@ describe('App', () => {
     expect(stat('Setup A')).toEqual({ value: '$40.22', sub: 'Opus 5.5 · 5 min cache · 6 cache breaks' })
     expect(stat('Setup B')).toEqual({ value: '$32.76', sub: 'Opus 5.5 · 1 hour cache · 1 cache break' })
     expect(stat('Setup C')).toEqual({ value: '$25.93', sub: 'Opus 5.5 · 5 min cache · no cache breaks' })
+    expect(stat('Setup D')).toEqual({ value: '$28.92', sub: 'Opus 5.5 · 1 hour cache · no cache breaks' })
     expect(stat('Cheapest')).toEqual({ value: 'Setup C', sub: 'saves $14.29 (36%) vs Setup A' })
     expect(stat('Compared at')).toEqual({ value: '995K tokens', sub: 'context size' })
     expect(summaryText().replace(/ /g, '')).toBe(DEFAULT_SUMMARY.replace(/ /g, ''))
   })
 
-  it('is a Summary region of five definition-list cards, with series keys on the three setups only', () => {
+  it('is a Summary region of six definition-list cards, with series keys on the four setups only', () => {
     render(<App />)
     const summary = screen.getByRole('region', { name: 'Summary' })
-    expect(summary.querySelectorAll('dl > .stat')).toHaveLength(5)
-    expect(summary.getAttribute('data-count')).toBe('5')
-    expect(summary.querySelectorAll('dt .key')).toHaveLength(3)
-    expect([...summary.querySelectorAll('dt svg.key line')].map((l) => l.getAttribute('stroke'))).toEqual(['var(--series-a)', 'var(--series-b)', 'var(--series-c)'])
+    expect(summary.querySelectorAll('dl > .stat')).toHaveLength(6)
+    expect(summary.getAttribute('data-count')).toBe('6')
+    expect(summary.querySelectorAll('dt .key')).toHaveLength(4)
+    expect([...summary.querySelectorAll('dt svg.key line')].map((l) => l.getAttribute('stroke'))).toEqual(['var(--series-a)', 'var(--series-b)', 'var(--series-c)', 'var(--series-d)'])
     expect(document.getElementById('headline')).toBeNull()
   })
 
@@ -85,12 +86,12 @@ describe('App', () => {
     expect(results.contains(screen.getByText('Cumulative cost at regular steps (table view)'))).toBe(false)
   })
 
-  it('feeds both charts with the three runs', () => {
+  it('feeds both charts with the four runs', () => {
     render(<App />)
     for (const metric of ['cum', 'req']) {
       const chart = screen.getByTestId(`chart-${metric}`)
-      expect(chart.getAttribute('data-last')).toBe('995000,995000,995000')
-      expect(chart.getAttribute('data-dashes')).toBe('solid,solid,6 3')
+      expect(chart.getAttribute('data-last')).toBe('995000,995000,995000,995000')
+      expect(chart.getAttribute('data-dashes')).toBe('solid,solid,6 3,2 3')
       expect(chart.getAttribute('data-xmax')).toBe('1000000')
     }
   })
@@ -98,9 +99,9 @@ describe('App', () => {
   it('gives each setup its own radiogroup of real radio inputs', () => {
     render(<App />)
     const groups = screen.getAllByRole('radiogroup', { hidden: true }).filter((g) => g.getAttribute('aria-label')?.startsWith('Provider for'))
-    expect(groups).toHaveLength(3)
+    expect(groups).toHaveLength(4)
     const names = groups.map((g) => new Set(within(g).getAllByRole('radio', { hidden: true }).map((r) => (r as HTMLInputElement).name)))
-    expect(names.map((n) => [...n])).toEqual([['provider-A'], ['provider-B'], ['provider-C']])
+    expect(names.map((n) => [...n])).toEqual([['provider-A'], ['provider-B'], ['provider-C'], ['provider-D']])
     expect((setupBox('A').getByLabelText('Claude') as HTMLInputElement).checked).toBe(true)
     expect((setupBox('B').getByLabelText('Claude') as HTMLInputElement).checked).toBe(true)
     expect((setupBox('B').getByLabelText('OpenAI') as HTMLInputElement).checked).toBe(false)
@@ -147,14 +148,14 @@ describe('App', () => {
 
   it('has four providers in each setup: Claude, OpenAI, xAI and Google, with unique radio names per setup', () => {
     render(<App />)
-    for (const id of ['A', 'B', 'C'] as const) {
+    for (const id of ['A', 'B', 'C', 'D'] as const) {
       const group = setupBox(id).getByRole('radiogroup', { name: `Provider for Setup ${id}`, hidden: true })
       const radios = within(group).getAllByRole('radio', { hidden: true }) as HTMLInputElement[]
       expect(radios.map((r) => r.value)).toEqual(['claude', 'openai', 'xai', 'google'])
       expect([...group.querySelectorAll('label')].map((l) => l.textContent)).toEqual(['Claude', 'OpenAI', 'xAI', 'Google'])
       expect(new Set(radios.map((r) => r.name))).toEqual(new Set([`provider-${id}`]))
     }
-    expect(new Set([...document.querySelectorAll<HTMLInputElement>('input[type=radio][name^="provider-"]')].map((r) => r.id)).size).toBe(12)
+    expect(new Set([...document.querySelectorAll<HTMLInputElement>('input[type=radio][name^="provider-"]')].map((r) => r.id)).size).toBe(16)
   })
 
   it('switching a setup to xAI selects Grok 4.7 with the best-effort cache, high effort and kept reasoning, and the card says so', () => {
@@ -298,11 +299,12 @@ describe('App', () => {
     const shared = { ...DEFAULT_SHARED, visibleOut: 1000 }
     const expectedA = DEFAULT_SETUP_LIST.map((s) => simulate(s, shared).totals.total)
     fireEvent.change(screen.getByLabelText('Output per request (K tokens)'), { target: { value: '1' } })
-    expect([stat('Setup A').value, stat('Setup B').value, stat('Setup C').value]).toEqual(expectedA.map((v) => `$${v.toFixed(2)}`))
+    expect([stat('Setup A').value, stat('Setup B').value, stat('Setup C').value, stat('Setup D').value]).toEqual(expectedA.map((v) => `$${v.toFixed(2)}`))
     // 0.5 is the default again.
     fireEvent.change(screen.getByLabelText('Output per request (K tokens)'), { target: { value: '0.5' } })
     expect(stat('Setup A').value).toBe('$40.22')
     expect(stat('Setup C').value).toBe('$25.93')
+    expect(stat('Setup D').value).toBe('$28.92')
   })
 
   it('accepts decimals, rounds to whole tokens and clamps in tokens', () => {

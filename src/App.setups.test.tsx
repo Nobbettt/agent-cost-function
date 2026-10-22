@@ -14,36 +14,45 @@ const toggle = (id: SetupId) => document.getElementById(`setup-${id}-toggle`) as
 const body = (id: SetupId) => document.getElementById(`setup-${id}-body`)!
 const removeBtn = (id: SetupId) => screen.queryByRole('button', { name: `Remove Setup ${id}` })
 const chart = () => screen.getByTestId('chart-cum')
-// The page starts with three setups; most scenarios here start from two, so drop the default C first.
+// The page starts with four setups; most scenarios here start from two, so drop the defaults D and C first.
 function renderTwo() {
   const result = render(<App />)
+  fireEvent.click(removeBtn('D')!)
   fireEvent.click(removeBtn('C')!)
   return result
 }
 
 describe('adding setups', () => {
-  it('starts with the three default setups, with remove buttons and an enabled Add button', () => {
+  it('starts with the four default setups, with remove buttons and the Add button disabled and explained', () => {
     render(<App />)
-    expect(groups()).toEqual(['A', 'B', 'C'])
-    for (const id of ['A', 'B', 'C'] as const) expect(removeBtn(id)).toBeTruthy()
-    expect(addBtn().disabled).toBe(false)
+    expect(groups()).toEqual(['A', 'B', 'C', 'D'])
+    for (const id of ['A', 'B', 'C', 'D'] as const) expect(removeBtn(id)).toBeTruthy()
+    expect(addBtn().disabled).toBe(true)
+    expect(screen.getByText('Up to 4 setups')).toBeTruthy()
+    fireEvent.click(addBtn())
+    expect(groups()).toEqual(['A', 'B', 'C', 'D'])
   })
 
-  it('the default C is Opus 5.5 on the 5 minute cache with no interruptions; one more can be added', () => {
+  it('removing a default setup frees the Add button again', () => {
+    render(<App />)
+    fireEvent.click(removeBtn('D')!)
+    expect(addBtn().disabled).toBe(false)
+    expect(screen.queryByText('Up to 4 setups')).toBeNull()
+  })
+
+  it('the default C is Opus 5.5 on the 5 minute cache with no interruptions, and D is the same on the 1 hour cache', () => {
     render(<App />)
     expect((box('C').getByLabelText('Cache lifetime') as HTMLSelectElement).value).toBe('5m')
     expect((box('C').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('0')
     expect(toggle('A').getAttribute('aria-expanded')).toBe('true')
     expect(toggle('B').getAttribute('aria-expanded')).toBe('false')
     expect(toggle('C').getAttribute('aria-expanded')).toBe('false')
-    add()
-    expect(groups()).toEqual(['A', 'B', 'C', 'D'])
-    // The copy is of C, the last setup.
+    expect((box('D').getByLabelText('Cache lifetime') as HTMLSelectElement).value).toBe('1h')
     expect((box('D').getByLabelText('Cache breaking interruptions') as HTMLInputElement).value).toBe('0')
-    expect(addBtn().disabled).toBe(true)
+    expect(toggle('D').getAttribute('aria-expanded')).toBe('false')
   })
 
-  it('removing C from the defaults leaves A and B, and the remove buttons go away', () => {
+  it('removing D and C from the defaults leaves A and B, and the remove buttons go away', () => {
     renderTwo()
     expect(groups()).toEqual(['A', 'B'])
     expect(removeBtn('A')).toBeNull()

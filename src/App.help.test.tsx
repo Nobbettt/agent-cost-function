@@ -66,7 +66,7 @@ describe('field help tips', () => {
 
   it('has no tips beyond those fields', () => {
     render(<App />)
-    expect(document.querySelectorAll('.info-btn')).toHaveLength(3 * SETUP_HELP.length + ADVANCED_HELP.length + 1)
+    expect(document.querySelectorAll('.info-btn')).toHaveLength(4 * SETUP_HELP.length + ADVANCED_HELP.length + 1)
   })
 
   it('labels still focus their inputs, and the tips are outside the labels', () => {

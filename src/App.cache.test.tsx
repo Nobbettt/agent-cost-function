@@ -189,7 +189,7 @@ describe("Google's explicit cache", () => {
     const rows = [...document.querySelectorAll('table')[0].querySelectorAll('tbody tr')].map((r) => [...r.children].map((c) => c.textContent))
     const col = headers().indexOf('Explicit cache storage')
     // 20K base tokens, 2 hours, $4.5 per million tokens per hour: $0.18.
-    expect(rows.map((r) => r[col])).toEqual(['—', '—', '$0.18'])
+    expect(rows.map((r) => r[col])).toEqual(['—', '—', '$0.18', '—'])
     expect(rows.every((r) => r.length === headers().length)).toBe(true)
     fireEvent.click(labelled('Explicit cache for prompt + tools'))
     expect(headers()).not.toContain('Explicit cache storage')

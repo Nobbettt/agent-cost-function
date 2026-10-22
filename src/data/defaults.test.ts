@@ -7,19 +7,23 @@ import { MODELS } from './pricing'
 const a = simulate(DEFAULT_SETUPS.A, DEFAULT_SHARED)
 const b = simulate(DEFAULT_SETUPS.B, DEFAULT_SHARED)
 const c = simulate(DEFAULT_SETUPS.C, DEFAULT_SHARED)
+const d = simulate(DEFAULT_SETUPS.D, DEFAULT_SHARED)
 const usd = (v: number) => v.toFixed(2)
 
-describe('default setups: 5 minute and 1 hour cache with breaks, and the 5 minute cache without', () => {
-  it('are both Opus 5.5, differing only in the cache and the interruptions (6 and 1)', () => {
+describe('default setups: 5 minute and 1 hour cache with breaks, and each cache without', () => {
+  it('are all Opus 5.5, differing only in the cache and the interruptions (6, 1, 0 and 0)', () => {
     expect(DEFAULT_SETUPS.A).toEqual({ ...DEFAULT_SETUPS.B, id: 'A', cache: '5m', interruptions: 6 })
     expect(DEFAULT_SETUPS.B.cache).toBe('1h')
     expect([DEFAULT_SETUPS.A.interruptions, DEFAULT_SETUPS.B.interruptions, DEFAULT_SETUPS.C.interruptions]).toEqual([6, 1, 0])
+    expect(DEFAULT_SETUPS.D.interruptions).toBe(0)
+    expect(DEFAULT_SETUPS.D.cache).toBe('1h')
     expect('pause' in DEFAULT_SETUPS.A).toBe(false)
   })
 
-  it('C is A without any interruptions, and the list is A, B, C', () => {
+  it('C is A without any interruptions, D is B without any, and the list is A, B, C, D', () => {
     expect(DEFAULT_SETUPS.C).toEqual({ ...DEFAULT_SETUPS.A, id: 'C', interruptions: 0 })
-    expect(DEFAULT_SETUP_LIST.map((x) => x.id)).toEqual(['A', 'B', 'C'])
+    expect(DEFAULT_SETUPS.D).toEqual({ ...DEFAULT_SETUPS.B, id: 'D', interruptions: 0 })
+    expect(DEFAULT_SETUP_LIST.map((x) => x.id)).toEqual(['A', 'B', 'C', 'D'])
   })
 
   it('reach the same request count', () => {
@@ -74,10 +78,22 @@ describe('default setups: 5 minute and 1 hour cache with breaks, and the 5 minut
     expect(c.totals.read).toBeGreaterThan(b.totals.read)
   })
 
-  it('compares at 995K: A $40.22, B $32.76, C $25.93; C is cheapest and saves $14.29 (36%) against A', () => {
-    const cmp = compare([{ id: 'A', run: a }, { id: 'B', run: b }, { id: 'C', run: c }])
+  it('D totals: 131 requests, reads $13.10, writes $7.96, no re-writes, output $7.86, total $28.92, no misses', () => {
+    expect(d.totals.requests).toBe(131)
+    expect(['read', 'write', 'rewrite', 'output', 'total'].map((k) => usd(d.totals[k as keyof typeof d.totals]))).toEqual(['13.10', '7.96', '0.00', '7.86', '28.92'])
+    expect(d.points.some((p) => p.miss)).toBe(false)
+  })
+
+  it('D is dearer than C only by its 2x cache writes, and cheaper than B, which pays one re-write', () => {
+    expect(d.totals.write).toBeCloseTo(c.totals.write * (2 / 1.25), 9)
+    expect(d.totals.total).toBeGreaterThan(c.totals.total)
+    expect(d.totals.total).toBeLessThan(b.totals.total)
+  })
+
+  it('compares at 995K: A $40.22, B $32.76, C $25.93, D $28.92; C is cheapest and saves $14.29 (36%) against A', () => {
+    const cmp = compare([{ id: 'A', run: a }, { id: 'B', run: b }, { id: 'C', run: c }, { id: 'D', run: d }])
     expect(cmp.common).toBe(995000)
-    expect(cmp.values.map((v) => usd(v.value))).toEqual(['40.22', '32.76', '25.93'])
+    expect(cmp.values.map((v) => usd(v.value))).toEqual(['40.22', '32.76', '25.93', '28.92'])
     expect(cmp).toMatchObject({ cheapest: 'C', mostExpensive: 'A', percent: 36, capped: false })
     expect(usd(cmp.saving)).toBe('14.29')
   })
