@@ -307,6 +307,22 @@ footer nav { display: inline; }
 .map-dot { fill: var(--ink); pointer-events: none; }
 .map-tip { position: absolute; z-index: 5; width: max-content; max-width: 240px; padding: 8px 10px; font-size: 12.5px; line-height: 1.4; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); pointer-events: none; }
 .map-tip-title { font-weight: 600; margin-bottom: 2px; }
+/* The keep-alive page has no setup colour: its provider toggle's focus ring uses the first series colour. */
+.be-settings { --series: var(--series-a); }
+/* A range slider with its value beside it; the global input box styles are taken off. */
+.slider { display: flex; align-items: center; gap: 10px; }
+.slider input { flex: 1; padding: 0; border: 0; background: none; accent-color: var(--series-a); }
+.slider output { flex: none; min-width: 4ch; text-align: right; font-variant-numeric: tabular-nums; }
+/* Keep-alive page: the advanced section is flat (a divider, no box), so its fields sit on the same columns as the
+   settings above, each stepper right under its label (the calculator's rule drops steppers to the column foot). */
+.setup.advanced.ka-advanced { border: 0; border-top: 1px solid var(--grid); border-radius: 0; background: none; padding-top: 4px; }
+.ka-advanced .setup-head { padding: 0; }
+.ka-advanced .setup-toggle { padding: 8px 0; }
+.ka-advanced .setup-body { padding: 0; }
+.setup.advanced.ka-advanced .setup-body .fields { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.setup.advanced.ka-advanced .setup-body .stepper { margin-top: 0; }
+.story { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.story code { font-size: 13px; }
 .chart-note { margin: 0 0 8px; font-size: 12.5px; color: var(--ink-2); }
 
 /* Advanced settings hold only number steppers: fixed compact controls in content-sized columns with roomy gaps.

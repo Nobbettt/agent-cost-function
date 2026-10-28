@@ -84,3 +84,12 @@ export function truncateLabel(text: string, max: number): string {
 
 /** `n / scale` as input text: at most 3 decimals, trailing zeros trimmed, no float noise (0.3, not 0.30000000000000004). */
 export const displayValue = (n: number, scale = 1): string => String(+(n / scale).toFixed(3))
+
+/** Minutes as a short duration: "45 min", "1 h 41 min", "38 h", and from two days on "2 d 3 h". */
+export function fmtDuration(minutes: number): string {
+  const m = Math.round(minutes)
+  if (m < 60) return `${m} min`
+  if (m < 48 * 60) return m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`
+  const h = Math.round(m / 60)
+  return h % 24 ? `${Math.floor(h / 24)} d ${h % 24} h` : `${h / 24} d`
+}

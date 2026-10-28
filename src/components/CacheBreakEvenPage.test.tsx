@@ -263,7 +263,7 @@ describe('Claude Cache Break-even page: navigation and currency', () => {
     expect(nav.getByRole('link', { name: 'Explore' }).getAttribute('aria-current')).toBeNull()
     const footer = within(within(screen.getByRole('contentinfo')).getByRole('navigation', { name: 'Site' }))
     expect(footer.getByText('Claude Cache Break-even').getAttribute('aria-current')).toBe('page')
-    expect(footer.getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/', '/how-it-works/', '/sources/'])
+    expect(footer.getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/', '/cache-keep-alive/', '/how-it-works/', '/sources/'])
   })
 
   it('from 768px up the currency select is in the navbar; below, it is the first field of the settings card', () => {

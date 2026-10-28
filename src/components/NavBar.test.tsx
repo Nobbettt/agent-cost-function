@@ -20,6 +20,7 @@ describe('NavBar', () => {
       ['Agent Cost FunctionACF', '/'],
       ['Explore', '/'],
       ['Claude Cache Break-even', '/cache-break-even/'],
+      ['Cache Keep-alive', '/cache-keep-alive/'],
     ])
     expect(bar().queryByRole('button')).toBeNull()
   })
@@ -35,14 +36,14 @@ describe('NavBar', () => {
     expect(bar().queryByRole('button')).toBeNull()
   })
 
-  it('has at most one current marker: Explore on the calculator, the break-even link on its page, none elsewhere; no How it is calculated or Sources links', () => {
-    const current = { calculator: 'Explore', 'cache-break-even': 'Claude Cache Break-even', 'how-it-works': null, sources: null } as const
-    for (const page of ['calculator', 'cache-break-even', 'how-it-works', 'sources'] as const) {
+  it('has at most one current marker: Explore on the calculator, each tool link on its own page, none elsewhere; no How it is calculated or Sources links', () => {
+    const current = { calculator: 'Explore', 'cache-break-even': 'Claude Cache Break-even', 'cache-keep-alive': 'Cache Keep-alive', 'how-it-works': null, sources: null } as const
+    for (const page of ['calculator', 'cache-break-even', 'cache-keep-alive', 'how-it-works', 'sources'] as const) {
       const { unmount } = render(<NavBar page={page} />)
       const marked = [...document.querySelectorAll('.navbar [aria-current]')].map((a) => a.textContent)
       expect(marked).toEqual(current[page] ? [current[page]] : [])
       expect(bar().queryByText(/how it is calculated|how it works|sources/i)).toBeNull()
-      expect([...document.querySelectorAll('.navbar a')].map((a) => a.getAttribute('href'))).toEqual(['/', '/', '/cache-break-even/'])
+      expect([...document.querySelectorAll('.navbar a')].map((a) => a.getAttribute('href'))).toEqual(['/', '/', '/cache-break-even/', '/cache-keep-alive/'])
       unmount()
     }
   })
@@ -55,6 +56,7 @@ describe('NavBar', () => {
     mockMatchMedia(false)
     render(<NavBar page="calculator" />)
     expect(bar().getByRole('link', { name: 'Cache break-even' }).textContent).toBe('Cache break-even')
+    expect(bar().getByRole('link', { name: 'Keep-alive' }).textContent).toBe('Keep-alive')
     expect(bar().queryByRole('link', { name: 'Claude Cache Break-even' })).toBeNull()
     expect(document.querySelector('.navbar a[aria-label]')).toBeNull()
   })

@@ -16,6 +16,12 @@ export const FIELD_HELP = {
   pausesShort: 'Pauses longer than 5 minutes but no longer than an hour. Each one makes the 5-minute cache write the whole context again; the 1-hour cache survives it.',
   pausesLong: 'Pauses longer than an hour. Both caches expire, so both write the whole context again; the 1-hour cache pays 2× input for it.',
   interruptionsShown: 'How many pauses of 5–60 min the chart covers. It is extended to fit your pauses if they are more.',
+  keepAliveProvider: 'Only providers whose cache has a known lifetime that every read restarts. xAI and Google cache best-effort, so a timed ping cannot keep them warm.',
+  context: 'How large the conversation is when you step away: everything a ping reads from the cache, and everything a cold message writes again. Goes up to the model\'s maximum input.',
+  pingInterval: 'Minutes between keep-alive pings. Each ping restarts the cache lifetime, so it has to come before the cache expires. The cache-saver-handoff plugin pings a minute before expiry.',
+  pingIn: 'New input tokens each ping sends: its short question and any wrapper the client adds. A fork never caches its own tail, so they cost the normal input price.',
+  pingOut: 'Output tokens each ping is billed for: the one-word reply plus any thinking the model does.',
+  returnChance: 'How likely you are to come back to this session at all. The pings are paid either way; the re-write is saved only if you come back.',
   currency: 'Display currency. Costs are calculated in USD and converted at the daily ECB reference rate.',
 } as const
 

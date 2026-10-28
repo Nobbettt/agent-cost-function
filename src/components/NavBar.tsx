@@ -19,10 +19,13 @@ export function NavBar({ page, controls }: Props) {
           <span className="brand-short" aria-hidden="true">ACF</span>
         </a>
         <div className="nav-links">
-          {/* Always real links to the two tools; the one for the current page carries aria-current. */}
+          {/* Always real links to the three tools; the one for the current page carries aria-current. */}
           <a href="/" aria-current={page === 'calculator' ? 'page' : undefined}>Explore</a>
           <a href="/cache-break-even/" aria-current={page === 'cache-break-even' ? 'page' : undefined}>
             {longName ? 'Claude Cache Break-even' : 'Cache break-even'}
+          </a>
+          <a href="/cache-keep-alive/" aria-current={page === 'cache-keep-alive' ? 'page' : undefined}>
+            {longName ? 'Cache Keep-alive' : 'Keep-alive'}
           </a>
         </div>
         {controls && <div className="nav-end">{controls}</div>}
