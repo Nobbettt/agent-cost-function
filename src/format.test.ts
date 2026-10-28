@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { everyOtherTickLabel, fmtPrice, fmtTokens, fmtUsd, formatMoney, signedMoney, truncateLabel, logTickLabel, displayValue } from './format'
+import { everyOtherTickLabel, fmtPrice, fmtTokens, fmtUsd, formatMoney, signedMoney, truncateLabel, logTickLabel, displayValue, fmtDuration } from './format'
 
 describe('fmtTokens', () => {
   it('formats raw, K and M', () => {
@@ -152,5 +152,16 @@ describe('displayValue', () => {
     expect(displayValue(1000000, 1000)).toBe('1000')
     expect(displayValue(1234.5678, 1000)).toBe('1.235')
     expect(displayValue(0, 1000)).toBe('0')
+  })
+})
+
+describe('fmtDuration', () => {
+  it('uses minutes under an hour, hours and minutes under two days, then days and hours', () => {
+    expect(fmtDuration(4.4)).toBe('4 min')
+    expect(fmtDuration(101)).toBe('1 h 41 min')
+    expect(fmtDuration(120)).toBe('2 h')
+    expect(fmtDuration(2302)).toBe('38 h 22 min')
+    expect(fmtDuration(48 * 60 + 190)).toBe('2 d 3 h')
+    expect(fmtDuration(72 * 60)).toBe('3 d')
   })
 })

@@ -11,8 +11,11 @@ interface Props {
   min: number
   max: number
   step: number
-  /** What the "-" and "+" buttons move by, in the stored unit; they snap to multiples of it. Defaults to `step`. */
-  clickStep?: number
+  /**
+   * What the "-" and "+" buttons move by, in the stored unit; they snap to multiples of it. Defaults to `step`.
+   * A function picks it for each press from the current value and the direction (1 is "+").
+   */
+  clickStep?: number | ((value: number, dir: 1 | -1) => number)
   /** Used when the field is empty or not a number. */
   fallback: number
   value: number
@@ -47,7 +50,8 @@ export function NumberField({ label, help, name, min, max, step, clickStep = ste
     return String(Math.round(n * scale))
   }
   const click = (dir: 1 | -1) => {
-    const next = snapStep(value, dir, clickStep, min, max)
+    const by = typeof clickStep === 'function' ? clickStep(value, dir) : clickStep
+    const next = snapStep(value, dir, by, min, max)
     setText(displayValue(next, scale))
     onChange(next)
   }

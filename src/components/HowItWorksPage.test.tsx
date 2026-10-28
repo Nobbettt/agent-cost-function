@@ -30,6 +30,7 @@ describe('HowItWorksPage', () => {
     expect(nav.getAllByRole('link').map((l) => [l.textContent, l.getAttribute('href')])).toEqual([
       ['Calculator', '/'],
       ['Claude Cache Break-even', '/cache-break-even/'],
+      ['Cache Keep-alive', '/cache-keep-alive/'],
       ['Sources', '/sources/'],
     ])
   })

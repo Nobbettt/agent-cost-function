@@ -27,3 +27,13 @@ export const DEFAULT_EXPLICIT_HOURS = 2
 export const PAUSE_LIMITS = { min: 0, max: 40, step: 1, clickStep: 1 } as const
 export const DEFAULT_SHORT_PAUSES = 2
 export const DEFAULT_LONG_PAUSES = 0
+
+/** Cache keep-alive page: the cached context slider (tokens; its max is the model's max input), the ping's own tokens, and the chance (%) you come back (a slider in 5% steps). The ping interval's range depends on the cache. */
+export const KEEP_ALIVE_LIMITS = {
+  context: { min: 10000, step: 10000 },
+  pingIn: { min: 0, max: 10000, step: 1, clickStep: 10 },
+  pingOut: { min: 0, max: 64000, step: 1, clickStep: 10 },
+  returnChance: { min: 0, max: 100, step: 5 },
+} as const
+// Ping tokens: the plugin's one-line question (~11 tokens) plus framing, and "OK" plus a little thinking (the fork inherits the session's effort).
+export const KEEP_ALIVE_DEFAULTS = { context: 200000, pingIn: 20, pingOut: 10, returnChance: 100 } as const

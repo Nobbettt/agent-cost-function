@@ -184,3 +184,20 @@ describe('NumberField minus and plus buttons', () => {
     expect(onChange).toHaveBeenLastCalledWith(5000)
   })
 })
+
+describe('NumberField with a click step that depends on the value', () => {
+  // 30 s below 10 min, a whole minute from 10 up: − from 10 lands on 9.5, + from 9.5 on 10.
+  const halfBelowTen = (value: number, dir: 1 | -1) => ((dir === 1 ? value < 10 : value <= 10) ? 0.5 : 1)
+  const minutes = { min: 1, max: 60, step: 0.5, clickStep: halfBelowTen, fallback: 4.5 } as const
+  const press = (name: string) => fireEvent.click(screen.getByRole('button', { name: `${name} Amount` }))
+
+  it.each([
+    [4.5, 'Increase', 5], [4.5, 'Decrease', 4], [9.5, 'Increase', 10], [10, 'Decrease', 9.5],
+    [10, 'Increase', 11], [59, 'Decrease', 58], [4.25, 'Increase', 4.5],
+  ] as const)('from %s, %s moves to %s', (value, button, next) => {
+    const { onChange, input } = setup({ ...minutes, value })
+    press(button)
+    expect(onChange).toHaveBeenLastCalledWith(next)
+    expect(input.value).toBe(String(next))
+  })
+})
