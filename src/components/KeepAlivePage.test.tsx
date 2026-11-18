@@ -118,7 +118,7 @@ describe('Cache Keep-alive page', () => {
     render(<KeepAlivePage />)
     fireEvent.click(screen.getByLabelText('OpenAI'))
     expect((field('Model') as HTMLSelectElement).value).toBe('gpt-6.1-sol')
-    expect([...(field('Model') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['GPT-6 Astra', 'GPT-6.1 Sol', 'GPT-6 Sol', 'GPT-6 Luna', 'GPT-5.6 Sol', 'GPT-5.6 Terra', 'GPT-5.6 Luna'])
+    expect([...(field('Model') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['GPT-6.2 Astra', 'GPT-6.2 Sol', 'GPT-6 Astra', 'GPT-6.1 Sol', 'GPT-6 Sol', 'GPT-6 Luna', 'GPT-5.6 Sol', 'GPT-5.6 Terra', 'GPT-5.6 Luna'])
     expect(screen.getByRole('group', { name: 'Cache lifetime' }).textContent).toBe('30 min (fixed)')
     expect((field('Ping every (min)') as HTMLInputElement).value).toBe('29')
     expect(story()).not.toContain('prolongCount')
@@ -127,7 +127,7 @@ describe('Cache Keep-alive page', () => {
   it('lists only the caches with a known lifetime in the comparison table', () => {
     render(<KeepAlivePage />)
     const cells = [...document.querySelectorAll('table tbody tr td:nth-child(2)')].map((td) => td.textContent)
-    expect(cells).toHaveLength(8 * 2 + 7)
+    expect(cells).toHaveLength(9 * 2 + 9)
     expect(new Set(cells)).toEqual(new Set(['5 min', '1 hour', '30 min (fixed)']))
     expect(document.querySelector('table')!.textContent).not.toMatch(/Grok|Gemini|GPT-5\.5|GPT-5\.4/)
   })
